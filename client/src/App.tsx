@@ -9,12 +9,14 @@ import Pedidos from "@/pages/Pedidos";
 import Fila from "@/pages/Fila";
 import Estoque from "@/pages/Estoque";
 import Caixa from "@/pages/Caixa";
+import PedidoForm from "@/pages/PedidoForm";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home}/>
       <Route path="/pedidos" component={Pedidos}/>
+      <Route path="/pedidos/:id" component={PedidoForm}/>
       <Route path="/fila" component={Fila}/>
       <Route path="/estoque" component={Estoque}/>
       <Route path="/caixa" component={Caixa}/>
