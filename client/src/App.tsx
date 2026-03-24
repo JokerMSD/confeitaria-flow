@@ -10,6 +10,7 @@ import Fila from "@/pages/Fila";
 import Estoque from "@/pages/Estoque";
 import Caixa from "@/pages/Caixa";
 import PedidoForm from "@/pages/PedidoForm";
+import CaixaForm from "@/pages/CaixaForm";
 
 function Router() {
   return (
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/fila" component={Fila}/>
       <Route path="/estoque" component={Estoque}/>
       <Route path="/caixa" component={Caixa}/>
+      <Route path="/caixa/:id" component={CaixaForm}/>
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

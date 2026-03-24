@@ -1,7 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { useMockData } from "@/hooks/use-mock-data";
-import { mockOrders, Order, OrderItem, OrderStatus, PaymentMethod } from "@/data/mock-data";
+import { mockOrders, Order, OrderItem, OrderStatus, PaymentMethod, CashTransaction, mockTransactions } from "@/data/mock-data";
 import { ArrowLeft, Plus, Trash2, Save } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useState, useMemo, useEffect } from "react";
@@ -77,6 +77,8 @@ export default function PedidoForm() {
     setItems(items.filter(item => item.id !== id));
   };
 
+  const [transactions, setTransactions] = useMockData<CashTransaction>("transactions", mockTransactions);
+
   const handleSave = () => {
     if (!customerName || !deliveryDate || items.length === 0) {
       toast({
@@ -104,6 +106,24 @@ export default function PedidoForm() {
       notes,
       items
     };
+
+    // Integration with Caixa: Record payment if > 0 and not already fully paid in previous state (simplified logic for mockup)
+    if (paid > 0 && (!existingOrder || existingOrder.paidAmount !== paid)) {
+        const diffAmount = existingOrder ? paid - existingOrder.paidAmount : paid;
+        if (diffAmount > 0) {
+            const newTransaction: CashTransaction = {
+                id: Math.random().toString(36).substr(2, 9),
+                type: 'Entrada',
+                category: 'Venda',
+                description: `Pagamento ${diffAmount === totalAmount ? 'Integral' : 'Parcial'} Pedido ${newOrder.orderNumber}`,
+                amount: diffAmount,
+                paymentMethod: paymentMethod,
+                date: new Date().toISOString(),
+                orderId: newOrder.id
+            };
+            setTransactions([newTransaction, ...transactions]);
+        }
+    }
 
     if (isEditing) {
       setOrders(orders.map(o => o.id === newOrder.id ? newOrder : o));
