@@ -11,6 +11,8 @@ import Estoque from "@/pages/Estoque";
 import Caixa from "@/pages/Caixa";
 import PedidoForm from "@/pages/PedidoForm";
 import CaixaForm from "@/pages/CaixaForm";
+import EstoqueForm from "@/pages/EstoqueForm";
+import EstoqueMovimentacao from "@/pages/EstoqueMovimentacao";
 
 function Router() {
   return (
@@ -20,6 +22,9 @@ function Router() {
       <Route path="/pedidos/:id" component={PedidoForm}/>
       <Route path="/fila" component={Fila}/>
       <Route path="/estoque" component={Estoque}/>
+      <Route path="/estoque/novo" component={EstoqueForm}/>
+      <Route path="/estoque/:id/editar" component={EstoqueForm}/>
+      <Route path="/estoque/:id" component={EstoqueMovimentacao}/>
       <Route path="/caixa" component={Caixa}/>
       <Route path="/caixa/:id" component={CaixaForm}/>
       {/* Fallback to 404 */}

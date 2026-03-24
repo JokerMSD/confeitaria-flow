@@ -38,6 +38,15 @@ export interface InventoryItem {
   notes?: string;
 }
 
+export interface InventoryMovement {
+  id: string;
+  itemId: string;
+  type: 'Entrada' | 'Saída' | 'Ajuste';
+  quantity: number;
+  date: string;
+  reason?: string;
+}
+
 export interface CashTransaction {
   id: string;
   type: 'Entrada' | 'Saída';
