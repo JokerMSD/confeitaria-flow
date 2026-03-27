@@ -1,0 +1,35 @@
+export type OrderStatus =
+  | "Novo"
+  | "Confirmado"
+  | "EmProducao"
+  | "Pronto"
+  | "Entregue"
+  | "Cancelado";
+
+export type PaymentStatus = "Pendente" | "Parcial" | "Pago";
+
+export type PaymentMethod =
+  | "Pix"
+  | "Dinheiro"
+  | "CartaoCredito"
+  | "CartaoDebito"
+  | "Transferencia";
+
+export interface OrderItem {
+  id: string;
+  orderId: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  lineTotalCents: number;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateOrderItemInput {
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  position?: number;
+}

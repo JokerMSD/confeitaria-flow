@@ -1,8 +1,8 @@
-export type OrderStatus = 'Novo' | 'Confirmado' | 'Em produção' | 'Pronto' | 'Entregue' | 'Cancelado';
+export type LegacyOrderStatus = 'Novo' | 'Confirmado' | 'Em produção' | 'Pronto' | 'Entregue' | 'Cancelado';
 export type PaymentStatus = 'Pendente' | 'Parcial' | 'Pago';
 export type PaymentMethod = 'Pix' | 'Dinheiro' | 'Cartão de crédito' | 'Cartão de débito' | 'Transferência';
 
-export interface OrderItem {
+export interface LegacyOrderItem {
   id: string;
   productId: string;
   productName: string;
@@ -11,7 +11,7 @@ export interface OrderItem {
   subtotal: number;
 }
 
-export interface Order {
+export interface LegacyOrder {
   id: string;
   orderNumber: string;
   customerName: string;
@@ -19,14 +19,18 @@ export interface Order {
   orderDate: string;
   deliveryDate: string;
   deliveryTime?: string;
-  status: OrderStatus;
+  status: LegacyOrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   totalAmount: number;
   paidAmount: number;
   notes?: string;
-  items: OrderItem[];
+  items: LegacyOrderItem[];
 }
+
+export type OrderStatus = LegacyOrderStatus;
+export type OrderItem = LegacyOrderItem;
+export type Order = LegacyOrder;
 
 export interface InventoryItem {
   id: string;
@@ -59,7 +63,7 @@ export interface CashTransaction {
 }
 
 // Mock Data
-export const mockOrders: Order[] = [
+export const mockOrders: LegacyOrder[] = [
   {
     id: '1',
     orderNumber: 'PED-001',
