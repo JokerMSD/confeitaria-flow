@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import net from "net";
+import { errorHandler } from "./middlewares/error-handler";
 
 const app = express();
 const httpServer = createServer(app);
@@ -33,6 +35,37 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
+async function findAvailablePort(startPort: number, host: string) {
+  let port = startPort;
+
+  while (true) {
+    const isAvailable = await new Promise<boolean>((resolve) => {
+      const tester = net.createServer();
+
+      tester.once("error", (error: NodeJS.ErrnoException) => {
+        if (error.code === "EADDRINUSE") {
+          resolve(false);
+          return;
+        }
+
+        throw error;
+      });
+
+      tester.once("listening", () => {
+        tester.close(() => resolve(true));
+      });
+
+      tester.listen(port, host);
+    });
+
+    if (isAvailable) {
+      return port;
+    }
+
+    port += 1;
+  }
+}
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -62,18 +95,11 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
+  app.use((err: any, _req: Request, _res: Response, next: NextFunction) => {
     console.error("Internal Server Error:", err);
-
-    if (res.headersSent) {
-      return next(err);
-    }
-
-    return res.status(status).json({ message });
+    next(err);
   });
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -89,11 +115,21 @@ app.use((req, res, next) => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || "5000", 10);
+  const requestedPort = parseInt(process.env.PORT || "5000", 10);
+  const host = "0.0.0.0";
+  const port = await findAvailablePort(requestedPort, host);
+
+  if (port !== requestedPort) {
+    log(
+      `port ${requestedPort} is busy, using port ${port} instead`,
+      "express",
+    );
+  }
+
   httpServer.listen(
     {
       port,
-      host: "0.0.0.0",
+      host,
       reusePort: true,
     },
     () => {
