@@ -11,7 +11,20 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export function Sidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  const handleResetDemo = () => {
+    if (!window.confirm("Limpar os dados salvos localmente e reiniciar a demonstração?")) {
+      return;
+    }
+
+    localStorage.removeItem("orders");
+    localStorage.removeItem("inventory");
+    localStorage.removeItem("transactions");
+    localStorage.removeItem("movements");
+    setLocation("/");
+    window.location.reload();
+  };
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
@@ -64,12 +77,14 @@ export function Sidebar() {
             <p className="text-xs text-sidebar-foreground/60 truncate">admin@docegestao.com</p>
           </div>
         </div>
-        <Link href="/login">
-          <a className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full">
-            <LogOut className="w-4 h-4" />
-            Sair
-          </a>
-        </Link>
+        <button
+          type="button"
+          onClick={handleResetDemo}
+          className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full"
+        >
+          <LogOut className="w-4 h-4" />
+          Reiniciar demo
+        </button>
       </div>
     </aside>
   );
