@@ -3,7 +3,7 @@ services:
     name: confeitaria-flow-api
     runtime: node
     rootDir: .
-    buildCommand: npm install && npm run build:api
+    buildCommand: npm install --include=dev && npm run build:api
     startCommand: npm run start:api
     healthCheckPath: /api/health
     envVars:

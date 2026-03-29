@@ -68,7 +68,7 @@ Passo a passo:
 
 Comandos usados no Render:
 
-- build: `npm install && npm run build:api`
+- build: `npm install --include=dev && npm run build:api`
 - start: `npm run start:api`
 
 Observacoes:
