@@ -1,1 +1,1 @@
-export { getDb } from "./client";
+export { getDb, getPool } from "./client";

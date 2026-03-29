@@ -1,75 +1,161 @@
-import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import { useMockData } from "@/hooks/use-mock-data";
-import { mockInventory, InventoryItem } from "@/data/mock-data";
-import { ArrowLeft, Save } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { useState, useMemo } from "react";
-import { Input } from "@/components/ui/input";
+import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ApiError } from "@/api/http-client";
+import { useInventoryItem } from "@/features/inventory/hooks/use-inventory-item";
+import { useCreateInventoryItem } from "@/features/inventory/hooks/use-create-inventory-item";
+import { useUpdateInventoryItem } from "@/features/inventory/hooks/use-update-inventory-item";
+import {
+  adaptInventoryFormStateToCreatePayload,
+  adaptInventoryFormStateToUpdatePayload,
+  adaptInventoryItemDetailToFormState,
+  createEmptyInventoryFormState,
+} from "@/features/inventory/lib/inventory-form-adapter";
+import type {
+  InventoryFormState,
+  UiInventoryCategory,
+  UiInventoryUnit,
+} from "@/features/inventory/types/inventory-ui";
 
 export default function EstoqueForm() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
-  
-  const isEditing = params?.id && params.id !== "novo";
+  const isEditing = Boolean(params?.id && params.id !== "novo");
+  const itemId = isEditing ? params.id : undefined;
   const { toast } = useToast();
 
-  const [inventory, setInventory] = useMockData<InventoryItem>("inventory", mockInventory);
-  
-  const existingItem = useMemo(() => {
-    return isEditing ? inventory.find(i => i.id === params.id) : null;
-  }, [isEditing, params.id, inventory]);
+  const inventoryItemQuery = useInventoryItem(itemId);
+  const createInventoryMutation = useCreateInventoryItem();
+  const updateInventoryMutation = useUpdateInventoryItem();
 
-  // Form state
-  const [name, setName] = useState(existingItem?.name || "");
-  const [category, setCategory] = useState<InventoryItem['category']>(existingItem?.category || "Ingrediente");
-  const [currentQuantity, setCurrentQuantity] = useState(existingItem?.currentQuantity?.toString() || "");
-  const [minQuantity, setMinQuantity] = useState(existingItem?.minQuantity?.toString() || "0");
-  const [unit, setUnit] = useState<InventoryItem['unit']>(existingItem?.unit || "un");
-  const [notes, setNotes] = useState(existingItem?.notes || "");
+  const [formState, setFormState] = useState<InventoryFormState>(
+    createEmptyInventoryFormState(),
+  );
 
-  const handleSave = () => {
-    if (!name || currentQuantity === "") {
+  const isSaving =
+    createInventoryMutation.isPending || updateInventoryMutation.isPending;
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFormState(createEmptyInventoryFormState());
+      return;
+    }
+
+    if (inventoryItemQuery.data) {
+      setFormState(adaptInventoryItemDetailToFormState(inventoryItemQuery.data));
+    }
+  }, [inventoryItemQuery.data, isEditing]);
+
+  const setField = <K extends keyof InventoryFormState>(
+    key: K,
+    value: InventoryFormState[K],
+  ) => {
+    setFormState((current) => ({
+      ...current,
+      [key]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    if (!formState.name.trim() || formState.currentQuantity.trim() === "") {
       toast({
-        title: "Preencha os campos obrigatórios",
-        description: "Nome do item e quantidade atual são obrigatórios.",
-        variant: "destructive"
+        title: "Preencha os campos obrigatorios",
+        description: "Nome do item e quantidade atual sao obrigatorios.",
+        variant: "destructive",
       });
       return;
     }
 
-    const newItem: InventoryItem = {
-      id: existingItem?.id || Math.random().toString(36).substr(2, 9),
-      name,
-      category,
-      currentQuantity: parseFloat(currentQuantity.replace(',', '.')),
-      minQuantity: parseFloat(minQuantity.replace(',', '.')),
-      unit,
-      notes
-    };
+    try {
+      if (isEditing && itemId) {
+        await updateInventoryMutation.mutateAsync({
+          id: itemId,
+          payload: adaptInventoryFormStateToUpdatePayload(formState),
+        });
+        toast({ title: "Item atualizado com sucesso!" });
+      } else {
+        await createInventoryMutation.mutateAsync(
+          adaptInventoryFormStateToCreatePayload(formState),
+        );
+        toast({ title: "Item cadastrado com sucesso!" });
+      }
 
-    if (isEditing) {
-      setInventory(inventory.map(i => i.id === newItem.id ? newItem : i));
-      toast({ title: "Item atualizado com sucesso!" });
-    } else {
-      setInventory([newItem, ...inventory]);
-      toast({ title: "Item cadastrado com sucesso!" });
+      setLocation("/estoque");
+    } catch (error) {
+      toast({
+        title: "Erro ao salvar item",
+        description:
+          error instanceof ApiError
+            ? error.message
+            : "Nao foi possivel salvar o item do estoque.",
+        variant: "destructive",
+      });
     }
-    
-    setLocation("/estoque");
   };
+
+  if (isEditing && inventoryItemQuery.isLoading) {
+    return (
+      <AppLayout title="Editar Item">
+        <div className="max-w-2xl mx-auto">
+          <Card className="glass-card">
+            <CardContent className="p-10 flex items-center justify-center gap-3 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Carregando item...</span>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (isEditing && inventoryItemQuery.isError) {
+    return (
+      <AppLayout title="Editar Item">
+        <div className="max-w-2xl mx-auto">
+          <Card className="glass-card">
+            <CardContent className="p-10 text-center space-y-4">
+              <div className="space-y-2">
+                <h2 className="text-xl font-display font-bold text-foreground">
+                  Item indisponivel
+                </h2>
+                <p className="text-muted-foreground">
+                  {inventoryItemQuery.error instanceof ApiError
+                    ? inventoryItemQuery.error.message
+                    : "Nao foi possivel carregar o item do estoque."}
+                </p>
+              </div>
+              <div className="flex justify-center gap-3">
+                <Button variant="outline" onClick={() => inventoryItemQuery.refetch()}>
+                  Tentar novamente
+                </Button>
+                <Button onClick={() => setLocation("/estoque")}>
+                  Voltar para o estoque
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title={isEditing ? "Editar Item" : "Novo Item de Estoque"}>
       <div className="max-w-2xl mx-auto space-y-6">
-        
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => setLocation("/estoque")} className="rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/estoque")}
+              className="rounded-full"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
@@ -78,49 +164,53 @@ export default function EstoqueForm() {
               </h2>
             </div>
           </div>
-          <Button onClick={handleSave} className="gap-2 rounded-xl">
-            <Save className="w-4 h-4" />
+          <Button onClick={handleSave} className="gap-2 rounded-xl" disabled={isSaving}>
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
             Salvar
           </Button>
         </div>
 
         <Card className="glass-card">
           <CardContent className="p-6 space-y-6">
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Nome */}
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="name">Nome do Item *</Label>
-                <Input 
-                  id="name" 
-                  value={name} 
-                  onChange={e => setName(e.target.value)} 
-                  placeholder="Ex: Leite Condensado Moça, Caixa Kraft 20x20..."
+                <Input
+                  id="name"
+                  value={formState.name}
+                  onChange={(event) => setField("name", event.target.value)}
+                  placeholder="Ex: Leite Condensado, Caixa Kraft 20x20..."
                   className="text-lg py-6"
                 />
               </div>
 
-              {/* Categoria */}
               <div className="space-y-2">
                 <Label>Categoria</Label>
-                <select 
+                <select
                   className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={category} 
-                  onChange={e => setCategory(e.target.value as any)}
+                  value={formState.category}
+                  onChange={(event) =>
+                    setField("category", event.target.value as UiInventoryCategory)
+                  }
                 >
-                  <option value="Produto Pronto">Produto Pronto (Trufas, Bolos...)</option>
-                  <option value="Ingrediente">Ingrediente (Farinha, Chocolate...)</option>
-                  <option value="Embalagem">Embalagem (Caixas, Fitas...)</option>
+                  <option value="Produto Pronto">Produto Pronto</option>
+                  <option value="Ingrediente">Ingrediente</option>
+                  <option value="Embalagem">Embalagem</option>
                 </select>
               </div>
 
-              {/* Unidade de Medida */}
               <div className="space-y-2">
                 <Label>Unidade de Medida</Label>
-                <select 
+                <select
                   className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={unit} 
-                  onChange={e => setUnit(e.target.value as any)}
+                  value={formState.unit}
+                  onChange={(event) =>
+                    setField("unit", event.target.value as UiInventoryUnit)
+                  }
                 >
                   <option value="un">Unidade (un)</option>
                   <option value="kg">Quilograma (kg)</option>
@@ -131,47 +221,69 @@ export default function EstoqueForm() {
                 </select>
               </div>
 
-              {/* Quantidade Atual */}
               <div className="space-y-2">
                 <Label htmlFor="currentQuantity">Quantidade Atual *</Label>
-                <Input 
-                  id="currentQuantity" 
-                  type="number" 
-                  step="0.01" 
-                  value={currentQuantity} 
-                  onChange={e => setCurrentQuantity(e.target.value)} 
+                <Input
+                  id="currentQuantity"
+                  type="number"
+                  step="0.01"
+                  value={formState.currentQuantity}
+                  onChange={(event) =>
+                    setField("currentQuantity", event.target.value)
+                  }
                   placeholder="0"
                   className="text-xl font-bold font-display"
                 />
               </div>
 
-              {/* Estoque Mínimo */}
               <div className="space-y-2">
-                <Label htmlFor="minQuantity">Estoque Mínimo (Alerta)</Label>
-                <Input 
-                  id="minQuantity" 
-                  type="number" 
-                  step="0.01" 
-                  value={minQuantity} 
-                  onChange={e => setMinQuantity(e.target.value)} 
+                <Label htmlFor="minQuantity">Estoque Minimo (Alerta)</Label>
+                <Input
+                  id="minQuantity"
+                  type="number"
+                  step="0.01"
+                  value={formState.minQuantity}
+                  onChange={(event) => setField("minQuantity", event.target.value)}
                   placeholder="0"
                   className="text-xl font-bold font-display text-warning"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Avisaremos quando chegar neste valor.</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Avisaremos quando chegar neste valor.
+                </p>
               </div>
 
-              {/* Observações */}
+              {formState.category === "Ingrediente" && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="purchaseUnitCost">
+                    Preco unitario de compra do ingrediente
+                  </Label>
+                  <Input
+                    id="purchaseUnitCost"
+                    type="number"
+                    step="0.01"
+                    value={formState.purchaseUnitCost}
+                    onChange={(event) =>
+                      setField("purchaseUnitCost", event.target.value)
+                    }
+                    placeholder="0,00"
+                    className="text-lg font-display"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Toda entrada deste ingrediente vai gerar automaticamente uma saida no caixa com base neste preco.
+                  </p>
+                </div>
+              )}
+
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="notes">Observações Opcionais</Label>
-                <textarea 
+                <Label htmlFor="notes">Observacoes Opcionais</Label>
+                <textarea
                   id="notes"
                   className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  placeholder="Fornecedor favorito, marca de preferência, validade média..."
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
+                  placeholder="Fornecedor favorito, marca preferida, validade media..."
+                  value={formState.notes}
+                  onChange={(event) => setField("notes", event.target.value)}
                 />
               </div>
-
             </div>
           </CardContent>
         </Card>

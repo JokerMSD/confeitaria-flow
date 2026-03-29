@@ -15,7 +15,18 @@ export function validateRequest(
       });
     }
 
-    req[target] = parsed.data;
+    if (target === "body") {
+      req.body = parsed.data;
+      return next();
+    }
+
+    const currentTarget = req[target] as Record<string, unknown>;
+
+    for (const key of Object.keys(currentTarget)) {
+      delete currentTarget[key];
+    }
+
+    Object.assign(currentTarget, parsed.data);
     return next();
   };
 }

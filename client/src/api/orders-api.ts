@@ -4,6 +4,8 @@ import type {
   ListOrdersFilters,
   ListOrdersResponse,
   OrderDetailResponse,
+  OrdersLookupResponse,
+  OrdersQueueResponse,
   UpdateOrderRequest,
 } from "@shared/types";
 import { httpClient } from "./http-client";
@@ -26,6 +28,14 @@ export function listOrders(filters: ListOrdersFilters = {}) {
 
 export function getOrder(id: string) {
   return httpClient<OrderDetailResponse>(`/api/orders/${id}`);
+}
+
+export function getOrdersQueue() {
+  return httpClient<OrdersQueueResponse>("/api/orders/queue");
+}
+
+export function getOrdersLookup() {
+  return httpClient<OrdersLookupResponse>("/api/orders/lookup");
 }
 
 export function createOrder(payload: CreateOrderRequest) {

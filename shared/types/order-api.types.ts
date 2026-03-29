@@ -5,6 +5,8 @@ import type {
   OrderListItem,
   UpdateOrderInput,
 } from "./order.types";
+import type { OrderLookupItem } from "./order-lookup.types";
+import type { OrderQueueItem } from "./order-queue.types";
 
 export interface ListOrdersResponse {
   data: OrderListItem[];
@@ -28,4 +30,12 @@ export interface DeleteOrderResponse {
     id: string;
     deletedAt: string;
   };
+}
+
+export interface OrdersQueueResponse {
+  data: OrderQueueItem[];
+}
+
+export interface OrdersLookupResponse {
+  data: OrderLookupItem[];
 }

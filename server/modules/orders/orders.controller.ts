@@ -12,6 +12,16 @@ export class OrdersController {
     });
   }
 
+  async queue(_req: Request, res: Response) {
+    const data = await this.ordersService.listQueue();
+    res.json({ data });
+  }
+
+  async lookup(_req: Request, res: Response) {
+    const data = await this.ordersService.listLookup();
+    res.json({ data });
+  }
+
   async detail(req: Request, res: Response) {
     const data = await this.ordersService.getById(String(req.params.id));
     res.json({ data });

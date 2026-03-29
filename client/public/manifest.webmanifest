@@ -1,0 +1,18 @@
+{
+  "name": "Doce Gestão",
+  "short_name": "Doce Gestão",
+  "description": "Sistema de gestão para confeitaria",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fff9f4",
+  "theme_color": "#e05b86",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

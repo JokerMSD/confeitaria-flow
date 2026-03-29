@@ -4,9 +4,15 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import net from "net";
 import { errorHandler } from "./middlewares/error-handler";
+import { corsMiddleware } from "./middlewares/cors";
+import { createSessionMiddleware } from "./auth/session";
+import { loadEnvFile } from "./load-env";
+import { CashTransactionsService } from "./services/cash-transactions.service";
 
 const app = express();
 const httpServer = createServer(app);
+
+loadEnvFile();
 
 declare module "http" {
   interface IncomingMessage {
@@ -23,6 +29,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+app.set("trust proxy", 1);
+app.use(corsMiddleware);
+app.use(createSessionMiddleware());
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -69,23 +78,11 @@ async function findAvailablePort(startPort: number, host: string) {
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+      log(`${req.method} ${path} ${res.statusCode} in ${duration}ms`);
     }
   });
 
@@ -94,6 +91,7 @@ app.use((req, res, next) => {
 
 (async () => {
   await registerRoutes(httpServer, app);
+  await new CashTransactionsService().reconcileOrderReceipts();
 
   app.use((err: any, _req: Request, _res: Response, next: NextFunction) => {
     console.error("Internal Server Error:", err);
@@ -104,22 +102,31 @@ app.use((req, res, next) => {
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
+  const serveClient = process.env.SERVE_CLIENT !== "false";
+
+  if (serveClient) {
+    if (process.env.NODE_ENV === "production") {
+      serveStatic(app);
+    } else {
+      const { setupVite } = await import("./vite");
+      await setupVite(httpServer, app);
+    }
   } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
+    log("client serving disabled; running API-only mode", "express");
   }
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
+  // Other ports are firewalled. Default to 3000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const requestedPort = parseInt(process.env.PORT || "5000", 10);
+  const requestedPort = parseInt(process.env.PORT || "3000", 10);
   const host = "0.0.0.0";
-  const port = await findAvailablePort(requestedPort, host);
+  const port =
+    process.env.NODE_ENV === "production"
+      ? requestedPort
+      : await findAvailablePort(requestedPort, host);
 
-  if (port !== requestedPort) {
+  if (process.env.NODE_ENV !== "production" && port !== requestedPort) {
     log(
       `port ${requestedPort} is busy, using port ${port} instead`,
       "express",

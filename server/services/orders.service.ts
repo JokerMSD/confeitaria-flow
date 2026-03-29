@@ -2,8 +2,10 @@ import type {
   CreateOrderInput,
   ListOrdersFilters,
   OrderDetail,
+  OrderLookupItem,
   OrderItem,
   OrderListItem,
+  OrderQueueItem,
   PaymentStatus,
   UpdateOrderInput,
 } from "@shared/types";
@@ -12,6 +14,7 @@ import { OrderItemsRepository } from "../repositories/order-items.repository";
 import { withTransaction } from "../db/transaction";
 import { formatOrderNumber } from "../utils/order-number";
 import { HttpError } from "../utils/http-error";
+import { CashTransactionsService } from "./cash-transactions.service";
 
 function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
@@ -29,10 +32,56 @@ function calculatePaymentStatus(
 export class OrdersService {
   private readonly ordersRepository = new OrdersRepository();
   private readonly orderItemsRepository = new OrderItemsRepository();
+  private readonly cashTransactionsService = new CashTransactionsService();
 
   async list(filters: ListOrdersFilters) {
     const rows = await this.ordersRepository.list(filters);
     return rows.map((row: any) => this.mapOrderListItem(row));
+  }
+
+  async listQueue() {
+    const rows = await this.ordersRepository.listQueueRows();
+    const orders = new Map<string, OrderQueueItem>();
+
+    for (const row of rows) {
+      const current =
+        orders.get(row.id) ??
+        ({
+          id: row.id,
+          orderNumber: row.orderNumber,
+          customerName: row.customerName,
+          orderDate: row.orderDate,
+          deliveryDate: row.deliveryDate,
+          deliveryTime: row.deliveryTime ?? null,
+          status: row.status,
+          paymentStatus: row.paymentStatus,
+          items: [] as OrderQueueItem["items"],
+        } satisfies OrderQueueItem);
+
+      if (row.itemProductName && Number.isFinite(row.itemQuantity)) {
+        current.items.push({
+          productName: row.itemProductName,
+          quantity: row.itemQuantity,
+        });
+      }
+
+      orders.set(row.id, current);
+    }
+
+    return Array.from(orders.values());
+  }
+
+  async listLookup() {
+    const rows = await this.ordersRepository.listLookupRows();
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      orderNumber: row.orderNumber,
+      customerName: row.customerName,
+      deliveryDate: row.deliveryDate,
+      status: row.status,
+      paymentStatus: row.paymentStatus,
+    } satisfies OrderLookupItem));
   }
 
   async getById(id: string) {
@@ -82,6 +131,18 @@ export class OrdersService {
           lineTotalCents: item.lineTotalCents,
           position: item.position ?? index,
         })),
+        tx,
+      );
+
+      await this.cashTransactionsService.syncOrderReceipt(
+        {
+          id: createdOrder.id,
+          orderNumber: createdOrder.orderNumber,
+          customerName: createdOrder.customerName,
+          paymentMethod: createdOrder.paymentMethod,
+          orderDate: createdOrder.orderDate,
+          paidAmountCents: createdOrder.paidAmountCents,
+        },
         tx,
       );
 
@@ -149,22 +210,48 @@ export class OrdersService {
         tx,
       );
 
+      await this.cashTransactionsService.syncOrderReceipt(
+        {
+          id: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          customerName: updatedOrder.customerName,
+          paymentMethod: updatedOrder.paymentMethod,
+          orderDate: updatedOrder.orderDate,
+          paidAmountCents: updatedOrder.paidAmountCents,
+        },
+        tx,
+      );
+
       return this.mapOrderDetail(updatedOrder, updatedItems);
     });
   }
 
   async remove(id: string) {
-    const deletedAt = new Date();
-    const deleted = await this.ordersRepository.markDeleted(id, deletedAt);
+    return withTransaction(async (tx) => {
+      const deletedAt = new Date();
+      const deleted = await this.ordersRepository.markDeleted(id, deletedAt, tx);
 
-    if (!deleted) {
-      throw new HttpError(404, "Order not found.");
-    }
+      if (!deleted) {
+        throw new HttpError(404, "Order not found.");
+      }
 
-    return {
-      id: deleted.id,
-      deletedAt: deletedAt.toISOString(),
-    };
+      await this.cashTransactionsService.syncOrderReceipt(
+        {
+          id: deleted.id,
+          orderNumber: deleted.orderNumber,
+          customerName: deleted.customerName,
+          paymentMethod: deleted.paymentMethod,
+          orderDate: deleted.orderDate,
+          paidAmountCents: 0,
+        },
+        tx,
+      );
+
+      return {
+        id: deleted.id,
+        deletedAt: deletedAt.toISOString(),
+      };
+    });
   }
 
   private normalizeOrderInput(input: CreateOrderInput | UpdateOrderInput) {

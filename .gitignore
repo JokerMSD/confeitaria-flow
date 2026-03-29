@@ -4,3 +4,13 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+.env
+.env.*
+!.env.example
+!client/.env.example
+.agents
+AGENTS.md
+skills-lock.json
+drizzle-kit
+tsx
+rest-express@1.0.0

@@ -1,6 +1,16 @@
-import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  ilike,
+  isNull,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
 import { getDb } from "../db";
-import { orders } from "@shared/schema";
+import { orderItems, orders } from "@shared/schema";
 import type { ListOrdersFilters, OrderStatus, PaymentMethod, PaymentStatus } from "@shared/types";
 
 type Executor = ReturnType<typeof getDb> | any;
@@ -77,6 +87,93 @@ export class OrdersRepository {
       .limit(1);
 
     return order ?? null;
+  }
+
+  async listQueueRows(executor: Executor = getDb()) {
+    return executor
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        orderDate: orders.orderDate,
+        deliveryDate: orders.deliveryDate,
+        deliveryTime: orders.deliveryTime,
+        status: orders.status,
+        paymentStatus: orders.paymentStatus,
+        itemProductName: orderItems.productName,
+        itemQuantity: orderItems.quantity,
+        itemPosition: orderItems.position,
+      })
+      .from(orders)
+      .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
+      .where(
+        and(
+          isNull(orders.deletedAt),
+          notInArray(orders.status, ["Entregue", "Cancelado"]),
+        ),
+      )
+      .orderBy(
+        asc(orders.deliveryDate),
+        sql`coalesce(${orders.deliveryTime}, '23:59')`,
+        asc(orders.createdAt),
+        asc(orderItems.position),
+      );
+  }
+
+  async listLookupRows(executor: Executor = getDb()) {
+    return executor
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        deliveryDate: orders.deliveryDate,
+        status: orders.status,
+        paymentStatus: orders.paymentStatus,
+      })
+      .from(orders)
+      .where(isNull(orders.deletedAt))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async listCashSyncRows(executor: Executor = getDb()) {
+    return executor
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        paymentMethod: orders.paymentMethod,
+        orderDate: orders.orderDate,
+        paidAmountCents: orders.paidAmountCents,
+      })
+      .from(orders)
+      .where(isNull(orders.deletedAt))
+      .orderBy(desc(orders.createdAt));
+  }
+
+  async getFinancialSummaryByDate(date?: string, executor: Executor = getDb()) {
+    const conditions = [isNull(orders.deletedAt)];
+
+    if (date) {
+      conditions.push(eq(orders.orderDate, date));
+    }
+
+    const [summary] = await executor
+      .select({
+        soldAmountCents:
+          sql<number>`coalesce(sum(${orders.subtotalAmountCents}), 0)`,
+        receivedAmountCents:
+          sql<number>`coalesce(sum(${orders.paidAmountCents}), 0)`,
+        receivableAmountCents:
+          sql<number>`coalesce(sum(${orders.remainingAmountCents}), 0)`,
+      })
+      .from(orders)
+      .where(and(...conditions));
+
+    return summary ?? {
+      soldAmountCents: 0,
+      receivedAmountCents: 0,
+      receivableAmountCents: 0,
+    };
   }
 
   async create(data: OrderRowInsert, executor: Executor = getDb()) {

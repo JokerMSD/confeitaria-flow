@@ -1,17 +1,22 @@
 # Confeitaria Flow
 
-Aplicação de gestão para confeitaria com frontend em React + Vite e servidor Express em TypeScript.
+Sistema de gestao para confeitaria com frontend React + Vite, backend Express e PostgreSQL.
 
 ## Requisitos
 
 - Node.js 20+
 - npm 10+
+- PostgreSQL
 
-## Instalação
+## Variaveis de ambiente
 
-```bash
-npm install
-```
+- `DATABASE_URL` obrigatoria para a API
+- `SESSION_SECRET` obrigatoria em producao
+- `AUTH_USERS_JSON` com os usuarios permitidos
+- `APP_ORIGIN` origin do frontend
+- `CORS_ORIGINS` lista de origins permitidas
+- `VITE_API_URL` opcional para o app, padrao `http://localhost:3001` no modo de desenvolvimento
+- `SESSION_COOKIE_SECURE=true` em deploy HTTPS
 
 ## Desenvolvimento
 
@@ -19,34 +24,26 @@ npm install
 npm run dev
 ```
 
-O servidor sobe por padrão na porta `5000`. Se a porta já estiver ocupada:
+O `dev` sobe:
+
+- app em `http://localhost:3000`
+- API em `http://localhost:3001`
+
+Para rodar separado:
 
 ```bash
-npx cross-env PORT=5001 NODE_ENV=development tsx server/index.ts
+npm run app
+npm run api
 ```
 
-## Produção local
-
-```bash
-npm start
-```
-
-Se o bundle de produção ainda não existir, o `start` gera o `dist` antes de subir o servidor. Se o `dist` já existir, ele apenas inicia a aplicação em modo de produção.
-
-## Build
-
-```bash
-npm run build
-```
-
-## Verificação de tipos
+## Build e producao local
 
 ```bash
 npm run check
+npm run build
+npm start
 ```
 
-## Estado atual
+## Deploy simples
 
-- O frontend funciona hoje com dados mockados persistidos em `localStorage`.
-- O backend Express existe, mas as rotas de negócio ainda não foram implementadas.
-- O botão `Reiniciar demo` limpa os dados mockados salvos no navegador.
+Veja [DEPLOY.md](./DEPLOY.md).

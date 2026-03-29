@@ -15,6 +15,8 @@ export function registerOrdersRoutes(app: Express) {
   const updateOrderBodySchema = z.object({ data: updateOrderInputSchema });
 
   app.get("/api/orders", validateRequest(listOrdersFiltersSchema, "query"), controller.list.bind(controller));
+  app.get("/api/orders/lookup", controller.lookup.bind(controller));
+  app.get("/api/orders/queue", controller.queue.bind(controller));
   app.get("/api/orders/:id", validateRequest(orderIdParamsSchema, "params"), controller.detail.bind(controller));
   app.post("/api/orders", validateRequest(orderBodySchema, "body"), controller.create.bind(controller));
   app.put(
