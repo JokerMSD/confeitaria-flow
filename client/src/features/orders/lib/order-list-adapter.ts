@@ -63,6 +63,7 @@ export function adaptOrderListItemToCard(order: ApiOrderListItem): OrderListCard
     remainingAmount: order.remainingAmountCents / 100,
     itemCount: order.itemCount,
     itemSummary: buildItemSummary(order.itemCount),
+    notes: order.notes ?? "",
     items: [],
   };
 }

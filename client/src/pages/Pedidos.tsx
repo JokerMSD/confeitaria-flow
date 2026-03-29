@@ -277,6 +277,16 @@ export default function Pedidos() {
 
                   <div className="space-y-2 flex-1">
                     <p className="text-sm text-muted-foreground line-clamp-2">{order.itemSummary}</p>
+                    {order.notes && (
+                      <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Observações
+                        </p>
+                        <p className="mt-1 text-sm text-foreground/90 line-clamp-3 break-words">
+                          {order.notes}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-4 text-sm mt-4">
                       <div

@@ -39,6 +39,7 @@ export interface OrderListCardItem {
   remainingAmount: number;
   itemCount: number;
   itemSummary: string;
+  notes: string;
   items: Array<{ quantity: number; productName: string }>;
 }
 
