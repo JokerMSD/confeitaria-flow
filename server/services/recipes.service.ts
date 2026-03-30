@@ -21,6 +21,7 @@ import { HttpError } from "../utils/http-error";
 
 const QUANTITY_SCALE = 1000;
 const ORDER_CONSUMPTION_SOURCE = "Pedido";
+const ORDER_STOCK_CONSUMPTION_STATUSES = new Set(["Pronto", "Entregue"]);
 
 type Executor = any;
 type RecipeRow = any;
@@ -350,7 +351,7 @@ export class RecipesService {
       );
     }
 
-    if (order.status === "Cancelado") {
+    if (!ORDER_STOCK_CONSUMPTION_STATUSES.has(order.status)) {
       return;
     }
 
