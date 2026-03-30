@@ -71,6 +71,9 @@ export class InventoryMovementsService {
           quantity: delta,
           reason: normalized.reason,
           reference: normalized.reference,
+          sourceType: null,
+          sourceId: null,
+          isSystemGenerated: false,
         },
         tx,
       );
@@ -128,6 +131,9 @@ export class InventoryMovementsService {
         quantity: delta,
         reason,
         reference,
+        sourceType: null,
+        sourceId: null,
+        isSystemGenerated: false,
       },
       executor,
     );
@@ -208,6 +214,9 @@ export class InventoryMovementsService {
       quantity: Number(row.quantity),
       reason: row.reason,
       reference: row.reference ?? null,
+      sourceType: row.sourceType ?? null,
+      sourceId: row.sourceId ?? null,
+      isSystemGenerated: Boolean(row.isSystemGenerated),
       createdAt: row.createdAt.toISOString(),
     };
   }

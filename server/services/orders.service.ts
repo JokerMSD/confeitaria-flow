@@ -15,6 +15,8 @@ import { withTransaction } from "../db/transaction";
 import { formatOrderNumber } from "../utils/order-number";
 import { HttpError } from "../utils/http-error";
 import { CashTransactionsService } from "./cash-transactions.service";
+import { OrderRecipeConsumptionService } from "./order-recipe-consumption.service";
+import { RecipesService } from "./recipes.service";
 
 function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
@@ -33,6 +35,9 @@ export class OrdersService {
   private readonly ordersRepository = new OrdersRepository();
   private readonly orderItemsRepository = new OrderItemsRepository();
   private readonly cashTransactionsService = new CashTransactionsService();
+  private readonly orderRecipeConsumptionService =
+    new OrderRecipeConsumptionService();
+  private readonly recipesService = new RecipesService();
 
   async list(filters: ListOrdersFilters) {
     const rows = await this.ordersRepository.list(filters);
@@ -99,6 +104,13 @@ export class OrdersService {
     const normalized = this.normalizeOrderInput(input);
 
     return withTransaction<OrderDetail>(async (tx) => {
+      await this.recipesService.assertOrderRecipesAreSellable(
+        normalized.items
+          .map((item) => item.recipeId)
+          .filter((recipeId): recipeId is string => Boolean(recipeId)),
+        tx,
+      );
+
       const sequence = await this.ordersRepository.nextOrderSequence(tx);
       const now = new Date();
 
@@ -125,6 +137,7 @@ export class OrdersService {
       const createdItems = await this.orderItemsRepository.insertMany(
         normalized.items.map((item, index) => ({
           orderId: createdOrder.id,
+          recipeId: item.recipeId,
           productName: item.productName,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
@@ -142,6 +155,19 @@ export class OrdersService {
           paymentMethod: createdOrder.paymentMethod,
           orderDate: createdOrder.orderDate,
           paidAmountCents: createdOrder.paidAmountCents,
+        },
+        tx,
+      );
+
+      await this.orderRecipeConsumptionService.syncOrderConsumption(
+        {
+          orderId: createdOrder.id,
+          orderNumber: createdOrder.orderNumber,
+          status: createdOrder.status,
+          items: createdItems.map((item: any) => ({
+            recipeId: item.recipeId ?? null,
+            quantity: item.quantity,
+          })),
         },
         tx,
       );
@@ -169,6 +195,13 @@ export class OrdersService {
       }
 
       const now = new Date();
+
+      await this.recipesService.assertOrderRecipesAreSellable(
+        normalized.items
+          .map((item) => item.recipeId)
+          .filter((recipeId): recipeId is string => Boolean(recipeId)),
+        tx,
+      );
 
       const updatedOrder = await this.ordersRepository.update(
         id,
@@ -201,6 +234,7 @@ export class OrdersService {
       const updatedItems = await this.orderItemsRepository.insertMany(
         normalized.items.map((item, index) => ({
           orderId: id,
+          recipeId: item.recipeId,
           productName: item.productName,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
@@ -218,6 +252,19 @@ export class OrdersService {
           paymentMethod: updatedOrder.paymentMethod,
           orderDate: updatedOrder.orderDate,
           paidAmountCents: updatedOrder.paidAmountCents,
+        },
+        tx,
+      );
+
+      await this.orderRecipeConsumptionService.syncOrderConsumption(
+        {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          status: updatedOrder.status,
+          items: updatedItems.map((item: any) => ({
+            recipeId: item.recipeId ?? null,
+            quantity: item.quantity,
+          })),
         },
         tx,
       );
@@ -243,6 +290,16 @@ export class OrdersService {
           paymentMethod: deleted.paymentMethod,
           orderDate: deleted.orderDate,
           paidAmountCents: 0,
+        },
+        tx,
+      );
+
+      await this.orderRecipeConsumptionService.syncOrderConsumption(
+        {
+          orderId: deleted.id,
+          orderNumber: deleted.orderNumber,
+          status: "Cancelado",
+          items: [],
         },
         tx,
       );
@@ -279,6 +336,7 @@ export class OrdersService {
       }
 
       return {
+        recipeId: item.recipeId ?? null,
         productName,
         quantity,
         unitPriceCents,
@@ -346,6 +404,7 @@ export class OrdersService {
       items: items.map<OrderItem>((item) => ({
         id: item.id,
         orderId: item.orderId,
+        recipeId: item.recipeId ?? null,
         productName: item.productName,
         quantity: item.quantity,
         unitPriceCents: item.unitPriceCents,

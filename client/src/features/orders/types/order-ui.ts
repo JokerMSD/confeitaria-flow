@@ -45,6 +45,7 @@ export interface OrderListCardItem {
 
 export interface OrderFormItem {
   id: string;
+  recipeId: string | null;
   productName: string;
   quantity: number;
   unitPrice: number;

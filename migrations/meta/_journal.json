@@ -43,6 +43,13 @@
       "when": 1774730000000,
       "tag": "0005_phase6_inventory_item_purchase_cost",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774886400000,
+      "tag": "0006_phase7_recipes_and_order_recipe_sync",
+      "breakpoints": true
     }
   ]
 }

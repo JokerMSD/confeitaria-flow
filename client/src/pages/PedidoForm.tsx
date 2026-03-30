@@ -12,6 +12,8 @@ import { ApiError } from "@/api/http-client";
 import { useCreateOrder } from "@/features/orders/hooks/use-create-order";
 import { useOrder } from "@/features/orders/hooks/use-order";
 import { useUpdateOrder } from "@/features/orders/hooks/use-update-order";
+import { useProductRecipes } from "@/features/recipes/hooks/use-product-recipes";
+import { adaptProductRecipesToOptions } from "@/features/recipes/lib/recipe-list-adapter";
 import {
   adaptFormStateToCreatePayload,
   adaptFormStateToUpdatePayload,
@@ -74,8 +76,10 @@ export default function PedidoForm() {
   const [newItemName, setNewItemName] = useState("");
   const [newItemQtd, setNewItemQtd] = useState("1");
   const [newItemPrice, setNewItemPrice] = useState("");
+  const [newItemRecipeId, setNewItemRecipeId] = useState("");
 
   const orderQuery = useOrder(orderId);
+  const productRecipesQuery = useProductRecipes();
   const createOrderMutation = useCreateOrder();
   const updateOrderMutation = useUpdateOrder();
 
@@ -113,6 +117,11 @@ export default function PedidoForm() {
     [paidAmountValue, totalAmount],
   );
 
+  const productRecipeOptions = useMemo(
+    () => adaptProductRecipesToOptions(productRecipesQuery.data?.data ?? []),
+    [productRecipesQuery.data],
+  );
+
   const setField = <K extends keyof OrderFormState>(
     key: K,
     value: OrderFormState[K],
@@ -141,6 +150,7 @@ export default function PedidoForm() {
         ...current.items,
         buildOrderFormItem(
           createTemporaryItemId(),
+          newItemRecipeId || null,
           newItemName.trim(),
           quantity,
           unitPrice,
@@ -152,6 +162,7 @@ export default function PedidoForm() {
     setNewItemName("");
     setNewItemQtd("1");
     setNewItemPrice("");
+    setNewItemRecipeId("");
   };
 
   const handleRemoveItem = (id: string) => {
@@ -388,6 +399,37 @@ export default function PedidoForm() {
 
                 <div className="flex flex-col md:flex-row gap-3 items-end bg-muted/30 p-4 rounded-xl border border-border/50">
                   <div className="space-y-2 flex-1 w-full">
+                    <Label>Produto cadastrado</Label>
+                    <select
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={newItemRecipeId}
+                      onChange={(event) => {
+                        const selectedId = event.target.value;
+                        setNewItemRecipeId(selectedId);
+
+                        const selectedRecipe = productRecipeOptions.find(
+                          (recipe) => recipe.id === selectedId,
+                        );
+
+                        if (selectedRecipe) {
+                          setNewItemName(selectedRecipe.name);
+                          setNewItemPrice(
+                            selectedRecipe.suggestedSalePrice == null
+                              ? ""
+                              : selectedRecipe.suggestedSalePrice.toString(),
+                          );
+                        }
+                      }}
+                    >
+                      <option value="">Produto livre</option>
+                      {productRecipeOptions.map((recipe) => (
+                        <option key={recipe.id} value={recipe.id}>
+                          {recipe.name} ({recipe.outputLabel})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2 flex-1 w-full">
                     <Label>Produto</Label>
                     <Input
                       placeholder="Ex: Bolo de Cenoura"
@@ -443,6 +485,11 @@ export default function PedidoForm() {
                           <p className="text-xs text-muted-foreground">
                             {formatCurrency(item.unitPrice)} un.
                           </p>
+                          {item.recipeId && (
+                            <p className="text-[11px] text-primary font-medium">
+                              Vinculado a receita
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center gap-4">
                           <span className="font-bold">

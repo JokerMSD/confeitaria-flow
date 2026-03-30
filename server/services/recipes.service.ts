@@ -1,0 +1,770 @@
+import type {
+  CreateRecipeInput,
+  InventoryItem,
+  InventoryItemUnit,
+  ListRecipesFilters,
+  OrderItem,
+  Recipe,
+  RecipeComponentResolved,
+  RecipeDetail,
+  RecipeKind,
+  RecipeListItem,
+  RecipeLookupItem,
+  UpdateRecipeInput,
+} from "@shared/types";
+import { withTransaction } from "../db/transaction";
+import { InventoryItemsRepository } from "../repositories/inventory-items.repository";
+import { InventoryMovementsRepository } from "../repositories/inventory-movements.repository";
+import { RecipeComponentsRepository } from "../repositories/recipe-components.repository";
+import { RecipesRepository } from "../repositories/recipes.repository";
+import { HttpError } from "../utils/http-error";
+
+const QUANTITY_SCALE = 1000;
+const ORDER_CONSUMPTION_SOURCE = "Pedido";
+
+type Executor = any;
+type RecipeRow = any;
+type RecipeComponentRow = any;
+
+interface RecipeCostNode {
+  recipeRow: RecipeRow;
+  totalCostCents: number;
+  unitCostCents: number;
+  suggestedSalePriceCents: number | null;
+  hasIncompleteCost: boolean;
+  components: RecipeComponentResolved[];
+  ingredientUsage: Map<string, number>;
+}
+
+function toIsoString(value: Date | null) {
+  return value ? value.toISOString() : null;
+}
+
+function toMilli(value: number) {
+  return Math.round(value * QUANTITY_SCALE);
+}
+
+function fromMilli(value: number) {
+  return Number(value) / QUANTITY_SCALE;
+}
+
+function roundCents(value: number) {
+  return Math.round(value);
+}
+
+function getUnitFamily(unit: InventoryItemUnit) {
+  if (unit === "g" || unit === "kg") {
+    return "massa";
+  }
+
+  if (unit === "ml" || unit === "l") {
+    return "volume";
+  }
+
+  if (unit === "un") {
+    return "unidade";
+  }
+
+  if (unit === "caixa") {
+    return "caixa";
+  }
+
+  return "desconhecido";
+}
+
+function convertQuantity(
+  quantity: number,
+  fromUnit: InventoryItemUnit,
+  toUnit: InventoryItemUnit,
+) {
+  if (fromUnit === toUnit) {
+    return quantity;
+  }
+
+  const fromFamily = getUnitFamily(fromUnit);
+  const toFamily = getUnitFamily(toUnit);
+
+  if (fromFamily !== toFamily) {
+    throw new HttpError(
+      400,
+      `Recipe quantity unit ${fromUnit} is incompatible with ${toUnit}.`,
+    );
+  }
+
+  if (fromFamily === "massa") {
+    if (fromUnit === "kg" && toUnit === "g") return quantity * 1000;
+    if (fromUnit === "g" && toUnit === "kg") return quantity / 1000;
+  }
+
+  if (fromFamily === "volume") {
+    if (fromUnit === "l" && toUnit === "ml") return quantity * 1000;
+    if (fromUnit === "ml" && toUnit === "l") return quantity / 1000;
+  }
+
+  throw new HttpError(
+    400,
+    `Recipe unit conversion from ${fromUnit} to ${toUnit} is not supported.`,
+  );
+}
+
+export class RecipesService {
+  private readonly recipesRepository = new RecipesRepository();
+  private readonly recipeComponentsRepository = new RecipeComponentsRepository();
+  private readonly inventoryItemsRepository = new InventoryItemsRepository();
+  private readonly inventoryMovementsRepository =
+    new InventoryMovementsRepository();
+
+  async list(filters: ListRecipesFilters) {
+    const rows = await this.recipesRepository.list(filters);
+    const cache = new Map<string, RecipeCostNode>();
+    return Promise.all(
+      rows.map(async (row: any) => this.buildRecipeDetail(row.id, cache)),
+    );
+  }
+
+  async listLookup(kind?: RecipeKind) {
+    const rows = await this.recipesRepository.list(kind ? { kind } : {});
+    const cache = new Map<string, RecipeCostNode>();
+    const data: RecipeLookupItem[] = [];
+
+    for (const row of rows as any[]) {
+      const detail = await this.buildRecipeDetail(row.id, cache);
+      data.push({
+        id: detail.id,
+        name: detail.name,
+        kind: detail.kind,
+        outputQuantity: detail.outputQuantity,
+        outputUnit: detail.outputUnit,
+        totalCostCents: detail.totalCostCents,
+        unitCostCents: detail.unitCostCents,
+        suggestedSalePriceCents: detail.suggestedSalePriceCents,
+      });
+    }
+
+    return data;
+  }
+
+  async getById(id: string) {
+    return this.buildRecipeDetail(id, new Map());
+  }
+
+  async create(input: CreateRecipeInput) {
+    const normalized = await this.normalizeInput(input);
+
+    return withTransaction<RecipeDetail>(async (tx) => {
+      const recipe = await this.recipesRepository.create(
+        {
+          name: normalized.name,
+          kind: normalized.kind,
+          outputQuantityMilli: normalized.outputQuantityMilli,
+          outputUnit: normalized.outputUnit,
+          markupPercent: normalized.markupPercent,
+          notes: normalized.notes,
+        },
+        tx,
+      );
+
+      await this.recipeComponentsRepository.insertMany(
+        normalized.components.map((component, index) => ({
+          recipeId: recipe.id,
+          componentType: component.componentType,
+          inventoryItemId: component.inventoryItemId,
+          childRecipeId: component.childRecipeId,
+          quantityMilli: component.quantityMilli,
+          quantityUnit: component.quantityUnit,
+          position: component.position ?? index,
+          notes: component.notes,
+        })),
+        tx,
+      );
+
+      return this.buildRecipeDetail(recipe.id, new Map(), tx);
+    });
+  }
+
+  async update(id: string, input: UpdateRecipeInput) {
+    const normalized = await this.normalizeInput(input, id);
+
+    return withTransaction<RecipeDetail>(async (tx) => {
+      const existing = await this.recipesRepository.findById(id, tx);
+
+      if (!existing) {
+        throw new HttpError(404, "Recipe not found.");
+      }
+
+      const updated = await this.recipesRepository.update(
+        id,
+        {
+          name: normalized.name,
+          kind: normalized.kind,
+          outputQuantityMilli: normalized.outputQuantityMilli,
+          outputUnit: normalized.outputUnit,
+          markupPercent: normalized.markupPercent,
+          notes: normalized.notes,
+          updatedAt: new Date(),
+        },
+        tx,
+      );
+
+      if (!updated) {
+        throw new HttpError(404, "Recipe not found.");
+      }
+
+      await this.recipeComponentsRepository.deleteByRecipeId(id, tx);
+      await this.recipeComponentsRepository.insertMany(
+        normalized.components.map((component, index) => ({
+          recipeId: id,
+          componentType: component.componentType,
+          inventoryItemId: component.inventoryItemId,
+          childRecipeId: component.childRecipeId,
+          quantityMilli: component.quantityMilli,
+          quantityUnit: component.quantityUnit,
+          position: component.position ?? index,
+          notes: component.notes,
+        })),
+        tx,
+      );
+
+      return this.buildRecipeDetail(id, new Map(), tx);
+    });
+  }
+
+  async remove(id: string) {
+    const deletedAt = new Date();
+    const deleted = await this.recipesRepository.markDeleted(id, deletedAt);
+
+    if (!deleted) {
+      throw new HttpError(404, "Recipe not found.");
+    }
+
+    return {
+      id: deleted.id,
+      deletedAt: deletedAt.toISOString(),
+    };
+  }
+
+  async assertOrderRecipesAreSellable(recipeIds: string[], executor?: Executor) {
+    for (const recipeId of recipeIds) {
+      const recipe = await this.recipesRepository.findById(recipeId, executor);
+
+      if (!recipe) {
+        throw new HttpError(400, "Order item recipe was not found.");
+      }
+
+      if (recipe.kind !== "ProdutoVenda") {
+        throw new HttpError(
+          400,
+          "Only sellable recipes can be attached to order items.",
+        );
+      }
+    }
+  }
+
+  async syncOrderInventoryConsumption(
+    order: { id: string; orderNumber: string; status: string },
+    orderItems: Array<Pick<OrderItem, "recipeId" | "quantity" | "productName">>,
+    executor?: Executor,
+  ) {
+    const existingMovements = await this.inventoryMovementsRepository.listBySource(
+      ORDER_CONSUMPTION_SOURCE,
+      order.id,
+      executor,
+    );
+
+    for (const movement of existingMovements as any[]) {
+      const reversed = await this.inventoryItemsRepository.applyQuantityDelta(
+        movement.itemId,
+        -Number(movement.quantity),
+        new Date(),
+        executor,
+      );
+
+      if (!reversed) {
+        throw new HttpError(
+          400,
+          "Failed to reverse automatic stock consumption for the order.",
+        );
+      }
+    }
+
+    if ((existingMovements as any[]).length > 0) {
+      await this.inventoryMovementsRepository.deleteBySource(
+        ORDER_CONSUMPTION_SOURCE,
+        order.id,
+        executor,
+      );
+    }
+
+    if (order.status === "Cancelado") {
+      return;
+    }
+
+    const requirements = new Map<string, number>();
+
+    for (const orderItem of orderItems) {
+      if (!orderItem.recipeId) {
+        continue;
+      }
+
+      const exploded = await this.explodeRecipeToInventory(
+        orderItem.recipeId,
+        orderItem.quantity,
+        executor,
+      );
+
+      for (const [itemId, quantity] of Array.from(exploded.entries())) {
+        requirements.set(itemId, (requirements.get(itemId) ?? 0) + quantity);
+      }
+    }
+
+    for (const [itemId, quantity] of Array.from(requirements.entries())) {
+      const updated = await this.inventoryItemsRepository.applyQuantityDelta(
+        itemId,
+        -quantity,
+        new Date(),
+        executor,
+      );
+
+      if (!updated) {
+        throw new HttpError(
+          400,
+          `Order ${order.orderNumber} would make stock negative for one or more ingredients.`,
+        );
+      }
+
+      await this.inventoryMovementsRepository.create(
+        {
+          itemId,
+          type: "Saida",
+          quantity: -quantity,
+          reason: `Consumo automatico do pedido ${order.orderNumber}`,
+          reference: order.orderNumber,
+          sourceType: ORDER_CONSUMPTION_SOURCE,
+          sourceId: order.id,
+          isSystemGenerated: true,
+        },
+        executor,
+      );
+    }
+  }
+
+  async explodeRecipeToInventory(
+    recipeId: string,
+    batchCount = 1,
+    executor?: Executor,
+  ) {
+    const aggregation = new Map<string, number>();
+    await this.collectInventoryUsage(recipeId, batchCount, aggregation, [], executor);
+    return aggregation;
+  }
+
+  private async buildRecipeDetail(
+    recipeId: string,
+    cache: Map<string, RecipeCostNode>,
+    executor?: Executor,
+  ): Promise<RecipeDetail> {
+    const node = await this.computeRecipeNode(recipeId, cache, [], executor);
+
+    return {
+      ...this.mapRecipe(node.recipeRow),
+      componentCount: node.components.length,
+      totalCostCents: node.totalCostCents,
+      unitCostCents: node.unitCostCents,
+      suggestedSalePriceCents: node.suggestedSalePriceCents,
+      hasIncompleteCost: node.hasIncompleteCost,
+      components: node.components,
+    };
+  }
+
+  private async computeRecipeNode(
+    recipeId: string,
+    cache: Map<string, RecipeCostNode>,
+    stack: string[],
+    executor?: Executor,
+  ): Promise<RecipeCostNode> {
+    if (cache.has(recipeId)) {
+      return cache.get(recipeId)!;
+    }
+
+    if (stack.includes(recipeId)) {
+      throw new HttpError(400, "Recipe composition cannot contain cycles.");
+    }
+
+    const nextStack = [...stack, recipeId];
+    const recipe = await this.recipesRepository.findById(recipeId, executor);
+
+    if (!recipe) {
+      throw new HttpError(404, "Recipe not found.");
+    }
+
+    const componentRows = await this.recipeComponentsRepository.listByRecipeId(
+      recipeId,
+      executor,
+    );
+
+    const components: RecipeComponentResolved[] = [];
+    const ingredientUsage = new Map<string, number>();
+    let totalCostCents = 0;
+    let hasIncompleteCost = false;
+
+    for (const row of componentRows as RecipeComponentRow[]) {
+      const requestedQuantity = fromMilli(row.quantityMilli);
+
+      if (row.componentType === "Ingrediente") {
+        if (!row.inventoryItemId) {
+          throw new HttpError(400, "Recipe component ingredient is invalid.");
+        }
+
+        const itemRow = await this.inventoryItemsRepository.findById(
+          row.inventoryItemId,
+          executor,
+        );
+
+        if (!itemRow) {
+          throw new HttpError(400, "Recipe component inventory item not found.");
+        }
+
+        const item = this.mapInventoryItem(itemRow);
+        const inventoryQuantity = convertQuantity(
+          requestedQuantity,
+          row.quantityUnit,
+          item.unit,
+        );
+        const unitCostCents = item.purchaseUnitCostCents ?? 0;
+        const componentCostCents = roundCents(unitCostCents * inventoryQuantity);
+
+        if (item.purchaseUnitCostCents == null) {
+          hasIncompleteCost = true;
+        }
+
+        totalCostCents += componentCostCents;
+        ingredientUsage.set(
+          item.id,
+          (ingredientUsage.get(item.id) ?? 0) + inventoryQuantity,
+        );
+        components.push({
+          ...this.mapComponent(row),
+          inventoryItemName: item.name,
+          inventoryItemUnit: item.unit,
+          childRecipeName: null,
+          childRecipeOutputUnit: null,
+          sourceName: item.name,
+          sourceUnit: item.unit,
+          totalCostCents: componentCostCents,
+          unitCostCents,
+        });
+
+        continue;
+      }
+
+      if (!row.childRecipeId) {
+        throw new HttpError(400, "Recipe component child recipe is invalid.");
+      }
+
+      const childNode = await this.computeRecipeNode(
+        row.childRecipeId,
+        cache,
+        nextStack,
+        executor,
+      );
+      const childRecipe = this.mapRecipe(childNode.recipeRow);
+      const requestedChildQuantity = convertQuantity(
+        requestedQuantity,
+        row.quantityUnit,
+        childRecipe.outputUnit,
+      );
+      const usageFactor =
+        childRecipe.outputQuantity > 0
+          ? requestedChildQuantity / childRecipe.outputQuantity
+          : 0;
+      const componentCostCents = roundCents(
+        childNode.totalCostCents * usageFactor,
+      );
+      const unitCostCents =
+        childRecipe.outputQuantity > 0
+          ? roundCents(childNode.totalCostCents / childRecipe.outputQuantity)
+          : 0;
+
+      totalCostCents += componentCostCents;
+      hasIncompleteCost = hasIncompleteCost || childNode.hasIncompleteCost;
+
+      for (const [itemId, quantity] of Array.from(childNode.ingredientUsage.entries())) {
+        ingredientUsage.set(
+          itemId,
+          (ingredientUsage.get(itemId) ?? 0) + quantity * usageFactor,
+        );
+      }
+
+      components.push({
+        ...this.mapComponent(row),
+        inventoryItemName: null,
+        inventoryItemUnit: null,
+        childRecipeName: childRecipe.name,
+        childRecipeOutputUnit: childRecipe.outputUnit,
+        sourceName: childRecipe.name,
+        sourceUnit: childRecipe.outputUnit,
+        totalCostCents: componentCostCents,
+        unitCostCents,
+      });
+    }
+
+    const recipeOutputQuantity = fromMilli(recipe.outputQuantityMilli);
+    const result: RecipeCostNode = {
+      recipeRow: recipe,
+      totalCostCents: roundCents(totalCostCents),
+      unitCostCents:
+        recipeOutputQuantity > 0
+          ? roundCents(totalCostCents / recipeOutputQuantity)
+          : 0,
+      suggestedSalePriceCents:
+        recipe.kind === "ProdutoVenda"
+          ? roundCents(totalCostCents * (1 + Number(recipe.markupPercent) / 100))
+          : null,
+      hasIncompleteCost,
+      components,
+      ingredientUsage,
+    };
+
+    cache.set(recipeId, result);
+    return result;
+  }
+
+  private async collectInventoryUsage(
+    recipeId: string,
+    batchCount: number,
+    aggregation: Map<string, number>,
+    stack: string[],
+    executor?: Executor,
+  ) {
+    if (stack.includes(recipeId)) {
+      throw new HttpError(400, "Recipe composition cannot contain cycles.");
+    }
+
+    const nextStack = [...stack, recipeId];
+    const recipe = await this.recipesRepository.findById(recipeId, executor);
+
+    if (!recipe) {
+      throw new HttpError(404, "Recipe not found.");
+    }
+
+    const components = await this.recipeComponentsRepository.listByRecipeId(
+      recipeId,
+      executor,
+    );
+
+    for (const component of components as RecipeComponentRow[]) {
+      const requestedQuantity = fromMilli(component.quantityMilli) * batchCount;
+
+      if (component.componentType === "Ingrediente") {
+        if (!component.inventoryItemId) {
+          throw new HttpError(400, "Recipe component ingredient is invalid.");
+        }
+
+        const itemRow = await this.inventoryItemsRepository.findById(
+          component.inventoryItemId,
+          executor,
+        );
+
+        if (!itemRow) {
+          throw new HttpError(400, "Recipe component inventory item not found.");
+        }
+
+        const item = this.mapInventoryItem(itemRow);
+        const inventoryQuantity = convertQuantity(
+          requestedQuantity,
+          component.quantityUnit,
+          item.unit,
+        );
+
+        aggregation.set(
+          component.inventoryItemId,
+          (aggregation.get(component.inventoryItemId) ?? 0) + inventoryQuantity,
+        );
+        continue;
+      }
+
+      if (!component.childRecipeId) {
+        throw new HttpError(400, "Recipe component child recipe is invalid.");
+      }
+
+      const childRecipe = await this.recipesRepository.findById(
+        component.childRecipeId,
+        executor,
+      );
+
+      if (!childRecipe) {
+        throw new HttpError(404, "Recipe component child recipe not found.");
+      }
+
+      const childOutputQuantity = fromMilli(childRecipe.outputQuantityMilli);
+      const requestedChildQuantity = convertQuantity(
+        requestedQuantity,
+        component.quantityUnit,
+        childRecipe.outputUnit,
+      );
+      const childBatchCount =
+        childOutputQuantity > 0 ? requestedChildQuantity / childOutputQuantity : 0;
+
+      await this.collectInventoryUsage(
+        component.childRecipeId,
+        childBatchCount,
+        aggregation,
+        nextStack,
+        executor,
+      );
+    }
+  }
+
+  private async normalizeInput(
+    input: CreateRecipeInput | UpdateRecipeInput,
+    currentRecipeId?: string,
+  ) {
+    const name = input.name.trim();
+    const notes = input.notes?.trim() || null;
+
+    if (!name) {
+      throw new HttpError(400, "Recipe name is required.");
+    }
+
+    if (!Number.isFinite(input.outputQuantity) || input.outputQuantity <= 0) {
+      throw new HttpError(400, "Recipe outputQuantity must be greater than zero.");
+    }
+
+    if (!Number.isInteger(input.markupPercent) || input.markupPercent < 0) {
+      throw new HttpError(
+        400,
+        "Recipe markupPercent must be a non-negative integer.",
+      );
+    }
+
+    if (
+      input.kind === "ProdutoVenda" &&
+      (input.outputUnit !== "un" || input.outputQuantity !== 1)
+    ) {
+      throw new HttpError(
+        400,
+        "Sellable recipes must have outputQuantity 1 and outputUnit un.",
+      );
+    }
+
+    const components = input.components.map((component, index) => {
+      const componentNotes = component.notes?.trim() || null;
+
+      if (!Number.isFinite(component.quantity) || component.quantity <= 0) {
+        throw new HttpError(
+          400,
+          "Recipe component quantity must be greater than zero.",
+        );
+      }
+
+      if (
+        component.componentType === "Ingrediente" &&
+        !component.inventoryItemId
+      ) {
+        throw new HttpError(
+          400,
+          "Recipe ingredient component requires inventoryItemId.",
+        );
+      }
+
+      if (component.componentType === "Receita" && !component.childRecipeId) {
+        throw new HttpError(
+          400,
+          "Recipe child recipe component requires childRecipeId.",
+        );
+      }
+
+      if (
+        currentRecipeId &&
+        component.componentType === "Receita" &&
+        component.childRecipeId === currentRecipeId
+      ) {
+        throw new HttpError(400, "Recipe cannot reference itself as a component.");
+      }
+
+      return {
+        componentType: component.componentType,
+        inventoryItemId:
+          component.componentType === "Ingrediente"
+            ? component.inventoryItemId ?? null
+            : null,
+        childRecipeId:
+          component.componentType === "Receita"
+            ? component.childRecipeId ?? null
+            : null,
+        quantityMilli: toMilli(component.quantity),
+        quantityUnit: component.quantityUnit,
+        position: component.position ?? index,
+        notes: componentNotes,
+      };
+    });
+
+    if (components.length === 0) {
+      throw new HttpError(400, "Recipe must have at least one component.");
+    }
+
+    return {
+      name,
+      kind: input.kind,
+      outputUnit: input.outputUnit,
+      outputQuantityMilli: toMilli(input.outputQuantity),
+      markupPercent: input.markupPercent,
+      notes,
+      components,
+    };
+  }
+
+  private mapRecipe(row: RecipeRow): Recipe {
+    return {
+      id: row.id,
+      name: row.name,
+      kind: row.kind as RecipeKind,
+      outputQuantity: fromMilli(row.outputQuantityMilli),
+      outputUnit: row.outputUnit as InventoryItemUnit,
+      markupPercent: row.markupPercent,
+      notes: row.notes ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      deletedAt: toIsoString(row.deletedAt),
+    };
+  }
+
+  private mapComponent(row: RecipeComponentRow) {
+    return {
+      id: row.id,
+      recipeId: row.recipeId,
+      componentType: row.componentType as "Ingrediente" | "Receita",
+      inventoryItemId: row.inventoryItemId ?? null,
+      inventoryItemName: null,
+      inventoryItemUnit: null,
+      childRecipeId: row.childRecipeId ?? null,
+      childRecipeName: null,
+      childRecipeOutputUnit: null,
+      quantity: fromMilli(row.quantityMilli),
+      quantityUnit: row.quantityUnit as InventoryItemUnit,
+      position: row.position,
+      notes: row.notes ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+    };
+  }
+
+  private mapInventoryItem(row: any): InventoryItem {
+    return {
+      id: row.id,
+      name: row.name,
+      category: row.category,
+      currentQuantity: Number(row.currentQuantity),
+      minQuantity: Number(row.minQuantity),
+      unit: row.unit,
+      purchaseUnitCostCents:
+        row.purchaseUnitCostCents == null
+          ? null
+          : Number(row.purchaseUnitCostCents),
+      notes: row.notes ?? null,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      deletedAt: toIsoString(row.deletedAt),
+    };
+  }
+}

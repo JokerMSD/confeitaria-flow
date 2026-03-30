@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { inventoryMovements } from "@shared/schema";
 import type {
   InventoryMovementType,
@@ -14,6 +14,9 @@ export interface InventoryMovementRowInsert {
   quantity: number;
   reason: string;
   reference: string | null;
+  sourceType?: string | null;
+  sourceId?: string | null;
+  isSystemGenerated?: boolean;
 }
 
 export class InventoryMovementsRepository {
@@ -55,5 +58,37 @@ export class InventoryMovementsRepository {
       .limit(1);
 
     return movement ?? null;
+  }
+
+  async listBySource(
+    sourceType: string,
+    sourceId: string,
+    executor: Executor = getDb(),
+  ) {
+    return executor
+      .select()
+      .from(inventoryMovements)
+      .where(
+        and(
+          eq(inventoryMovements.sourceType, sourceType),
+          eq(inventoryMovements.sourceId, sourceId),
+        ),
+      )
+      .orderBy(desc(inventoryMovements.createdAt));
+  }
+
+  async deleteBySource(
+    sourceType: string,
+    sourceId: string,
+    executor: Executor = getDb(),
+  ) {
+    await executor
+      .delete(inventoryMovements)
+      .where(
+        and(
+          eq(inventoryMovements.sourceType, sourceType),
+          eq(inventoryMovements.sourceId, sourceId),
+        ),
+      );
   }
 }

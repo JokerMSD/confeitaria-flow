@@ -44,6 +44,9 @@ export interface InventoryMovement {
   quantity: number;
   reason: string;
   reference: string | null;
+  sourceType: string | null;
+  sourceId: string | null;
+  isSystemGenerated: boolean;
   createdAt: string;
 }
 

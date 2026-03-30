@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   doublePrecision,
   index,
   pgTable,
@@ -22,6 +23,9 @@ export const inventoryMovements = pgTable(
     quantity: doublePrecision("quantity").notNull(),
     reason: varchar("reason", { length: 240 }).notNull(),
     reference: varchar("reference", { length: 120 }),
+    sourceType: varchar("source_type", { length: 32 }),
+    sourceId: varchar("source_id", { length: 120 }),
+    isSystemGenerated: boolean("is_system_generated").notNull().default(false),
     createdAt: timestamp("created_at", {
       withTimezone: true,
       mode: "date",
@@ -32,6 +36,10 @@ export const inventoryMovements = pgTable(
   (table) => ({
     itemIdIdx: index("inventory_movements_item_id_idx").on(table.itemId),
     typeIdx: index("inventory_movements_type_idx").on(table.type),
+    sourceIdx: index("inventory_movements_source_idx").on(
+      table.sourceType,
+      table.sourceId,
+    ),
     createdAtIdx: index("inventory_movements_created_at_idx").on(
       table.createdAt,
     ),

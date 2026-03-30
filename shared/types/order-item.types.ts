@@ -18,6 +18,7 @@ export type PaymentMethod =
 export interface OrderItem {
   id: string;
   orderId: string;
+  recipeId: string | null;
   productName: string;
   quantity: number;
   unitPriceCents: number;
@@ -28,6 +29,7 @@ export interface OrderItem {
 }
 
 export interface CreateOrderItemInput {
+  recipeId?: string | null;
   productName: string;
   quantity: number;
   unitPriceCents: number;
