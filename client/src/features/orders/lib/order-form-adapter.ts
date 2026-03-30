@@ -56,6 +56,10 @@ function decimalStringToCents(value: string) {
   return parseMoneyInputToCents(value) ?? 0;
 }
 
+function decimalNumberToCents(value: number) {
+  return Math.round(value * 100);
+}
+
 function buildPreviewSubtotal(item: Pick<OrderFormItem, "quantity" | "unitPrice">) {
   return item.quantity * item.unitPrice;
 }
@@ -111,7 +115,7 @@ function adaptFormItemsToPayload(items: OrderFormItem[]) {
     tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
     productName: item.productName.trim(),
     quantity: item.quantity,
-    unitPriceCents: decimalStringToCents(item.unitPrice.toString()),
+    unitPriceCents: decimalNumberToCents(item.unitPrice),
     position: item.position ?? index,
   }));
 }
