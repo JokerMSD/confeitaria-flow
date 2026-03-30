@@ -40,6 +40,9 @@ export default function EstoqueForm() {
 
   const isSaving =
     createInventoryMutation.isPending || updateInventoryMutation.isPending;
+  const shouldShowRecipeEquivalentFields =
+    formState.category === "Ingrediente" &&
+    (formState.unit === "un" || formState.unit === "caixa");
 
   useEffect(() => {
     if (!isEditing) {
@@ -208,9 +211,17 @@ export default function EstoqueForm() {
                 <select
                   className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                   value={formState.unit}
-                  onChange={(event) =>
-                    setField("unit", event.target.value as UiInventoryUnit)
-                  }
+                  onChange={(event) => {
+                    const nextUnit = event.target.value as UiInventoryUnit;
+                    setFormState((current) => ({
+                      ...current,
+                      unit: nextUnit,
+                      recipeEquivalentQuantity:
+                        nextUnit === "un" || nextUnit === "caixa"
+                          ? current.recipeEquivalentQuantity
+                          : "",
+                    }));
+                  }}
                 >
                   <option value="un">Unidade (un)</option>
                   <option value="kg">Quilograma (kg)</option>
@@ -251,6 +262,50 @@ export default function EstoqueForm() {
                   Avisaremos quando chegar neste valor.
                 </p>
               </div>
+
+              {shouldShowRecipeEquivalentFields && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="recipeEquivalentQuantity">
+                      Cada {formState.unit} equivale a quanto?
+                    </Label>
+                    <Input
+                      id="recipeEquivalentQuantity"
+                      type="number"
+                      step="0.01"
+                      value={formState.recipeEquivalentQuantity}
+                      onChange={(event) =>
+                        setField("recipeEquivalentQuantity", event.target.value)
+                      }
+                      placeholder="Ex: 500"
+                      className="text-lg font-display"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Unidade equivalente para receitas</Label>
+                    <select
+                      className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={formState.recipeEquivalentUnit}
+                      onChange={(event) =>
+                        setField(
+                          "recipeEquivalentUnit",
+                          event.target.value as UiInventoryUnit,
+                        )
+                      }
+                    >
+                      <option value="g">Grama (g)</option>
+                      <option value="kg">Quilograma (kg)</option>
+                      <option value="ml">Mililitro (ml)</option>
+                      <option value="l">Litro (l)</option>
+                      <option value="un">Unidade (un)</option>
+                    </select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Exemplo: 1 unidade de manteiga equivale a 500 g.
+                    </p>
+                  </div>
+                </>
+              )}
 
               {formState.category === "Ingrediente" && (
                 <div className="space-y-2 md:col-span-2">

@@ -26,9 +26,33 @@ export const createInventoryItemInputSchema = z.object({
   currentQuantity: quantitySchema,
   minQuantity: quantitySchema,
   unit: inventoryItemUnitSchema,
+  recipeEquivalentQuantity: z.number().finite().positive().nullable().optional(),
+  recipeEquivalentUnit: inventoryItemUnitSchema.nullable().optional(),
   purchaseUnitCostCents: centsSchema.nullable().optional(),
   notes: z.string().trim().max(1000).nullable().optional(),
 }).superRefine((value, ctx) => {
+  const hasEquivalentQuantity = value.recipeEquivalentQuantity != null;
+  const hasEquivalentUnit = value.recipeEquivalentUnit != null;
+
+  if (hasEquivalentQuantity !== hasEquivalentUnit) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Inventory item recipeEquivalentQuantity and recipeEquivalentUnit must be provided together.",
+      path: hasEquivalentQuantity
+        ? ["recipeEquivalentUnit"]
+        : ["recipeEquivalentQuantity"],
+    });
+  }
+
+  if (hasEquivalentQuantity && value.category !== "Ingrediente") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Inventory item recipe equivalence is only supported for Ingrediente.",
+      path: ["recipeEquivalentQuantity"],
+    });
+  }
+
   if (value.category === "Ingrediente" && value.purchaseUnitCostCents != null && value.purchaseUnitCostCents <= 0) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

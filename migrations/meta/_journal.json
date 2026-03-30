@@ -57,6 +57,13 @@
       "when": 1774890000000,
       "tag": "0007_phase7_recipe_components_quantity_unit_hotfix",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1774893600000,
+      "tag": "0008_phase8_inventory_recipe_equivalence",
+      "breakpoints": true
     }
   ]
 }

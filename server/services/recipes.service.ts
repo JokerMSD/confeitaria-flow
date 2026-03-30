@@ -107,6 +107,39 @@ function convertQuantity(
   );
 }
 
+function convertRecipeQuantityToInventoryUnits(
+  quantity: number,
+  fromUnit: InventoryItemUnit,
+  item: InventoryItem,
+) {
+  if (fromUnit === item.unit) {
+    return quantity;
+  }
+
+  try {
+    return convertQuantity(quantity, fromUnit, item.unit);
+  } catch {}
+
+  if (
+    item.recipeEquivalentQuantity != null &&
+    item.recipeEquivalentUnit != null &&
+    (item.unit === "un" || item.unit === "caixa")
+  ) {
+    const equivalentQuantity = convertQuantity(
+      quantity,
+      fromUnit,
+      item.recipeEquivalentUnit,
+    );
+
+    return equivalentQuantity / item.recipeEquivalentQuantity;
+  }
+
+  throw new HttpError(
+    400,
+    `Recipe quantity unit ${fromUnit} is incompatible with inventory unit ${item.unit} for item ${item.name}.`,
+  );
+}
+
 export class RecipesService {
   private readonly recipesRepository = new RecipesRepository();
   private readonly recipeComponentsRepository = new RecipeComponentsRepository();
@@ -425,10 +458,10 @@ export class RecipesService {
         }
 
         const item = this.mapInventoryItem(itemRow);
-        const inventoryQuantity = convertQuantity(
+        const inventoryQuantity = convertRecipeQuantityToInventoryUnits(
           requestedQuantity,
           row.quantityUnit,
-          item.unit,
+          item,
         );
         const unitCostCents = item.purchaseUnitCostCents ?? 0;
         const componentCostCents = roundCents(unitCostCents * inventoryQuantity);
@@ -570,10 +603,10 @@ export class RecipesService {
         }
 
         const item = this.mapInventoryItem(itemRow);
-        const inventoryQuantity = convertQuantity(
+        const inventoryQuantity = convertRecipeQuantityToInventoryUnits(
           requestedQuantity,
           component.quantityUnit,
-          item.unit,
+          item,
         );
 
         aggregation.set(
@@ -757,6 +790,11 @@ export class RecipesService {
       currentQuantity: Number(row.currentQuantity),
       minQuantity: Number(row.minQuantity),
       unit: row.unit,
+      recipeEquivalentQuantity:
+        row.recipeEquivalentQuantity == null
+          ? null
+          : Number(row.recipeEquivalentQuantity),
+      recipeEquivalentUnit: row.recipeEquivalentUnit ?? null,
       purchaseUnitCostCents:
         row.purchaseUnitCostCents == null
           ? null

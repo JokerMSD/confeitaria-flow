@@ -19,6 +19,8 @@ export const inventoryItems = pgTable(
     currentQuantity: doublePrecision("current_quantity").notNull().default(0),
     minQuantity: doublePrecision("min_quantity").notNull().default(0),
     unit: varchar("unit", { length: 16 }).notNull(),
+    recipeEquivalentQuantity: doublePrecision("recipe_equivalent_quantity"),
+    recipeEquivalentUnit: varchar("recipe_equivalent_unit", { length: 16 }),
     purchaseUnitCostCents: integer("purchase_unit_cost_cents"),
     notes: text("notes"),
     createdAt: timestamp("created_at", {

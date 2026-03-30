@@ -73,6 +73,8 @@ export class InventoryItemsService {
           category: normalized.category,
           minQuantity: normalized.minQuantity,
           unit: normalized.unit,
+          recipeEquivalentQuantity: normalized.recipeEquivalentQuantity,
+          recipeEquivalentUnit: normalized.recipeEquivalentUnit,
           purchaseUnitCostCents: normalized.purchaseUnitCostCents,
           notes: normalized.notes,
           updatedAt: new Date(),
@@ -158,6 +160,14 @@ export class InventoryItemsService {
       currentQuantity: input.currentQuantity,
       minQuantity: input.minQuantity,
       unit: input.unit,
+      recipeEquivalentQuantity:
+        input.category === "Ingrediente"
+          ? input.recipeEquivalentQuantity ?? null
+          : null,
+      recipeEquivalentUnit:
+        input.category === "Ingrediente"
+          ? input.recipeEquivalentUnit ?? null
+          : null,
       purchaseUnitCostCents:
         input.category === "Ingrediente"
           ? input.purchaseUnitCostCents ?? null
@@ -174,6 +184,11 @@ export class InventoryItemsService {
       currentQuantity: Number(row.currentQuantity),
       minQuantity: Number(row.minQuantity),
       unit: row.unit,
+      recipeEquivalentQuantity:
+        row.recipeEquivalentQuantity == null
+          ? null
+          : Number(row.recipeEquivalentQuantity),
+      recipeEquivalentUnit: row.recipeEquivalentUnit ?? null,
       purchaseUnitCostCents:
         row.purchaseUnitCostCents == null ? null : Number(row.purchaseUnitCostCents),
       notes: row.notes ?? null,

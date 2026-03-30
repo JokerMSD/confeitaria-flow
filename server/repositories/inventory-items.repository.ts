@@ -15,6 +15,8 @@ export interface InventoryItemRowInsert {
   currentQuantity: number;
   minQuantity: number;
   unit: InventoryItemUnit;
+  recipeEquivalentQuantity: number | null;
+  recipeEquivalentUnit: InventoryItemUnit | null;
   purchaseUnitCostCents: number | null;
   notes: string | null;
 }
@@ -28,6 +30,8 @@ export interface InventoryItemMetadataUpdate {
   category: InventoryItemCategory;
   minQuantity: number;
   unit: InventoryItemUnit;
+  recipeEquivalentQuantity: number | null;
+  recipeEquivalentUnit: InventoryItemUnit | null;
   purchaseUnitCostCents: number | null;
   notes: string | null;
   updatedAt: Date;

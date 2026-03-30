@@ -72,6 +72,8 @@ export function createEmptyInventoryFormState(): InventoryFormState {
     currentQuantity: "",
     minQuantity: "0",
     unit: "un",
+    recipeEquivalentQuantity: "",
+    recipeEquivalentUnit: "g",
     purchaseUnitCost: "",
     notes: "",
   };
@@ -86,6 +88,11 @@ export function adaptInventoryItemDetailToFormState(
     currentQuantity: numberToQuantityString(response.data.currentQuantity),
     minQuantity: numberToQuantityString(response.data.minQuantity),
     unit: response.data.unit as UiInventoryUnit,
+    recipeEquivalentQuantity: numberToQuantityString(
+      response.data.recipeEquivalentQuantity ?? 0,
+    ).replace(/^0$/, response.data.recipeEquivalentQuantity == null ? "" : "0"),
+    recipeEquivalentUnit:
+      (response.data.recipeEquivalentUnit as UiInventoryUnit | null) ?? "g",
     purchaseUnitCost: centsToMoneyString(response.data.purchaseUnitCostCents),
     notes: response.data.notes ?? "",
   };
@@ -98,6 +105,17 @@ function adaptFormStateToInput(state: InventoryFormState) {
     currentQuantity: quantityStringToNumber(state.currentQuantity),
     minQuantity: quantityStringToNumber(state.minQuantity),
     unit: state.unit as ApiInventoryUnit,
+    recipeEquivalentQuantity:
+      state.category === "Ingrediente" &&
+      (state.unit === "un" || state.unit === "caixa")
+        ? quantityStringToNumber(state.recipeEquivalentQuantity) || null
+        : null,
+    recipeEquivalentUnit:
+      state.category === "Ingrediente" &&
+      (state.unit === "un" || state.unit === "caixa") &&
+      state.recipeEquivalentQuantity.trim()
+        ? (state.recipeEquivalentUnit as ApiInventoryUnit)
+        : null,
     purchaseUnitCostCents:
       state.category === "Ingrediente"
         ? moneyStringToCents(state.purchaseUnitCost)

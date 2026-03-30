@@ -22,6 +22,8 @@ export interface InventoryFormState {
   currentQuantity: string;
   minQuantity: string;
   unit: UiInventoryUnit;
+  recipeEquivalentQuantity: string;
+  recipeEquivalentUnit: UiInventoryUnit;
   purchaseUnitCost: string;
   notes: string;
 }

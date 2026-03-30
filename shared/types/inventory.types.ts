@@ -13,6 +13,8 @@ export interface InventoryItem {
   currentQuantity: number;
   minQuantity: number;
   unit: InventoryItemUnit;
+  recipeEquivalentQuantity: number | null;
+  recipeEquivalentUnit: InventoryItemUnit | null;
   purchaseUnitCostCents: number | null;
   notes: string | null;
   createdAt: string;
@@ -26,6 +28,8 @@ export interface CreateInventoryItemInput {
   currentQuantity: number;
   minQuantity: number;
   unit: InventoryItemUnit;
+  recipeEquivalentQuantity?: number | null;
+  recipeEquivalentUnit?: InventoryItemUnit | null;
   purchaseUnitCostCents?: number | null;
   notes?: string | null;
 }
