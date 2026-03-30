@@ -13,6 +13,10 @@ function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
 }
 
+function isUnitPurchase(unit: string) {
+  return unit === "un" || unit === "caixa";
+}
+
 export class InventoryMovementsService {
   private readonly inventoryItemsRepository = new InventoryItemsRepository();
   private readonly inventoryMovementsRepository =
@@ -60,6 +64,15 @@ export class InventoryMovementsService {
       }
 
       const delta = this.resolveDelta(item.currentQuantity, normalized.type, normalized.quantity);
+      const effectivePurchaseAmountCents =
+        normalized.purchaseAmountCents != null && isUnitPurchase(item.unit)
+          ? Math.round(normalized.purchaseAmountCents * normalized.quantity)
+          : normalized.purchaseAmountCents;
+      const purchaseCashAmountCents =
+        normalized.purchasePaymentMethod != null &&
+        effectivePurchaseAmountCents != null
+          ? effectivePurchaseAmountCents
+          : null;
 
       if (delta === 0) {
         throw new HttpError(400, "Inventory movement must change the item quantity.");
@@ -83,7 +96,7 @@ export class InventoryMovementsService {
           quantity: delta,
           reason: normalized.reason,
           reference: normalized.reference,
-          purchaseAmountCents: normalized.purchaseAmountCents,
+          purchaseAmountCents: effectivePurchaseAmountCents,
           purchaseEquivalentQuantity: normalized.purchaseEquivalentQuantity,
           purchaseEquivalentUnit:
             normalized.purchaseEquivalentQuantity != null
@@ -98,7 +111,7 @@ export class InventoryMovementsService {
 
       if (
         normalized.type === "Entrada" &&
-        normalized.purchaseAmountCents != null &&
+        purchaseCashAmountCents != null &&
         normalized.purchasePaymentMethod != null
       ) {
         await this.cashTransactionsService.registerInventoryPurchaseExpense(
@@ -107,7 +120,7 @@ export class InventoryMovementsService {
             itemName: item.name,
             quantity: normalized.quantity,
             unit: item.unit,
-            amountCents: normalized.purchaseAmountCents,
+            amountCents: purchaseCashAmountCents,
             paymentMethod: normalized.purchasePaymentMethod,
           },
           tx,
@@ -134,11 +147,11 @@ export class InventoryMovementsService {
       if (
         item.category === "Ingrediente" &&
         normalized.type === "Entrada" &&
-        (normalized.purchaseAmountCents != null ||
+        (effectivePurchaseAmountCents != null ||
           normalized.purchaseEquivalentQuantity != null)
       ) {
         const pricingAccumulatedQuantity =
-          normalized.purchaseAmountCents != null
+          effectivePurchaseAmountCents != null
             ? (item.pricingAccumulatedQuantity == null
                 ? 0
                 : Number(item.pricingAccumulatedQuantity)) + normalized.quantity
@@ -146,10 +159,10 @@ export class InventoryMovementsService {
               ? 0
               : Number(item.pricingAccumulatedQuantity);
         const pricingAccumulatedCostCents =
-          normalized.purchaseAmountCents != null
+          effectivePurchaseAmountCents != null
             ? (item.pricingAccumulatedCostCents == null
                 ? 0
-                : Number(item.pricingAccumulatedCostCents)) + normalized.purchaseAmountCents
+                : Number(item.pricingAccumulatedCostCents)) + effectivePurchaseAmountCents
             : item.pricingAccumulatedCostCents == null
               ? 0
               : Number(item.pricingAccumulatedCostCents);

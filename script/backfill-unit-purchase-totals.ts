@@ -23,8 +23,26 @@ const client = new Client({
   connectionString: process.env.DATABASE_URL,
 });
 
-function shouldUpdateDescription(description: string | null) {
-  return !description || !description.includes("(");
+const defaultAffectedMovements = new Map<string, number>([
+  ["aaa9f68f-eefe-4504-b684-a203e433941f", 470],
+]);
+
+function resolveAffectedMovements() {
+  const envEntries = process.env.STOCK_PURCHASE_FIXES
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!envEntries || envEntries.length === 0) {
+    return defaultAffectedMovements;
+  }
+
+  return new Map(
+    envEntries.map((entry) => {
+      const [movementId, unitPriceCents] = entry.split(":");
+      return [movementId.trim(), Number(unitPriceCents)];
+    }),
+  );
 }
 
 async function main() {
@@ -32,6 +50,8 @@ async function main() {
 
   try {
     await client.query("begin");
+    const affectedMovements = resolveAffectedMovements();
+    const movementIds = Array.from(affectedMovements.keys());
 
     const { rows } = await client.query<CandidateRow>(`
       select
@@ -54,19 +74,21 @@ async function main() {
         and im.purchase_amount_cents is not null
         and ii.unit in ('un', 'caixa')
         and im.quantity > 1
-        and (
-          ct.id is null
-          or ct.description not like '%(%'
-        )
+        and im.id = any($1::uuid[])
       order by im.created_at asc
-    `);
+    `, [movementIds]);
 
     const itemCostDelta = new Map<string, number>();
+    const correctedMovementIds: string[] = [];
 
     for (const row of rows) {
-      const correctedAmountCents = Math.round(
-        Number(row.purchase_amount_cents) * Number(row.quantity),
-      );
+      const unitPriceCents = affectedMovements.get(row.movement_id);
+
+      if (unitPriceCents == null || !Number.isFinite(unitPriceCents)) {
+        continue;
+      }
+
+      const correctedAmountCents = Math.round(unitPriceCents * Number(row.quantity));
       const extraCostCents = correctedAmountCents - Number(row.purchase_amount_cents);
 
       if (extraCostCents <= 0) {
@@ -85,10 +107,10 @@ async function main() {
       if (row.cash_id) {
         await client.query(
           `
-            update cash_transactions
-            set
-              amount_cents = $2,
-              description = $3,
+          update cash_transactions
+          set
+            amount_cents = $2,
+            description = $3,
               updated_at = now()
             where id = $1
           `,
@@ -104,6 +126,7 @@ async function main() {
         row.item_id,
         (itemCostDelta.get(row.item_id) ?? 0) + extraCostCents,
       );
+      correctedMovementIds.push(row.movement_id);
     }
 
     for (const [itemId, deltaCostCents] of itemCostDelta.entries()) {
@@ -154,9 +177,9 @@ async function main() {
     console.log(
       JSON.stringify(
         {
-          correctedMovementCount: rows.length,
+          correctedMovementCount: correctedMovementIds.length,
           affectedItemCount: itemCostDelta.size,
-          correctedMovementIds: rows.map((row) => row.movement_id),
+          correctedMovementIds,
         },
         null,
         2,

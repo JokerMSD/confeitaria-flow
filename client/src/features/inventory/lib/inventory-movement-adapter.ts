@@ -90,13 +90,21 @@ function isUnitPurchase(unit: UiInventoryUnit | undefined) {
 
 export function resolveInventoryPurchaseAmountCents(
   state: InventoryMovementFormState,
-  itemUnit?: UiInventoryUnit,
 ) {
   if (!state.registerPurchase) {
     return null;
   }
 
   const amountCents = moneyStringToCents(state.purchaseAmount);
+
+  return amountCents == null ? null : amountCents;
+}
+
+export function resolveInventoryPurchaseTotalPreviewCents(
+  state: InventoryMovementFormState,
+  itemUnit?: UiInventoryUnit,
+) {
+  const amountCents = resolveInventoryPurchaseAmountCents(state);
 
   if (amountCents == null) {
     return null;
@@ -121,7 +129,6 @@ const uiToApiPaymentMethodMap = {
 export function adaptInventoryMovementFormStateToCreatePayload(
   itemId: string,
   state: InventoryMovementFormState,
-  itemUnit?: UiInventoryUnit,
 ): CreateInventoryMovementInput {
   return {
     itemId,
@@ -129,7 +136,7 @@ export function adaptInventoryMovementFormStateToCreatePayload(
     quantity: quantityStringToNumber(state.quantity),
     reason: state.reason.trim(),
     reference: state.reference.trim() || null,
-    purchaseAmountCents: resolveInventoryPurchaseAmountCents(state, itemUnit),
+    purchaseAmountCents: resolveInventoryPurchaseAmountCents(state),
     purchaseEquivalentQuantity: state.purchaseEquivalentQuantity.trim()
       ? quantityStringToNumber(state.purchaseEquivalentQuantity)
       : null,

@@ -26,6 +26,7 @@ import {
   adaptInventoryMovementsToList,
   createEmptyInventoryMovementFormState,
   resolveInventoryPurchaseAmountCents,
+  resolveInventoryPurchaseTotalPreviewCents,
 } from "../features/inventory/lib/inventory-movement-adapter";
 import {
   formatMoneyInput,
@@ -66,8 +67,12 @@ export default function EstoqueMovimentacao() {
   const isSaving = createMovementMutation.isPending;
   const isIngredient = item?.category === "Ingrediente";
   const purchaseUsesUnitPrice = item?.unit === "un" || item?.unit === "caixa";
+  const purchaseAmountCents = useMemo(
+    () => resolveInventoryPurchaseAmountCents(formState),
+    [formState],
+  );
   const computedPurchaseTotalCents = useMemo(
-    () => resolveInventoryPurchaseAmountCents(formState, item?.unit),
+    () => resolveInventoryPurchaseTotalPreviewCents(formState, item?.unit),
     [formState, item?.unit],
   );
   const allowsPurchaseYield =
@@ -87,10 +92,6 @@ export default function EstoqueMovimentacao() {
 
   const handleSave = async () => {
     const quantity = parseDecimalInput(formState.quantity);
-    const purchaseAmountCents = resolveInventoryPurchaseAmountCents(
-      formState,
-      item?.unit,
-    );
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
       toast({
@@ -149,11 +150,7 @@ export default function EstoqueMovimentacao() {
 
     try {
       await createMovementMutation.mutateAsync({
-        data: adaptInventoryMovementFormStateToCreatePayload(
-          itemId,
-          formState,
-          item?.unit,
-        ),
+        data: adaptInventoryMovementFormStateToCreatePayload(itemId, formState),
       });
 
       toast({ title: "Movimentacao registrada com sucesso!" });
