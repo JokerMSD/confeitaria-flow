@@ -22,6 +22,18 @@ export const inventoryItems = pgTable(
     recipeEquivalentQuantity: doublePrecision("recipe_equivalent_quantity"),
     recipeEquivalentUnit: varchar("recipe_equivalent_unit", { length: 16 }),
     purchaseUnitCostCents: integer("purchase_unit_cost_cents"),
+    pricingAccumulatedQuantity: doublePrecision("pricing_accumulated_quantity")
+      .notNull()
+      .default(0),
+    pricingAccumulatedCostCents: doublePrecision("pricing_accumulated_cost_cents")
+      .notNull()
+      .default(0),
+    equivalentAccumulatedQuantity: doublePrecision("equivalent_accumulated_quantity")
+      .notNull()
+      .default(0),
+    equivalentAccumulatedBaseQuantity: doublePrecision("equivalent_accumulated_base_quantity")
+      .notNull()
+      .default(0),
     notes: text("notes"),
     createdAt: timestamp("created_at", {
       withTimezone: true,

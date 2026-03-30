@@ -14,6 +14,9 @@ export interface InventoryMovementRowInsert {
   quantity: number;
   reason: string;
   reference: string | null;
+  purchaseAmountCents?: number | null;
+  purchaseEquivalentQuantity?: number | null;
+  purchaseEquivalentUnit?: string | null;
   sourceType?: string | null;
   sourceId?: string | null;
   isSystemGenerated?: boolean;

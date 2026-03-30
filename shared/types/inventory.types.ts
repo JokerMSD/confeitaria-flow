@@ -62,6 +62,7 @@ export interface CreateInventoryMovementInput {
   reference?: string | null;
   purchaseAmountCents?: number | null;
   purchasePaymentMethod?: PaymentMethod | null;
+  purchaseEquivalentQuantity?: number | null;
 }
 
 export interface ListInventoryMovementsFilters {

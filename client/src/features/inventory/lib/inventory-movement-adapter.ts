@@ -48,6 +48,7 @@ export function createEmptyInventoryMovementFormState(): InventoryMovementFormSt
     reference: "",
     registerPurchase: false,
     purchaseAmount: "",
+    purchaseEquivalentQuantity: "",
     purchasePaymentMethod: "Pix",
   };
 }
@@ -80,6 +81,7 @@ export function adaptInventoryMovementToFormState(
     reference: movement.reference ?? "",
     registerPurchase: false,
     purchaseAmount: "",
+    purchaseEquivalentQuantity: "",
     purchasePaymentMethod: "Pix",
   };
 }
@@ -119,6 +121,9 @@ export function adaptInventoryMovementFormStateToCreatePayload(
     reference: state.reference.trim() || null,
     purchaseAmountCents: state.registerPurchase
       ? moneyStringToCents(state.purchaseAmount)
+      : null,
+    purchaseEquivalentQuantity: state.purchaseEquivalentQuantity.trim()
+      ? quantityStringToNumber(state.purchaseEquivalentQuantity)
       : null,
     purchasePaymentMethod: state.registerPurchase
       ? uiToApiPaymentMethodMap[state.purchasePaymentMethod]

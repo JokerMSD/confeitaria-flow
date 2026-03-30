@@ -83,6 +83,7 @@ export const createInventoryMovementInputSchema = z.object({
   reference: z.string().trim().max(120).nullable().optional(),
   purchaseAmountCents: centsSchema.nullable().optional(),
   purchasePaymentMethod: paymentMethodSchema.nullable().optional(),
+  purchaseEquivalentQuantity: z.number().finite().positive().nullable().optional(),
 }).superRefine((value, ctx) => {
   const hasAmount = value.purchaseAmountCents != null;
   const hasMethod = value.purchasePaymentMethod != null;
@@ -93,6 +94,15 @@ export const createInventoryMovementInputSchema = z.object({
       message:
         "Inventory movement purchaseAmountCents and purchasePaymentMethod must be provided together.",
       path: hasAmount ? ["purchasePaymentMethod"] : ["purchaseAmountCents"],
+    });
+  }
+
+  if (value.purchaseEquivalentQuantity != null && value.type !== "Entrada") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Inventory movement purchaseEquivalentQuantity is only available for stock entries.",
+      path: ["purchaseEquivalentQuantity"],
     });
   }
 });

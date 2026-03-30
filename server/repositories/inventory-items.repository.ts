@@ -18,6 +18,10 @@ export interface InventoryItemRowInsert {
   recipeEquivalentQuantity: number | null;
   recipeEquivalentUnit: InventoryItemUnit | null;
   purchaseUnitCostCents: number | null;
+  pricingAccumulatedQuantity: number;
+  pricingAccumulatedCostCents: number;
+  equivalentAccumulatedQuantity: number;
+  equivalentAccumulatedBaseQuantity: number;
   notes: string | null;
 }
 
@@ -34,6 +38,16 @@ export interface InventoryItemMetadataUpdate {
   recipeEquivalentUnit: InventoryItemUnit | null;
   purchaseUnitCostCents: number | null;
   notes: string | null;
+  updatedAt: Date;
+}
+
+export interface InventoryItemPurchaseMetricsUpdate {
+  recipeEquivalentQuantity: number | null;
+  purchaseUnitCostCents: number | null;
+  pricingAccumulatedQuantity: number;
+  pricingAccumulatedCostCents: number;
+  equivalentAccumulatedQuantity: number;
+  equivalentAccumulatedBaseQuantity: number;
   updatedAt: Date;
 }
 
@@ -97,6 +111,20 @@ export class InventoryItemsRepository {
   async updateMetadata(
     id: string,
     data: InventoryItemMetadataUpdate,
+    executor: Executor = getDb(),
+  ) {
+    const [item] = await executor
+      .update(inventoryItems)
+      .set(data)
+      .where(and(eq(inventoryItems.id, id), isNull(inventoryItems.deletedAt)))
+      .returning();
+
+    return item ?? null;
+  }
+
+  async updatePurchaseMetrics(
+    id: string,
+    data: InventoryItemPurchaseMetricsUpdate,
     executor: Executor = getDb(),
   ) {
     const [item] = await executor

@@ -58,10 +58,11 @@ export default function EstoqueMovimentacao() {
   );
 
   const isSaving = createMovementMutation.isPending;
-  const ingredientAutoCashEnabled =
+  const isIngredient = item?.category === "Ingrediente";
+  const allowsPurchaseYield =
     item?.category === "Ingrediente" &&
-    item.purchaseUnitCostCents != null &&
-    item.purchaseUnitCostCents > 0;
+    item.recipeEquivalentUnit != null &&
+    (item.unit === "un" || item.unit === "caixa");
 
   const setField = <K extends keyof InventoryMovementFormState>(
     key: K,
@@ -98,13 +99,27 @@ export default function EstoqueMovimentacao() {
     }
 
     if (
-      !ingredientAutoCashEnabled &&
       formState.registerPurchase &&
       (!Number.isFinite(purchaseAmount) || purchaseAmount <= 0)
     ) {
       toast({
         title: "Valor de compra invalido",
         description: "Informe um valor maior que zero para registrar a compra no caixa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      formState.purchaseEquivalentQuantity.trim() &&
+      (!Number.isFinite(
+        Number.parseFloat(formState.purchaseEquivalentQuantity.replace(",", ".")),
+      ) ||
+        Number.parseFloat(formState.purchaseEquivalentQuantity.replace(",", ".")) <= 0)
+    ) {
+      toast({
+        title: "Rendimento invalido",
+        description: "Informe um rendimento total maior que zero.",
         variant: "destructive",
       });
       return;
@@ -121,13 +136,7 @@ export default function EstoqueMovimentacao() {
 
     try {
       await createMovementMutation.mutateAsync({
-        data: adaptInventoryMovementFormStateToCreatePayload(itemId, {
-          ...formState,
-          registerPurchase:
-            ingredientAutoCashEnabled && formState.type === "Entrada"
-              ? false
-              : formState.registerPurchase,
-        }),
+        data: adaptInventoryMovementFormStateToCreatePayload(itemId, formState),
       });
 
       toast({ title: "Movimentacao registrada com sucesso!" });
@@ -311,19 +320,27 @@ export default function EstoqueMovimentacao() {
                 />
               </div>
 
-              {formState.type === "Entrada" && ingredientAutoCashEnabled && (
+              {formState.type === "Entrada" && isIngredient && (
                 <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-                  Esta entrada vai gerar automaticamente uma saida no caixa de{" "}
+                  Custo medio atual:{" "}
                   <strong className="text-foreground">
-                    {formatCurrency(
-                      (item.purchaseUnitCostCents ?? 0) / 100,
-                    )}
-                  </strong>{" "}
-                  por {item.unit}.
+                    {item.purchaseUnitCostCents == null
+                      ? "nao definido"
+                      : formatCurrency((item.purchaseUnitCostCents ?? 0) / 100)}
+                  </strong>
+                  {allowsPurchaseYield && item.recipeEquivalentQuantity != null && (
+                    <>
+                      {" "}por {item.unit}. Equivalencia media atual:{" "}
+                      <strong className="text-foreground">
+                        {item.recipeEquivalentQuantity} {item.recipeEquivalentUnit} por {item.unit}
+                      </strong>
+                      .
+                    </>
+                  )}
                 </div>
               )}
 
-              {formState.type === "Entrada" && !ingredientAutoCashEnabled && (
+              {formState.type === "Entrada" && (
                 <>
                   <label className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3">
                     <input
@@ -334,7 +351,7 @@ export default function EstoqueMovimentacao() {
                       }
                     />
                     <span className="text-sm text-foreground">
-                      Registrar esta entrada como compra no caixa
+                      Registrar esta entrada como compra e atualizar custo medio
                     </span>
                   </label>
 
@@ -373,6 +390,32 @@ export default function EstoqueMovimentacao() {
                           <option value="Transferência">Transferência</option>
                         </select>
                       </div>
+                    </div>
+                  )}
+
+                  {allowsPurchaseYield && (
+                    <div className="space-y-2">
+                      <Label htmlFor="purchaseEquivalentQuantity">
+                        Rendimento real total da compra ({item.recipeEquivalentUnit})
+                      </Label>
+                      <Input
+                        id="purchaseEquivalentQuantity"
+                        type="number"
+                        step="0.001"
+                        value={formState.purchaseEquivalentQuantity}
+                        onChange={(event) =>
+                          setField("purchaseEquivalentQuantity", event.target.value)
+                        }
+                        placeholder={`Ex: ${
+                          item.recipeEquivalentUnit === "kg" || item.recipeEquivalentUnit === "l"
+                            ? "0.705"
+                            : "705"
+                        }`}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Use este campo quando o item e comprado em {item.unit}, mas consumido em{" "}
+                        {item.recipeEquivalentUnit}. Ex.: 2 unidades renderam 0.705 kg.
+                      </p>
                     </div>
                   )}
                 </>

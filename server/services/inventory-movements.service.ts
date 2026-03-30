@@ -47,6 +47,18 @@ export class InventoryMovementsService {
         throw new HttpError(404, "Inventory item not found.");
       }
 
+      if (
+        normalized.purchaseEquivalentQuantity != null &&
+        (item.category !== "Ingrediente" ||
+          item.recipeEquivalentUnit == null ||
+          (item.unit !== "un" && item.unit !== "caixa"))
+      ) {
+        throw new HttpError(
+          400,
+          "Only unit-based ingredients with recipe equivalence can record purchase yield.",
+        );
+      }
+
       const delta = this.resolveDelta(item.currentQuantity, normalized.type, normalized.quantity);
 
       if (delta === 0) {
@@ -71,6 +83,12 @@ export class InventoryMovementsService {
           quantity: delta,
           reason: normalized.reason,
           reference: normalized.reference,
+          purchaseAmountCents: normalized.purchaseAmountCents,
+          purchaseEquivalentQuantity: normalized.purchaseEquivalentQuantity,
+          purchaseEquivalentUnit:
+            normalized.purchaseEquivalentQuantity != null
+              ? item.recipeEquivalentUnit ?? null
+              : null,
           sourceType: null,
           sourceId: null,
           isSystemGenerated: false,
@@ -79,6 +97,20 @@ export class InventoryMovementsService {
       );
 
       if (
+        normalized.type === "Entrada" &&
+        normalized.purchaseAmountCents != null &&
+        normalized.purchasePaymentMethod != null
+      ) {
+        await this.cashTransactionsService.registerInventoryPurchaseExpense(
+          {
+            movementId: createdMovement.id,
+            itemName: item.name,
+            amountCents: normalized.purchaseAmountCents,
+            paymentMethod: normalized.purchasePaymentMethod,
+          },
+          tx,
+        );
+      } else if (
         item.category === "Ingrediente" &&
         item.purchaseUnitCostCents != null &&
         item.purchaseUnitCostCents > 0 &&
@@ -89,21 +121,73 @@ export class InventoryMovementsService {
             movementId: createdMovement.id,
             itemName: item.name,
             amountCents: Math.round(normalized.quantity * item.purchaseUnitCostCents),
-            paymentMethod:
-              normalized.purchasePaymentMethod ?? "Pix",
+            paymentMethod: "Pix",
           },
           tx,
         );
-      } else if (
-        normalized.purchaseAmountCents != null &&
-        normalized.purchasePaymentMethod != null
+      }
+
+      if (
+        item.category === "Ingrediente" &&
+        normalized.type === "Entrada" &&
+        (normalized.purchaseAmountCents != null ||
+          normalized.purchaseEquivalentQuantity != null)
       ) {
-        await this.cashTransactionsService.registerInventoryPurchaseExpense(
+        const pricingAccumulatedQuantity =
+          normalized.purchaseAmountCents != null
+            ? (item.pricingAccumulatedQuantity == null
+                ? 0
+                : Number(item.pricingAccumulatedQuantity)) + normalized.quantity
+            : item.pricingAccumulatedQuantity == null
+              ? 0
+              : Number(item.pricingAccumulatedQuantity);
+        const pricingAccumulatedCostCents =
+          normalized.purchaseAmountCents != null
+            ? (item.pricingAccumulatedCostCents == null
+                ? 0
+                : Number(item.pricingAccumulatedCostCents)) + normalized.purchaseAmountCents
+            : item.pricingAccumulatedCostCents == null
+              ? 0
+              : Number(item.pricingAccumulatedCostCents);
+
+        const equivalentAccumulatedBaseQuantity =
+          normalized.purchaseEquivalentQuantity != null
+            ? (item.equivalentAccumulatedBaseQuantity == null
+                ? 0
+                : Number(item.equivalentAccumulatedBaseQuantity)) + normalized.quantity
+            : item.equivalentAccumulatedBaseQuantity == null
+              ? 0
+              : Number(item.equivalentAccumulatedBaseQuantity);
+        const equivalentAccumulatedQuantity =
+          normalized.purchaseEquivalentQuantity != null
+            ? (item.equivalentAccumulatedQuantity == null
+                ? 0
+                : Number(item.equivalentAccumulatedQuantity)) +
+              normalized.purchaseEquivalentQuantity
+            : item.equivalentAccumulatedQuantity == null
+              ? 0
+              : Number(item.equivalentAccumulatedQuantity);
+
+        await this.inventoryItemsRepository.updatePurchaseMetrics(
+          item.id,
           {
-            movementId: createdMovement.id,
-            itemName: item.name,
-            amountCents: normalized.purchaseAmountCents,
-            paymentMethod: normalized.purchasePaymentMethod,
+            recipeEquivalentQuantity:
+              equivalentAccumulatedBaseQuantity > 0
+                ? equivalentAccumulatedQuantity / equivalentAccumulatedBaseQuantity
+                : item.recipeEquivalentQuantity == null
+                  ? null
+                  : Number(item.recipeEquivalentQuantity),
+            purchaseUnitCostCents:
+              pricingAccumulatedQuantity > 0
+                ? Math.round(pricingAccumulatedCostCents / pricingAccumulatedQuantity)
+                : item.purchaseUnitCostCents == null
+                  ? null
+                  : Number(item.purchaseUnitCostCents),
+            pricingAccumulatedQuantity,
+            pricingAccumulatedCostCents,
+            equivalentAccumulatedQuantity,
+            equivalentAccumulatedBaseQuantity,
+            updatedAt: new Date(),
           },
           tx,
         );
@@ -179,6 +263,13 @@ export class InventoryMovementsService {
       );
     }
 
+    if (input.purchaseEquivalentQuantity != null && input.type !== "Entrada") {
+      throw new HttpError(
+        400,
+        "Inventory purchase equivalent quantity is only available for stock entries.",
+      );
+    }
+
     return {
       itemId: input.itemId,
       type: input.type,
@@ -186,6 +277,7 @@ export class InventoryMovementsService {
       reason,
       reference,
       purchaseAmountCents: input.purchaseAmountCents ?? null,
+      purchaseEquivalentQuantity: input.purchaseEquivalentQuantity ?? null,
       purchasePaymentMethod: input.purchasePaymentMethod ?? null,
     };
   }

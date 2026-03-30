@@ -87,6 +87,19 @@ export class InventoryItemsService {
       }
 
       const delta = normalized.currentQuantity - existing.currentQuantity;
+      const shouldRecalibratePurchaseMetrics =
+        normalized.category !== existing.category ||
+        normalized.unit !== existing.unit ||
+        normalized.currentQuantity !== existing.currentQuantity ||
+        normalized.purchaseUnitCostCents !==
+          (existing.purchaseUnitCostCents == null
+            ? null
+            : Number(existing.purchaseUnitCostCents)) ||
+        normalized.recipeEquivalentQuantity !==
+          (existing.recipeEquivalentQuantity == null
+            ? null
+            : Number(existing.recipeEquivalentQuantity)) ||
+        normalized.recipeEquivalentUnit !== (existing.recipeEquivalentUnit ?? null);
 
       if (delta !== 0) {
         const stockUpdated = await this.inventoryItemsRepository.applyQuantityDelta(
@@ -107,6 +120,40 @@ export class InventoryItemsService {
             quantity: delta,
             reason: "Ajuste automático do item",
             reference: `inventory-item:update:${id}`,
+          },
+          tx,
+        );
+      }
+
+      if (shouldRecalibratePurchaseMetrics) {
+        await this.inventoryItemsRepository.updatePurchaseMetrics(
+          id,
+          {
+            recipeEquivalentQuantity: normalized.recipeEquivalentQuantity,
+            purchaseUnitCostCents: normalized.purchaseUnitCostCents,
+            pricingAccumulatedQuantity:
+              normalized.category === "Ingrediente" &&
+              normalized.purchaseUnitCostCents != null
+                ? normalized.currentQuantity
+                : 0,
+            pricingAccumulatedCostCents:
+              normalized.category === "Ingrediente" &&
+              normalized.purchaseUnitCostCents != null
+                ? normalized.currentQuantity * normalized.purchaseUnitCostCents
+                : 0,
+            equivalentAccumulatedQuantity:
+              normalized.category === "Ingrediente" &&
+              normalized.recipeEquivalentQuantity != null &&
+              normalized.recipeEquivalentUnit != null
+                ? normalized.currentQuantity * normalized.recipeEquivalentQuantity
+                : 0,
+            equivalentAccumulatedBaseQuantity:
+              normalized.category === "Ingrediente" &&
+              normalized.recipeEquivalentQuantity != null &&
+              normalized.recipeEquivalentUnit != null
+                ? normalized.currentQuantity
+                : 0,
+            updatedAt: new Date(),
           },
           tx,
         );
@@ -172,6 +219,26 @@ export class InventoryItemsService {
         input.category === "Ingrediente"
           ? input.purchaseUnitCostCents ?? null
           : null,
+      pricingAccumulatedQuantity:
+        input.category === "Ingrediente" && input.purchaseUnitCostCents != null
+          ? input.currentQuantity
+          : 0,
+      pricingAccumulatedCostCents:
+        input.category === "Ingrediente" && input.purchaseUnitCostCents != null
+          ? input.currentQuantity * input.purchaseUnitCostCents
+          : 0,
+      equivalentAccumulatedQuantity:
+        input.category === "Ingrediente" &&
+        input.recipeEquivalentQuantity != null &&
+        input.recipeEquivalentUnit != null
+          ? input.currentQuantity * input.recipeEquivalentQuantity
+          : 0,
+      equivalentAccumulatedBaseQuantity:
+        input.category === "Ingrediente" &&
+        input.recipeEquivalentQuantity != null &&
+        input.recipeEquivalentUnit != null
+          ? input.currentQuantity
+          : 0,
       notes,
     };
   }
