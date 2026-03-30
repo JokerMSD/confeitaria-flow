@@ -13,7 +13,11 @@ import { useCreateOrder } from "@/features/orders/hooks/use-create-order";
 import { useOrder } from "@/features/orders/hooks/use-order";
 import { useUpdateOrder } from "@/features/orders/hooks/use-update-order";
 import { useProductRecipes } from "@/features/recipes/hooks/use-product-recipes";
-import { adaptProductRecipesToOptions } from "@/features/recipes/lib/recipe-list-adapter";
+import { useRecipes } from "@/features/recipes/hooks/use-recipes";
+import {
+  adaptFillingRecipesToOptions,
+  adaptProductRecipesToOptions,
+} from "@/features/recipes/lib/recipe-list-adapter";
 import {
   adaptFormStateToCreatePayload,
   adaptFormStateToUpdatePayload,
@@ -77,9 +81,11 @@ export default function PedidoForm() {
   const [newItemQtd, setNewItemQtd] = useState("1");
   const [newItemPrice, setNewItemPrice] = useState("");
   const [newItemRecipeId, setNewItemRecipeId] = useState("");
+  const [newItemFillingRecipeId, setNewItemFillingRecipeId] = useState("");
 
   const orderQuery = useOrder(orderId);
   const productRecipesQuery = useProductRecipes();
+  const fillingRecipesQuery = useRecipes({ kind: "Preparacao" });
   const createOrderMutation = useCreateOrder();
   const updateOrderMutation = useUpdateOrder();
 
@@ -121,6 +127,16 @@ export default function PedidoForm() {
     () => adaptProductRecipesToOptions(productRecipesQuery.data?.data ?? []),
     [productRecipesQuery.data],
   );
+  const fillingRecipeOptions = useMemo(
+    () => adaptFillingRecipesToOptions(fillingRecipesQuery.data?.data ?? []),
+    [fillingRecipesQuery.data],
+  );
+
+  const selectedProductRecipe = useMemo(
+    () =>
+      productRecipeOptions.find((recipe) => recipe.id === newItemRecipeId) ?? null,
+    [newItemRecipeId, productRecipeOptions],
+  );
 
   const setField = <K extends keyof OrderFormState>(
     key: K,
@@ -134,6 +150,16 @@ export default function PedidoForm() {
 
   const handleAddItem = () => {
     if (!newItemName || !newItemPrice || !newItemQtd) {
+      return;
+    }
+
+    if (newItemRecipeId && !newItemFillingRecipeId) {
+      toast({
+        title: "Selecione o recheio",
+        description:
+          "Para produtos do catalogo, escolha tambem um recheio disponivel.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -151,6 +177,7 @@ export default function PedidoForm() {
         buildOrderFormItem(
           createTemporaryItemId(),
           newItemRecipeId || null,
+          newItemFillingRecipeId || null,
           newItemName.trim(),
           quantity,
           unitPrice,
@@ -163,6 +190,7 @@ export default function PedidoForm() {
     setNewItemQtd("1");
     setNewItemPrice("");
     setNewItemRecipeId("");
+    setNewItemFillingRecipeId("");
   };
 
   const handleRemoveItem = (id: string) => {
@@ -406,6 +434,7 @@ export default function PedidoForm() {
                       onChange={(event) => {
                         const selectedId = event.target.value;
                         setNewItemRecipeId(selectedId);
+                        setNewItemFillingRecipeId("");
 
                         const selectedRecipe = productRecipeOptions.find(
                           (recipe) => recipe.id === selectedId,
@@ -418,6 +447,9 @@ export default function PedidoForm() {
                               ? ""
                               : selectedRecipe.suggestedSalePrice.toString(),
                           );
+                        } else {
+                          setNewItemName("");
+                          setNewItemPrice("");
                         }
                       }}
                     >
@@ -435,7 +467,43 @@ export default function PedidoForm() {
                       placeholder="Ex: Bolo de Cenoura"
                       value={newItemName}
                       onChange={(event) => setNewItemName(event.target.value)}
+                      disabled={Boolean(newItemRecipeId)}
                     />
+                  </div>
+                  <div className="space-y-2 flex-1 w-full">
+                    <Label>Recheio</Label>
+                    <select
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={newItemFillingRecipeId}
+                      onChange={(event) => {
+                        const selectedId = event.target.value;
+                        setNewItemFillingRecipeId(selectedId);
+
+                        if (selectedProductRecipe) {
+                          const selectedFilling = fillingRecipeOptions.find(
+                            (recipe) => recipe.id === selectedId,
+                          );
+
+                          setNewItemName(
+                            selectedFilling
+                              ? `${selectedProductRecipe.name} - ${selectedFilling.name}`
+                              : selectedProductRecipe.name,
+                          );
+                        }
+                      }}
+                      disabled={!newItemRecipeId}
+                    >
+                      <option value="">
+                        {newItemRecipeId
+                          ? "Selecione um recheio"
+                          : "Escolha um produto primeiro"}
+                      </option>
+                      {fillingRecipeOptions.map((recipe) => (
+                        <option key={recipe.id} value={recipe.id}>
+                          {recipe.name} ({recipe.outputLabel})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="space-y-2 w-full md:w-24">
                     <Label>Qtd.</Label>
@@ -454,6 +522,7 @@ export default function PedidoForm() {
                       placeholder="0.00"
                       value={newItemPrice}
                       onChange={(event) => setNewItemPrice(event.target.value)}
+                      disabled={Boolean(newItemRecipeId)}
                     />
                   </div>
                   <Button
@@ -488,6 +557,11 @@ export default function PedidoForm() {
                           {item.recipeId && (
                             <p className="text-[11px] text-primary font-medium">
                               Vinculado a receita
+                            </p>
+                          )}
+                          {item.fillingRecipeId && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Recheio selecionado
                             </p>
                           )}
                         </div>

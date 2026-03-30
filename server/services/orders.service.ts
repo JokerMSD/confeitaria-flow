@@ -110,6 +110,12 @@ export class OrdersService {
           .filter((recipeId): recipeId is string => Boolean(recipeId)),
         tx,
       );
+      await this.recipesService.assertFillingRecipesArePreparations(
+        normalized.items
+          .map((item) => item.fillingRecipeId)
+          .filter((recipeId): recipeId is string => Boolean(recipeId)),
+        tx,
+      );
 
       const sequence = await this.ordersRepository.nextOrderSequence(tx);
       const now = new Date();
@@ -138,6 +144,7 @@ export class OrdersService {
         normalized.items.map((item, index) => ({
           orderId: createdOrder.id,
           recipeId: item.recipeId,
+          fillingRecipeId: item.fillingRecipeId,
           productName: item.productName,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
@@ -166,6 +173,7 @@ export class OrdersService {
           status: createdOrder.status,
           items: createdItems.map((item: any) => ({
             recipeId: item.recipeId ?? null,
+            fillingRecipeId: item.fillingRecipeId ?? null,
             quantity: item.quantity,
           })),
         },
@@ -202,6 +210,12 @@ export class OrdersService {
           .filter((recipeId): recipeId is string => Boolean(recipeId)),
         tx,
       );
+      await this.recipesService.assertFillingRecipesArePreparations(
+        normalized.items
+          .map((item) => item.fillingRecipeId)
+          .filter((recipeId): recipeId is string => Boolean(recipeId)),
+        tx,
+      );
 
       const updatedOrder = await this.ordersRepository.update(
         id,
@@ -235,6 +249,7 @@ export class OrdersService {
         normalized.items.map((item, index) => ({
           orderId: id,
           recipeId: item.recipeId,
+          fillingRecipeId: item.fillingRecipeId,
           productName: item.productName,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
@@ -263,6 +278,7 @@ export class OrdersService {
           status: updatedOrder.status,
           items: updatedItems.map((item: any) => ({
             recipeId: item.recipeId ?? null,
+            fillingRecipeId: item.fillingRecipeId ?? null,
             quantity: item.quantity,
           })),
         },
@@ -337,6 +353,7 @@ export class OrdersService {
 
       return {
         recipeId: item.recipeId ?? null,
+        fillingRecipeId: item.fillingRecipeId ?? null,
         productName,
         quantity,
         unitPriceCents,
@@ -405,6 +422,7 @@ export class OrdersService {
         id: item.id,
         orderId: item.orderId,
         recipeId: item.recipeId ?? null,
+        fillingRecipeId: item.fillingRecipeId ?? null,
         productName: item.productName,
         quantity: item.quantity,
         unitPriceCents: item.unitPriceCents,

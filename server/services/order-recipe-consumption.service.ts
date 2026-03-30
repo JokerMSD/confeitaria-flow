@@ -12,6 +12,7 @@ export class OrderRecipeConsumptionService {
       status: string;
       items: Array<{
         recipeId: string | null;
+        fillingRecipeId?: string | null;
         quantity: number;
         productName?: string;
       }>;
@@ -26,6 +27,7 @@ export class OrderRecipeConsumptionService {
       },
       input.items.map((item) => ({
         recipeId: item.recipeId,
+        fillingRecipeId: item.fillingRecipeId ?? null,
         quantity: item.quantity,
         productName: item.productName ?? "",
       })),

@@ -7,6 +7,7 @@ type Executor = ReturnType<typeof getDb> | any;
 export interface OrderItemRowInsert {
   orderId: string;
   recipeId: string | null;
+  fillingRecipeId: string | null;
   productName: string;
   quantity: number;
   unitPriceCents: number;

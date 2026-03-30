@@ -98,6 +98,7 @@ export function adaptOrderDetailToFormState(
     items: response.data.items.map((item) => ({
       id: item.id,
       recipeId: item.recipeId ?? null,
+      fillingRecipeId: item.fillingRecipeId ?? null,
       productName: item.productName,
       quantity: item.quantity,
       unitPrice: item.unitPriceCents / 100,
@@ -110,6 +111,7 @@ export function adaptOrderDetailToFormState(
 function adaptFormItemsToPayload(items: OrderFormItem[]) {
   return items.map((item, index) => ({
     recipeId: item.recipeId ?? null,
+    fillingRecipeId: item.fillingRecipeId ?? null,
     productName: item.productName.trim(),
     quantity: item.quantity,
     unitPriceCents: decimalStringToCents(item.unitPrice.toString()),
@@ -149,6 +151,7 @@ export function adaptFormStateToUpdatePayload(
 export function buildOrderFormItem(
   id: string,
   recipeId: string | null,
+  fillingRecipeId: string | null,
   productName: string,
   quantity: number,
   unitPrice: number,
@@ -157,6 +160,7 @@ export function buildOrderFormItem(
   return {
     id,
     recipeId,
+    fillingRecipeId,
     productName,
     quantity,
     unitPrice,

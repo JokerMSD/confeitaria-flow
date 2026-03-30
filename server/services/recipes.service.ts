@@ -293,9 +293,31 @@ export class RecipesService {
     }
   }
 
+  async assertFillingRecipesArePreparations(
+    recipeIds: string[],
+    executor?: Executor,
+  ) {
+    for (const recipeId of recipeIds) {
+      const recipe = await this.recipesRepository.findById(recipeId, executor);
+
+      if (!recipe) {
+        throw new HttpError(400, "Order item filling recipe was not found.");
+      }
+
+      if (recipe.kind !== "Preparacao") {
+        throw new HttpError(
+          400,
+          "Only preparation recipes can be used as filling.",
+        );
+      }
+    }
+  }
+
   async syncOrderInventoryConsumption(
     order: { id: string; orderNumber: string; status: string },
-    orderItems: Array<Pick<OrderItem, "recipeId" | "quantity" | "productName">>,
+    orderItems: Array<
+      Pick<OrderItem, "recipeId" | "fillingRecipeId" | "quantity" | "productName">
+    >,
     executor?: Executor,
   ) {
     const existingMovements = await this.inventoryMovementsRepository.listBySource(
@@ -343,6 +365,7 @@ export class RecipesService {
         orderItem.recipeId,
         orderItem.quantity,
         executor,
+        orderItem.fillingRecipeId ?? null,
       );
 
       for (const [itemId, quantity] of Array.from(exploded.entries())) {
@@ -385,9 +408,18 @@ export class RecipesService {
     recipeId: string,
     batchCount = 1,
     executor?: Executor,
+    fillingRecipeId?: string | null,
   ) {
     const aggregation = new Map<string, number>();
-    await this.collectInventoryUsage(recipeId, batchCount, aggregation, [], executor);
+    await this.collectInventoryUsage(
+      recipeId,
+      batchCount,
+      aggregation,
+      [],
+      executor,
+      fillingRecipeId ?? null,
+      true,
+    );
     return aggregation;
   }
 
@@ -568,6 +600,8 @@ export class RecipesService {
     aggregation: Map<string, number>,
     stack: string[],
     executor?: Executor,
+    fillingRecipeId?: string | null,
+    allowFillingOverride = false,
   ) {
     if (stack.includes(recipeId)) {
       throw new HttpError(400, "Recipe composition cannot contain cycles.");
@@ -584,6 +618,8 @@ export class RecipesService {
       recipeId,
       executor,
     );
+
+    let fillingApplied = false;
 
     for (const component of components as RecipeComponentRow[]) {
       const requestedQuantity = fromMilli(component.quantityMilli) * batchCount;
@@ -620,13 +656,29 @@ export class RecipesService {
         throw new HttpError(400, "Recipe component child recipe is invalid.");
       }
 
+      const effectiveChildRecipeId =
+        allowFillingOverride &&
+        fillingRecipeId &&
+        !fillingApplied
+          ? fillingRecipeId
+          : component.childRecipeId;
+
       const childRecipe = await this.recipesRepository.findById(
-        component.childRecipeId,
+        effectiveChildRecipeId,
         executor,
       );
 
       if (!childRecipe) {
         throw new HttpError(404, "Recipe component child recipe not found.");
+      }
+
+      if (
+        allowFillingOverride &&
+        fillingRecipeId &&
+        !fillingApplied &&
+        component.componentType === "Receita"
+      ) {
+        fillingApplied = true;
       }
 
       const childOutputQuantity = fromMilli(childRecipe.outputQuantityMilli);
@@ -639,11 +691,13 @@ export class RecipesService {
         childOutputQuantity > 0 ? requestedChildQuantity / childOutputQuantity : 0;
 
       await this.collectInventoryUsage(
-        component.childRecipeId,
+        effectiveChildRecipeId!,
         childBatchCount,
         aggregation,
         nextStack,
         executor,
+        null,
+        false,
       );
     }
   }

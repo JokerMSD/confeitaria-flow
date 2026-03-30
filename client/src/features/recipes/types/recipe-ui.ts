@@ -42,3 +42,10 @@ export interface ProductRecipeOption {
   outputLabel: string;
   suggestedSalePrice: number | null;
 }
+
+export interface FillingRecipeOption {
+  id: string;
+  name: string;
+  outputLabel: string;
+  unitCost: number;
+}

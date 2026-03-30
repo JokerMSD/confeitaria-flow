@@ -1,5 +1,9 @@
 import type { RecipeListItem, RecipeLookupItem } from "@shared/types";
-import type { ProductRecipeOption, RecipeListCard } from "../types/recipe-ui";
+import type {
+  FillingRecipeOption,
+  ProductRecipeOption,
+  RecipeListCard,
+} from "../types/recipe-ui";
 
 function formatOutputLabel(quantity: number, unit: string) {
   return `${quantity} ${unit}`;
@@ -34,5 +38,16 @@ export function adaptProductRecipesToOptions(
       recipe.suggestedSalePriceCents == null
         ? null
         : recipe.suggestedSalePriceCents / 100,
+  }));
+}
+
+export function adaptFillingRecipesToOptions(
+  recipes: RecipeLookupItem[],
+): FillingRecipeOption[] {
+  return recipes.map((recipe) => ({
+    id: recipe.id,
+    name: recipe.name,
+    outputLabel: formatOutputLabel(recipe.outputQuantity, recipe.outputUnit),
+    unitCost: recipe.unitCostCents / 100,
   }));
 }
