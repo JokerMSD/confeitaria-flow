@@ -7,6 +7,7 @@ import {
   Wallet,
   LogOut,
   BookOpen,
+  Store,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
@@ -46,6 +47,7 @@ export function Sidebar() {
     { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
     { href: "/fila", label: "Fila", icon: ClipboardList },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
+    { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
   ];
@@ -132,6 +134,7 @@ export function BottomNav() {
     { href: "/", label: "Início", icon: Home },
     { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
+    { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
   ];

@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
-  BookOpen,
   MoreVertical,
+  Package,
   Plus,
   Search,
   Trash2,
@@ -25,13 +25,14 @@ import { useRecipes } from "@/features/recipes/hooks/use-recipes";
 import { useDeleteRecipe } from "@/features/recipes/hooks/use-delete-recipe";
 import { adaptRecipesToCards } from "@/features/recipes/lib/recipe-list-adapter";
 
-export default function Receitas() {
+export default function Catalogo() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+
   const recipesQuery = useRecipes({
     search: searchTerm || undefined,
-    kind: "Preparacao",
+    kind: "ProdutoVenda",
   });
   const deleteRecipeMutation = useDeleteRecipe();
 
@@ -43,24 +44,24 @@ export default function Receitas() {
   const handleDelete = (id: string, event: React.MouseEvent) => {
     event.stopPropagation();
 
-    if (!window.confirm("Deseja excluir esta receita?")) {
+    if (!window.confirm("Deseja excluir este produto do catalogo?")) {
       return;
     }
 
     deleteRecipeMutation.mutate(id, {
       onSuccess: () => {
         toast({
-          title: "Receita excluida",
-          description: "A receita foi removida com sucesso.",
+          title: "Produto excluido",
+          description: "O produto foi removido do catalogo com sucesso.",
         });
       },
       onError: (error) => {
         toast({
-          title: "Erro ao excluir receita",
+          title: "Erro ao excluir produto",
           description:
             error instanceof ApiError
               ? error.message
-              : "Nao foi possivel excluir a receita.",
+              : "Nao foi possivel excluir o produto.",
           variant: "destructive",
         });
       },
@@ -68,22 +69,22 @@ export default function Receitas() {
   };
 
   return (
-    <AppLayout title="Receitas">
+    <AppLayout title="Catalogo">
       <div className="space-y-6">
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-display font-bold text-foreground">
-                Receitas
+                Catalogo
               </h2>
               <p className="text-muted-foreground">
-                Cadastre bases, recheios e preparacoes usadas na producao.
+                Cadastre os produtos vendidos e seus precos sugeridos.
               </p>
             </div>
-            <Link href="/receitas/nova">
+            <Link href="/catalogo/novo">
               <a className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md hover:bg-primary/90 transition-all shrink-0">
                 <Plus className="w-5 h-5" />
-                Nova Preparacao
+                Novo Produto
               </a>
             </Link>
           </div>
@@ -113,12 +114,12 @@ export default function Receitas() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {recipesQuery.isLoading ? (
             <div className="col-span-full py-12 text-center text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
-              Carregando receitas...
+              Carregando catalogo...
             </div>
           ) : recipesQuery.isError ? (
             <div className="col-span-full py-12 text-center text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
-              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>Nao foi possivel carregar as receitas.</p>
+              <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>Nao foi possivel carregar o catalogo.</p>
               <Button
                 variant="link"
                 onClick={() => recipesQuery.refetch()}
@@ -129,22 +130,22 @@ export default function Receitas() {
             </div>
           ) : recipes.length === 0 ? (
             <div className="col-span-full py-12 text-center text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
-              <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>Nenhuma receita cadastrada.</p>
+              <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
+              <p>Nenhum produto cadastrado.</p>
             </div>
           ) : (
             recipes.map((recipe) => (
               <Card
                 key={recipe.id}
                 className="glass-card overflow-hidden hover:border-primary/30 transition-all group cursor-pointer hover:-translate-y-1"
-                onClick={() => setLocation(`/receitas/${recipe.id}`)}
+                onClick={() => setLocation(`/catalogo/${recipe.id}`)}
               >
                 <div className="p-5 flex flex-col gap-4 h-full">
                   <div className="flex justify-between items-start">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold border bg-muted text-muted-foreground">
-                          PREPARACAO
+                          PRODUTO
                         </span>
                       </div>
                       <h3 className="font-bold text-lg leading-tight line-clamp-2">
@@ -164,9 +165,9 @@ export default function Receitas() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                           <DropdownMenuItem
-                            onClick={() => setLocation(`/receitas/${recipe.id}`)}
+                            onClick={() => setLocation(`/catalogo/${recipe.id}`)}
                           >
-                            Editar Receita
+                            Editar Produto
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="text-destructive focus:bg-destructive focus:text-destructive-foreground"

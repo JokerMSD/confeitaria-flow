@@ -42,12 +42,14 @@ export function createEmptyRecipeComponentState(
   };
 }
 
-export function createEmptyRecipeFormState(): RecipeFormState {
+export function createEmptyRecipeFormState(
+  kind: RecipeFormState["kind"] = "Preparacao",
+): RecipeFormState {
   return {
     name: "",
-    kind: "Preparacao",
+    kind,
     outputQuantity: "",
-    outputUnit: "g",
+    outputUnit: kind === "ProdutoVenda" ? "un" : "g",
     markupPercent: "100",
     notes: "",
     components: [createEmptyRecipeComponentState()],

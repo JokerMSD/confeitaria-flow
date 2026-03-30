@@ -24,14 +24,33 @@ import type { RecipeFormState } from "@/features/recipes/types/recipe-ui";
 import { formatCurrency } from "@/lib/utils";
 
 export default function ReceitaForm() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
-  const isEditing = Boolean(params?.id && params.id !== "nova");
+  const isCatalogRoute = location.startsWith("/catalogo");
+  const isEditing = Boolean(
+    params?.id &&
+      params.id !== "nova" &&
+      params.id !== "novo",
+  );
   const recipeId = isEditing ? params.id : undefined;
   const { toast } = useToast();
+  const listingPath = isCatalogRoute ? "/catalogo" : "/receitas";
+  const defaultKind: RecipeFormState["kind"] = isCatalogRoute
+    ? "ProdutoVenda"
+    : "Preparacao";
+  const pageTitle = isCatalogRoute
+    ? isEditing
+      ? "Editar Produto"
+      : "Novo Produto"
+    : isEditing
+      ? "Editar Receita"
+      : "Nova Receita";
+  const pageDescription = isCatalogRoute
+    ? "Cadastre os produtos do catalogo vendidos nos pedidos."
+    : "Cadastre bases, recheios e preparacoes usadas na producao.";
 
   const [formState, setFormState] = useState<RecipeFormState>(
-    createEmptyRecipeFormState(),
+    createEmptyRecipeFormState(defaultKind),
   );
 
   const recipeQuery = useRecipe(recipeId);
@@ -45,14 +64,14 @@ export default function ReceitaForm() {
 
   useEffect(() => {
     if (!isEditing) {
-      setFormState(createEmptyRecipeFormState());
+      setFormState(createEmptyRecipeFormState(defaultKind));
       return;
     }
 
     if (recipeQuery.data) {
       setFormState(adaptRecipeDetailToFormState(recipeQuery.data));
     }
-  }, [isEditing, recipeQuery.data]);
+  }, [defaultKind, isEditing, recipeQuery.data]);
 
   const recipeSummary = recipeQuery.data?.data;
   const ingredientOptions = inventoryQuery.data?.data ?? [];
@@ -196,7 +215,7 @@ export default function ReceitaForm() {
         toast({ title: "Receita criada com sucesso!" });
       }
 
-      setLocation("/receitas");
+      setLocation(listingPath);
     } catch (error) {
       toast({
         title: "Erro ao salvar receita",
@@ -211,7 +230,7 @@ export default function ReceitaForm() {
 
   if (isEditing && recipeQuery.isLoading) {
     return (
-      <AppLayout title="Editar Receita">
+      <AppLayout title={pageTitle}>
         <div className="max-w-5xl mx-auto">
           <Card className="glass-card">
             <CardContent className="p-10 flex items-center justify-center gap-3 text-muted-foreground">
@@ -226,14 +245,14 @@ export default function ReceitaForm() {
 
   if (isEditing && recipeQuery.isError) {
     return (
-      <AppLayout title="Editar Receita">
+      <AppLayout title={pageTitle}>
         <div className="max-w-5xl mx-auto">
           <Card className="glass-card">
             <CardContent className="p-10 text-center space-y-4">
               <p className="text-muted-foreground">
                 Nao foi possivel carregar a receita.
               </p>
-              <Button onClick={() => setLocation("/receitas")}>Voltar</Button>
+              <Button onClick={() => setLocation(listingPath)}>Voltar</Button>
             </CardContent>
           </Card>
         </div>
@@ -242,24 +261,24 @@ export default function ReceitaForm() {
   }
 
   return (
-    <AppLayout title={isEditing ? "Editar Receita" : "Nova Receita"}>
+    <AppLayout title={pageTitle}>
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setLocation("/receitas")}
+              onClick={() => setLocation(listingPath)}
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
               <h2 className="text-2xl font-display font-bold text-foreground">
-                {isEditing ? "Editar Receita" : "Nova Receita"}
+                {pageTitle}
               </h2>
               <p className="text-muted-foreground">
-                Cadastre preparacoes base e produtos de venda.
+                {pageDescription}
               </p>
             </div>
           </div>
@@ -269,7 +288,7 @@ export default function ReceitaForm() {
             ) : (
               <Save className="w-4 h-4" />
             )}
-            Salvar Receita
+            {isCatalogRoute ? "Salvar Produto" : "Salvar Receita"}
           </Button>
         </div>
 
@@ -295,12 +314,16 @@ export default function ReceitaForm() {
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                       value={formState.kind}
+                      disabled
                       onChange={(event) =>
                         setField("kind", event.target.value as RecipeFormState["kind"])
                       }
                     >
-                      <option value="Preparacao">Preparacao</option>
-                      <option value="ProdutoVenda">Produto de venda</option>
+                      {isCatalogRoute ? (
+                        <option value="ProdutoVenda">Produto de venda</option>
+                      ) : (
+                        <option value="Preparacao">Preparacao</option>
+                      )}
                     </select>
                   </div>
                   <div className="space-y-2">

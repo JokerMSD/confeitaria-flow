@@ -18,6 +18,7 @@ import EstoqueMovimentacao from "@/pages/EstoqueMovimentacao";
 import Login from "@/pages/Login";
 import Receitas from "@/pages/Receitas";
 import ReceitaForm from "@/pages/ReceitaForm";
+import Catalogo from "@/pages/Catalogo";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 
 function AuthGate() {
@@ -88,7 +89,9 @@ function AuthGate() {
       <Route path="/caixa" component={Caixa} />
       <Route path="/caixa/:id" component={CaixaForm} />
       <Route path="/receitas" component={Receitas} />
+      <Route path="/catalogo" component={Catalogo} />
       <Route path="/receitas/:id" component={ReceitaForm} />
+      <Route path="/catalogo/:id" component={ReceitaForm} />
       <Route path="/login" component={Login} />
       <Route component={NotFound} />
     </Switch>
