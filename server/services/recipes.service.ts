@@ -54,6 +54,17 @@ function roundCents(value: number) {
   return Math.round(value);
 }
 
+function normalizeName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\bovo de pascoa recheado\b/g, "ovo trufado")
+    .replace(/\b(ovo de colher|ovo trufado)\s+(350|500)\b/g, "$1 $2g")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function getUnitFamily(unit: InventoryItemUnit) {
   if (unit === "g" || unit === "kg") {
     return "massa";
@@ -363,15 +374,22 @@ export class RecipesService {
     const requirements = new Map<string, number>();
 
     for (const orderItem of orderItems) {
-      if (!orderItem.recipeId) {
+      const resolvedRecipe = orderItem.recipeId
+        ? {
+            recipeId: orderItem.recipeId,
+            fillingRecipeId: orderItem.fillingRecipeId ?? null,
+          }
+        : await this.resolveLegacyOrderItemRecipes(orderItem.productName, executor);
+
+      if (!resolvedRecipe?.recipeId) {
         continue;
       }
 
       const exploded = await this.explodeRecipeToInventory(
-        orderItem.recipeId,
+        resolvedRecipe.recipeId,
         orderItem.quantity,
         executor,
-        orderItem.fillingRecipeId ?? null,
+        resolvedRecipe.fillingRecipeId,
       );
 
       for (const [itemId, quantity] of Array.from(exploded.entries())) {
@@ -408,6 +426,60 @@ export class RecipesService {
         executor,
       );
     }
+  }
+
+  async resolveLegacyOrderItemRecipes(
+    productName: string,
+    executor?: Executor,
+  ): Promise<{ recipeId: string; fillingRecipeId: string | null } | null> {
+    const normalizedProductName = normalizeName(productName);
+
+    if (!normalizedProductName) {
+      return null;
+    }
+
+    const recipes = await this.recipesRepository.listAll(executor);
+    const sellableRecipes = (recipes as RecipeRow[]).filter(
+      (recipe) => recipe.kind === "ProdutoVenda",
+    );
+    const preparationRecipes = (recipes as RecipeRow[]).filter(
+      (recipe) => recipe.kind === "Preparacao",
+    );
+
+    const exactProductMatch = sellableRecipes.find(
+      (recipe) => normalizeName(recipe.name) === normalizedProductName,
+    );
+
+    if (exactProductMatch) {
+      return {
+        recipeId: exactProductMatch.id,
+        fillingRecipeId: null,
+      };
+    }
+
+    const productParts = productName.split(/\s+-\s+/).map((part) => part.trim());
+    const baseProductName = normalizeName(productParts[0] ?? productName);
+    const fillingName =
+      productParts.length > 1 ? normalizeName(productParts.slice(1).join(" - ")) : "";
+
+    const baseProductMatch = sellableRecipes.find(
+      (recipe) => normalizeName(recipe.name) === baseProductName,
+    );
+
+    if (!baseProductMatch) {
+      return null;
+    }
+
+    const fillingMatch = fillingName
+      ? preparationRecipes.find(
+          (recipe) => normalizeName(recipe.name) === fillingName,
+        ) ?? null
+      : null;
+
+    return {
+      recipeId: baseProductMatch.id,
+      fillingRecipeId: fillingMatch?.id ?? null,
+    };
   }
 
   async explodeRecipeToInventory(

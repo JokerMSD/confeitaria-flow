@@ -59,16 +59,24 @@ export class InventoryPurchasePlanService {
 
     for (const row of rows as any[]) {
       pendingOrderIds.add(row.orderId);
+      const resolvedRecipe = row.recipeId
+        ? {
+            recipeId: row.recipeId,
+            fillingRecipeId: row.fillingRecipeId ?? null,
+          }
+        : await this.recipesService.resolveLegacyOrderItemRecipes(
+            row.productName,
+          );
 
-      if (!row.recipeId) {
+      if (!resolvedRecipe?.recipeId) {
         continue;
       }
 
       const exploded = await this.recipesService.explodeRecipeToInventory(
-        row.recipeId,
+        resolvedRecipe.recipeId,
         row.quantity,
         undefined,
-        row.fillingRecipeId ?? null,
+        resolvedRecipe.fillingRecipeId,
       );
 
       for (const [itemId, quantity] of Array.from(exploded.entries())) {
