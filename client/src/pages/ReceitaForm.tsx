@@ -368,6 +368,11 @@ export default function ReceitaForm() {
                   </Button>
                 </div>
 
+                <p className="text-sm text-muted-foreground">
+                  Ingredientes podem ser usados na receita mesmo com estoque atual zerado.
+                  O saldo so sera validado quando houver baixa automatica por venda.
+                </p>
+
                 <div className="space-y-4">
                   {formState.components.map((component, index) => (
                     <div
