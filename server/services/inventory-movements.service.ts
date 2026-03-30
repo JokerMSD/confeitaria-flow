@@ -64,15 +64,30 @@ export class InventoryMovementsService {
       }
 
       const delta = this.resolveDelta(item.currentQuantity, normalized.type, normalized.quantity);
-      const effectivePurchaseAmountCents =
+      const grossPurchaseAmountCents =
         normalized.purchaseAmountCents != null && isUnitPurchase(item.unit)
           ? Math.round(normalized.purchaseAmountCents * normalized.quantity)
           : normalized.purchaseAmountCents;
+      const effectivePurchaseAmountCents =
+        grossPurchaseAmountCents != null
+          ? Math.max(0, grossPurchaseAmountCents - (normalized.purchaseDiscountCents ?? 0))
+          : null;
       const purchaseCashAmountCents =
         normalized.purchasePaymentMethod != null &&
         effectivePurchaseAmountCents != null
           ? effectivePurchaseAmountCents
           : null;
+
+      if (
+        grossPurchaseAmountCents != null &&
+        effectivePurchaseAmountCents != null &&
+        effectivePurchaseAmountCents <= 0
+      ) {
+        throw new HttpError(
+          400,
+          "Inventory purchase total after discount must be greater than zero.",
+        );
+      }
 
       if (delta === 0) {
         throw new HttpError(400, "Inventory movement must change the item quantity.");
@@ -97,6 +112,7 @@ export class InventoryMovementsService {
           reason: normalized.reason,
           reference: normalized.reference,
           purchaseAmountCents: effectivePurchaseAmountCents,
+          purchaseDiscountCents: normalized.purchaseDiscountCents,
           purchaseEquivalentQuantity: normalized.purchaseEquivalentQuantity,
           purchaseEquivalentUnit:
             normalized.purchaseEquivalentQuantity != null
@@ -287,13 +303,38 @@ export class InventoryMovementsService {
       );
     }
 
+    if (input.purchaseDiscountCents != null && input.purchaseDiscountCents < 0) {
+      throw new HttpError(
+        400,
+        "Inventory purchase discount must be non-negative.",
+      );
+    }
+
+    if (input.purchaseDiscountCents != null && input.purchaseAmountCents == null) {
+      throw new HttpError(
+        400,
+        "Inventory purchase discount requires a purchase amount.",
+      );
+    }
+
+    if (input.purchaseDiscountCents != null && input.type !== "Entrada") {
+      throw new HttpError(
+        400,
+        "Inventory purchase discount is only available for stock entries.",
+      );
+    }
+
+    const grossPurchaseAmountCents = input.purchaseAmountCents ?? null;
+    const discountCents = input.purchaseDiscountCents ?? null;
+
     return {
       itemId: input.itemId,
       type: input.type,
       quantity: input.quantity,
       reason,
       reference,
-      purchaseAmountCents: input.purchaseAmountCents ?? null,
+      purchaseAmountCents: grossPurchaseAmountCents,
+      purchaseDiscountCents: discountCents,
       purchaseEquivalentQuantity: input.purchaseEquivalentQuantity ?? null,
       purchasePaymentMethod: input.purchasePaymentMethod ?? null,
     };

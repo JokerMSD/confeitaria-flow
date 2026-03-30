@@ -26,6 +26,7 @@ import {
   adaptInventoryMovementsToList,
   createEmptyInventoryMovementFormState,
   resolveInventoryPurchaseAmountCents,
+  resolveInventoryPurchaseGrossPreviewCents,
   resolveInventoryPurchaseTotalPreviewCents,
 } from "../features/inventory/lib/inventory-movement-adapter";
 import {
@@ -70,6 +71,10 @@ export default function EstoqueMovimentacao() {
   const purchaseAmountCents = useMemo(
     () => resolveInventoryPurchaseAmountCents(formState),
     [formState],
+  );
+  const computedPurchaseGrossCents = useMemo(
+    () => resolveInventoryPurchaseGrossPreviewCents(formState, item?.unit),
+    [formState, item?.unit],
   );
   const computedPurchaseTotalCents = useMemo(
     () => resolveInventoryPurchaseTotalPreviewCents(formState, item?.unit),
@@ -122,6 +127,20 @@ export default function EstoqueMovimentacao() {
         description: purchaseUsesUnitPrice
           ? "Informe um preco por unidade maior que zero para calcular o total da compra."
           : "Informe um valor maior que zero para registrar a compra no caixa.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      formState.registerPurchase &&
+      computedPurchaseTotalCents != null &&
+      computedPurchaseTotalCents <= 0
+    ) {
+      toast({
+        title: "Valor liquido invalido",
+        description:
+          "O total da compra apos desconto precisa ser maior que zero.",
         variant: "destructive",
       });
       return;
@@ -362,7 +381,7 @@ export default function EstoqueMovimentacao() {
                   </label>
 
                   {formState.registerPurchase && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="purchaseAmount">
                           {purchaseUsesUnitPrice
@@ -384,8 +403,29 @@ export default function EstoqueMovimentacao() {
                         />
                         <p className="text-xs text-muted-foreground">
                           {purchaseUsesUnitPrice
-                            ? `Quantidade comprada: ${formState.quantity || "0"} ${item.unit}. Total calculado: ${formatCurrency((computedPurchaseTotalCents ?? 0) / 100)}.`
-                            : "Informe o valor total pago nesta compra."}
+                            ? `Quantidade comprada: ${formState.quantity || "0"} ${item.unit}. Valor bruto calculado: ${formatCurrency((computedPurchaseGrossCents ?? 0) / 100)}.`
+                            : "Informe o valor bruto desta compra antes de desconto."}
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="purchaseDiscount">Desconto da compra (R$)</Label>
+                        <Input
+                          id="purchaseDiscount"
+                          type="text"
+                          inputMode="numeric"
+                          value={formState.purchaseDiscount}
+                          onChange={(event) =>
+                            setField(
+                              "purchaseDiscount",
+                              formatMoneyInput(event.target.value),
+                            )
+                          }
+                          placeholder="0,00"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Total liquido no caixa e no custo medio:{" "}
+                          {formatCurrency((computedPurchaseTotalCents ?? 0) / 100)}.
                         </p>
                       </div>
 

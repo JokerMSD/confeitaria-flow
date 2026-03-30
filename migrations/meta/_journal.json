@@ -92,6 +92,13 @@
       "when": 1775060000000,
       "tag": "0012_phase12_inventory_weighted_average_cost",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1775100000000,
+      "tag": "0013_phase13_inventory_purchase_discount",
+      "breakpoints": true
     }
   ]
 }

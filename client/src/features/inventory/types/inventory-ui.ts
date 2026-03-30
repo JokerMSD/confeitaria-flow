@@ -47,6 +47,7 @@ export interface InventoryMovementFormState {
   reference: string;
   registerPurchase: boolean;
   purchaseAmount: string;
+  purchaseDiscount: string;
   purchaseEquivalentQuantity: string;
   purchasePaymentMethod:
     | "Pix"

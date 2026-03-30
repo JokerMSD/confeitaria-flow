@@ -27,6 +27,7 @@ export interface CreateInventoryMovementInput {
   reason: string;
   reference?: string | null;
   purchaseAmountCents?: number | null;
+  purchaseDiscountCents?: number | null;
   purchaseEquivalentQuantity?: number | null;
   purchasePaymentMethod?:
     | "Pix"

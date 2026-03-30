@@ -42,6 +42,7 @@ export function createEmptyInventoryMovementFormState(): InventoryMovementFormSt
     reference: "",
     registerPurchase: false,
     purchaseAmount: "",
+    purchaseDiscount: "",
     purchaseEquivalentQuantity: "",
     purchasePaymentMethod: "Pix",
   };
@@ -75,6 +76,7 @@ export function adaptInventoryMovementToFormState(
     reference: movement.reference ?? "",
     registerPurchase: false,
     purchaseAmount: "",
+    purchaseDiscount: "",
     purchaseEquivalentQuantity: "",
     purchasePaymentMethod: "Pix",
   };
@@ -100,7 +102,36 @@ export function resolveInventoryPurchaseAmountCents(
   return amountCents == null ? null : amountCents;
 }
 
+export function resolveInventoryPurchaseDiscountCents(
+  state: InventoryMovementFormState,
+) {
+  if (!state.registerPurchase) {
+    return null;
+  }
+
+  const amountCents = moneyStringToCents(state.purchaseDiscount);
+  return amountCents == null ? null : amountCents;
+}
+
 export function resolveInventoryPurchaseTotalPreviewCents(
+  state: InventoryMovementFormState,
+  itemUnit?: UiInventoryUnit,
+) {
+  const amountCents = resolveInventoryPurchaseAmountCents(state);
+  const discountCents = resolveInventoryPurchaseDiscountCents(state) ?? 0;
+
+  if (amountCents == null) {
+    return null;
+  }
+
+  const grossTotalCents = isUnitPurchase(itemUnit)
+    ? Math.round(quantityStringToNumber(state.quantity) * amountCents)
+    : amountCents;
+
+  return Math.max(0, grossTotalCents - discountCents);
+}
+
+export function resolveInventoryPurchaseGrossPreviewCents(
   state: InventoryMovementFormState,
   itemUnit?: UiInventoryUnit,
 ) {
@@ -137,6 +168,7 @@ export function adaptInventoryMovementFormStateToCreatePayload(
     reason: state.reason.trim(),
     reference: state.reference.trim() || null,
     purchaseAmountCents: resolveInventoryPurchaseAmountCents(state),
+    purchaseDiscountCents: resolveInventoryPurchaseDiscountCents(state),
     purchaseEquivalentQuantity: state.purchaseEquivalentQuantity.trim()
       ? quantityStringToNumber(state.purchaseEquivalentQuantity)
       : null,

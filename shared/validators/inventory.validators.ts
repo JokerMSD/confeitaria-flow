@@ -82,6 +82,7 @@ export const createInventoryMovementInputSchema = z.object({
   reason: z.string().trim().min(1).max(240),
   reference: z.string().trim().max(120).nullable().optional(),
   purchaseAmountCents: centsSchema.nullable().optional(),
+  purchaseDiscountCents: centsSchema.nullable().optional(),
   purchasePaymentMethod: paymentMethodSchema.nullable().optional(),
   purchaseEquivalentQuantity: z.number().finite().positive().nullable().optional(),
 }).superRefine((value, ctx) => {
@@ -103,6 +104,15 @@ export const createInventoryMovementInputSchema = z.object({
       message:
         "Inventory movement purchaseEquivalentQuantity is only available for stock entries.",
       path: ["purchaseEquivalentQuantity"],
+    });
+  }
+
+  if (value.purchaseDiscountCents != null && !hasAmount) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Inventory movement purchaseDiscountCents requires purchaseAmountCents.",
+      path: ["purchaseDiscountCents"],
     });
   }
 });
