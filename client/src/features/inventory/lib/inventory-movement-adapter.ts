@@ -8,6 +8,10 @@ import type {
   InventoryMovementListItem,
   UiInventoryMovementType,
 } from "../types/inventory-ui";
+import {
+  parseDecimalInput,
+  parseMoneyInputToCents,
+} from "./inventory-input-helpers";
 
 const apiToUiTypeMap: Record<ApiInventoryMovementType, UiInventoryMovementType> = {
   Entrada: "Entrada",
@@ -26,18 +30,7 @@ function numberToQuantityString(value: number) {
 }
 
 function quantityStringToNumber(value: string) {
-  const normalized = value.replace(",", ".").trim();
-
-  if (!normalized) {
-    return 0;
-  }
-
-  const quantity = Number.parseFloat(normalized);
-  if (!Number.isFinite(quantity)) {
-    return 0;
-  }
-
-  return quantity;
+  return parseDecimalInput(value);
 }
 
 export function createEmptyInventoryMovementFormState(): InventoryMovementFormState {
@@ -87,18 +80,7 @@ export function adaptInventoryMovementToFormState(
 }
 
 function moneyStringToCents(value: string) {
-  const normalized = value.replace(",", ".").trim();
-
-  if (!normalized) {
-    return null;
-  }
-
-  const amount = Number.parseFloat(normalized);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return Math.round(amount * 100);
+  return parseMoneyInputToCents(value);
 }
 
 const uiToApiPaymentMethodMap = {

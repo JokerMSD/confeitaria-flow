@@ -24,6 +24,7 @@ import { useDeleteInventoryItem } from "@/features/inventory/hooks/use-delete-in
 import { useCreateInventoryMovement } from "@/features/inventory/hooks/use-create-inventory-movement";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
 import { adaptInventoryPurchasePlan } from "@/features/inventory/lib/inventory-purchase-plan-adapter";
+import { getQuantityStep } from "@/features/inventory/lib/inventory-input-helpers";
 
 export default function Estoque() {
   const [, setLocation] = useLocation();
@@ -416,7 +417,7 @@ export default function Estoque() {
                           <Input
                             type="number"
                             min="0.001"
-                            step="0.001"
+                            step={getQuantityStep(item.unit)}
                             inputMode="decimal"
                             value={getQuickQuantityValue(item.id)}
                             placeholder="1"

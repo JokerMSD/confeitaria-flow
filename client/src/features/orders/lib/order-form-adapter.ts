@@ -3,6 +3,10 @@ import type {
   OrderDetailResponse,
   UpdateOrderRequest,
 } from "@shared/types";
+import {
+  formatMoneyInput,
+  parseMoneyInputToCents,
+} from "@/features/inventory/lib/inventory-input-helpers";
 import type {
   OrderFormItem,
   OrderFormState,
@@ -45,22 +49,11 @@ const uiToApiPaymentMethodMap: Record<UiPaymentMethod, string> = {
 };
 
 function centsToDecimalString(cents: number) {
-  return (cents / 100).toString();
+  return formatMoneyInput(String(cents));
 }
 
 function decimalStringToCents(value: string) {
-  const normalized = value.replace(",", ".").trim();
-
-  if (!normalized) {
-    return 0;
-  }
-
-  const amount = Number.parseFloat(normalized);
-  if (!Number.isFinite(amount)) {
-    return 0;
-  }
-
-  return Math.round(amount * 100);
+  return parseMoneyInputToCents(value) ?? 0;
 }
 
 function buildPreviewSubtotal(item: Pick<OrderFormItem, "quantity" | "unitPrice">) {

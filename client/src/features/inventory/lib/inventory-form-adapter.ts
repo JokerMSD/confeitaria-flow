@@ -10,6 +10,11 @@ import type {
   UiInventoryCategory,
   UiInventoryUnit,
 } from "../types/inventory-ui";
+import {
+  formatMoneyInput,
+  parseDecimalInput,
+  parseMoneyInputToCents,
+} from "./inventory-input-helpers";
 
 const uiToApiCategoryMap: Record<UiInventoryCategory, ApiInventoryCategory> = {
   "Produto Pronto": "ProdutoPronto",
@@ -24,18 +29,7 @@ const apiToUiCategoryMap: Record<ApiInventoryCategory, UiInventoryCategory> = {
 };
 
 function quantityStringToNumber(value: string) {
-  const normalized = value.replace(",", ".").trim();
-
-  if (!normalized) {
-    return 0;
-  }
-
-  const quantity = Number.parseFloat(normalized);
-  if (!Number.isFinite(quantity)) {
-    return 0;
-  }
-
-  return quantity;
+  return parseDecimalInput(value);
 }
 
 function numberToQuantityString(value: number) {
@@ -47,22 +41,11 @@ function centsToMoneyString(value: number | null | undefined) {
     return "";
   }
 
-  return (value / 100).toFixed(2);
+  return formatMoneyInput(String(value));
 }
 
 function moneyStringToCents(value: string) {
-  const normalized = value.replace(",", ".").trim();
-
-  if (!normalized) {
-    return null;
-  }
-
-  const amount = Number.parseFloat(normalized);
-  if (!Number.isFinite(amount) || amount <= 0) {
-    return null;
-  }
-
-  return Math.round(amount * 100);
+  return parseMoneyInputToCents(value);
 }
 
 export function createEmptyInventoryFormState(): InventoryFormState {

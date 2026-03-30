@@ -10,6 +10,7 @@ import {
   Save,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { QuantityStepperField } from "@/components/forms/QuantityStepperField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,10 @@ import {
   adaptInventoryMovementsToList,
   createEmptyInventoryMovementFormState,
 } from "../features/inventory/lib/inventory-movement-adapter";
+import {
+  formatMoneyInput,
+  parseDecimalInput,
+} from "@/features/inventory/lib/inventory-input-helpers";
 import type {
   InventoryMovementFormState,
   UiInventoryMovementType,
@@ -75,10 +80,8 @@ export default function EstoqueMovimentacao() {
   };
 
   const handleSave = async () => {
-    const quantity = Number.parseFloat(formState.quantity.replace(",", "."));
-    const purchaseAmount = Number.parseFloat(
-      formState.purchaseAmount.replace(",", "."),
-    );
+    const quantity = parseDecimalInput(formState.quantity);
+    const purchaseAmount = parseDecimalInput(formState.purchaseAmount);
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
       toast({
@@ -100,7 +103,7 @@ export default function EstoqueMovimentacao() {
 
     if (
       formState.registerPurchase &&
-      (!Number.isFinite(purchaseAmount) || purchaseAmount <= 0)
+      purchaseAmount <= 0
     ) {
       toast({
         title: "Valor de compra invalido",
@@ -112,10 +115,7 @@ export default function EstoqueMovimentacao() {
 
     if (
       formState.purchaseEquivalentQuantity.trim() &&
-      (!Number.isFinite(
-        Number.parseFloat(formState.purchaseEquivalentQuantity.replace(",", ".")),
-      ) ||
-        Number.parseFloat(formState.purchaseEquivalentQuantity.replace(",", ".")) <= 0)
+      parseDecimalInput(formState.purchaseEquivalentQuantity) <= 0
     ) {
       toast({
         title: "Rendimento invalido",
@@ -276,23 +276,15 @@ export default function EstoqueMovimentacao() {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quantity">
-                  {formState.type === "Ajuste"
-                    ? "Nova Quantidade Total"
-                    : "Quantidade"}{" "}
-                  ({item.unit}) *
-                </Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  step="0.01"
-                  value={formState.quantity}
-                  onChange={(event) => setField("quantity", event.target.value)}
-                  placeholder="0"
-                  className="text-xl font-bold font-display py-6"
-                />
-              </div>
+              <QuantityStepperField
+                id="quantity"
+                label={`${formState.type === "Ajuste" ? "Nova Quantidade Total" : "Quantidade"} (${item.unit}) *`}
+                value={formState.quantity}
+                onChange={(value) => setField("quantity", value)}
+                placeholder="0"
+                unit={item.unit}
+                inputClassName="text-xl font-bold font-display py-6"
+              />
 
               <div className="space-y-2">
                 <Label htmlFor="reason">Motivo / Observacao *</Label>
@@ -361,11 +353,14 @@ export default function EstoqueMovimentacao() {
                         <Label htmlFor="purchaseAmount">Valor da Compra (R$)</Label>
                         <Input
                           id="purchaseAmount"
-                          type="number"
-                          step="0.01"
+                          type="text"
+                          inputMode="numeric"
                           value={formState.purchaseAmount}
                           onChange={(event) =>
-                            setField("purchaseAmount", event.target.value)
+                            setField(
+                              "purchaseAmount",
+                              formatMoneyInput(event.target.value),
+                            )
                           }
                           placeholder="0,00"
                         />
@@ -394,29 +389,22 @@ export default function EstoqueMovimentacao() {
                   )}
 
                   {allowsPurchaseYield && (
-                    <div className="space-y-2">
-                      <Label htmlFor="purchaseEquivalentQuantity">
-                        Rendimento real total da compra ({item.recipeEquivalentUnit})
-                      </Label>
-                      <Input
-                        id="purchaseEquivalentQuantity"
-                        type="number"
-                        step="0.001"
-                        value={formState.purchaseEquivalentQuantity}
-                        onChange={(event) =>
-                          setField("purchaseEquivalentQuantity", event.target.value)
-                        }
-                        placeholder={`Ex: ${
-                          item.recipeEquivalentUnit === "kg" || item.recipeEquivalentUnit === "l"
-                            ? "0.705"
-                            : "705"
-                        }`}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Use este campo quando o item e comprado em {item.unit}, mas consumido em{" "}
-                        {item.recipeEquivalentUnit}. Ex.: 2 unidades renderam 0.705 kg.
-                      </p>
-                    </div>
+                    <QuantityStepperField
+                      id="purchaseEquivalentQuantity"
+                      label={`Rendimento real total da compra (${item.recipeEquivalentUnit})`}
+                      value={formState.purchaseEquivalentQuantity}
+                      onChange={(value) =>
+                        setField("purchaseEquivalentQuantity", value)
+                      }
+                      placeholder={
+                        item.recipeEquivalentUnit === "kg" ||
+                        item.recipeEquivalentUnit === "l"
+                          ? "0,705"
+                          : "705"
+                      }
+                      unit={item.recipeEquivalentUnit ?? item.unit}
+                      helpText={`Use este campo quando o item e comprado em ${item.unit}, mas consumido em ${item.recipeEquivalentUnit}. Ex.: 2 unidades renderam 0,705 kg.`}
+                    />
                   )}
                 </>
               )}

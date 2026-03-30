@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { QuantityStepperField } from "@/components/forms/QuantityStepperField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
+import {
+  formatMoneyInput,
+  parseMoneyInputToCents,
+} from "@/features/inventory/lib/inventory-input-helpers";
 import { useCreateOrder } from "@/features/orders/hooks/use-create-order";
 import { useOrder } from "@/features/orders/hooks/use-order";
 import { useUpdateOrder } from "@/features/orders/hooks/use-update-order";
@@ -42,14 +47,7 @@ function createTemporaryItemId() {
 }
 
 function parseCurrencyInput(value: string) {
-  const normalized = value.replace(",", ".").trim();
-  const amount = Number.parseFloat(normalized || "0");
-
-  if (!Number.isFinite(amount)) {
-    return 0;
-  }
-
-  return amount;
+  return (parseMoneyInputToCents(value) ?? 0) / 100;
 }
 
 function buildPaymentStatusPreview(totalAmount: number, paidAmount: string) {
@@ -233,7 +231,7 @@ export default function PedidoForm() {
     setNewItemTertiaryFillingRecipeId(item.tertiaryFillingRecipeId ?? "");
     setNewItemName(item.productName);
     setNewItemQtd(String(item.quantity));
-    setNewItemPrice(String(item.unitPrice));
+    setNewItemPrice(formatMoneyInput(String(Math.round(item.unitPrice * 100))));
   };
 
   const handleAddItem = () => {
@@ -565,7 +563,9 @@ export default function PedidoForm() {
                           setNewItemPrice(
                             selectedRecipe.salePrice == null
                               ? ""
-                              : selectedRecipe.salePrice.toString(),
+                              : formatMoneyInput(
+                                  String(Math.round(selectedRecipe.salePrice * 100)),
+                                ),
                           );
                         } else {
                           setNewItemName("");
@@ -689,23 +689,24 @@ export default function PedidoForm() {
                       {newItemName || "Selecione produto e recheio"}
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Qtd.</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      value={newItemQtd}
-                      onChange={(event) => setNewItemQtd(event.target.value)}
-                    />
-                  </div>
+                  <QuantityStepperField
+                    id="newItemQtd"
+                    label="Qtd."
+                    value={newItemQtd}
+                    onChange={setNewItemQtd}
+                    unit="un"
+                    min="1"
+                  />
                   <div className="space-y-2">
                     <Label>Preço Un.</Label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
                       value={newItemPrice}
-                      onChange={(event) => setNewItemPrice(event.target.value)}
+                      onChange={(event) =>
+                        setNewItemPrice(formatMoneyInput(event.target.value))
+                      }
                       disabled={Boolean(newItemRecipeId)}
                     />
                   </div>
@@ -836,12 +837,13 @@ export default function PedidoForm() {
                   <div className="space-y-2">
                     <Label>Valor Pago</Label>
                     <Input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="numeric"
                       value={formState.paidAmount}
                       onChange={(event) =>
-                        setField("paidAmount", event.target.value)
+                        setField("paidAmount", formatMoneyInput(event.target.value))
                       }
+                      placeholder="0,00"
                     />
                   </div>
 

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { QuantityStepperField } from "@/components/forms/QuantityStepperField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ import type {
   UiInventoryCategory,
   UiInventoryUnit,
 } from "@/features/inventory/types/inventory-ui";
+import { formatMoneyInput } from "@/features/inventory/lib/inventory-input-helpers";
 
 export default function EstoqueForm() {
   const [, setLocation] = useLocation();
@@ -232,55 +234,40 @@ export default function EstoqueForm() {
                 </select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="currentQuantity">Quantidade Atual *</Label>
-                <Input
-                  id="currentQuantity"
-                  type="number"
-                  step="0.01"
-                  value={formState.currentQuantity}
-                  onChange={(event) =>
-                    setField("currentQuantity", event.target.value)
-                  }
-                  placeholder="0"
-                  className="text-xl font-bold font-display"
-                />
-              </div>
+              <QuantityStepperField
+                id="currentQuantity"
+                label="Quantidade Atual *"
+                value={formState.currentQuantity}
+                onChange={(value) => setField("currentQuantity", value)}
+                placeholder="0"
+                unit={formState.unit}
+                inputClassName="text-xl font-bold font-display"
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="minQuantity">Estoque Minimo (Alerta)</Label>
-                <Input
-                  id="minQuantity"
-                  type="number"
-                  step="0.01"
-                  value={formState.minQuantity}
-                  onChange={(event) => setField("minQuantity", event.target.value)}
-                  placeholder="0"
-                  className="text-xl font-bold font-display text-warning"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Avisaremos quando chegar neste valor.
-                </p>
-              </div>
+              <QuantityStepperField
+                id="minQuantity"
+                label="Estoque Minimo (Alerta)"
+                value={formState.minQuantity}
+                onChange={(value) => setField("minQuantity", value)}
+                placeholder="0"
+                unit={formState.unit}
+                inputClassName="text-xl font-bold font-display text-warning"
+                helpText="Avisaremos quando chegar neste valor."
+              />
 
               {shouldShowRecipeEquivalentFields && (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="recipeEquivalentQuantity">
-                      Cada {formState.unit} equivale a quanto?
-                    </Label>
-                    <Input
-                      id="recipeEquivalentQuantity"
-                      type="number"
-                      step="0.01"
-                      value={formState.recipeEquivalentQuantity}
-                      onChange={(event) =>
-                        setField("recipeEquivalentQuantity", event.target.value)
-                      }
-                      placeholder="Ex: 500"
-                      className="text-lg font-display"
-                    />
-                  </div>
+                  <QuantityStepperField
+                    id="recipeEquivalentQuantity"
+                    label={`Cada ${formState.unit} equivale a quanto?`}
+                    value={formState.recipeEquivalentQuantity}
+                    onChange={(value) =>
+                      setField("recipeEquivalentQuantity", value)
+                    }
+                    placeholder="Ex: 500"
+                    unit={formState.recipeEquivalentUnit}
+                    inputClassName="text-lg font-display"
+                  />
 
                   <div className="space-y-2">
                     <Label>Unidade equivalente para receitas</Label>
@@ -314,11 +301,14 @@ export default function EstoqueForm() {
                   </Label>
                   <Input
                     id="purchaseUnitCost"
-                    type="number"
-                    step="0.01"
+                    type="text"
+                    inputMode="numeric"
                     value={formState.purchaseUnitCost}
                     onChange={(event) =>
-                      setField("purchaseUnitCost", event.target.value)
+                      setField(
+                        "purchaseUnitCost",
+                        formatMoneyInput(event.target.value),
+                      )
                     }
                     placeholder="0,00"
                     className="text-lg font-display"

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Loader2, Plus, Save, Trash2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { QuantityStepperField } from "@/components/forms/QuantityStepperField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import {
   createEmptyRecipeComponentState,
   createEmptyRecipeFormState,
 } from "@/features/recipes/lib/recipe-form-adapter";
+import { formatMoneyInput } from "@/features/inventory/lib/inventory-input-helpers";
 import type { RecipeFormState } from "@/features/recipes/types/recipe-ui";
 import { formatCurrency } from "@/lib/utils";
 
@@ -341,28 +343,23 @@ export default function ReceitaForm() {
                     <div className="space-y-2">
                       <Label>Preco praticado</Label>
                       <Input
-                        type="number"
-                        min="0"
-                        step="0.01"
+                        type="text"
+                        inputMode="numeric"
                         value={formState.salePrice}
                         onChange={(event) =>
-                          setField("salePrice", event.target.value)
+                          setField("salePrice", formatMoneyInput(event.target.value))
                         }
-                        placeholder="Ex: 39.90"
+                        placeholder="Ex: 39,90"
                       />
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <Label>Rendimento *</Label>
-                    <Input
-                      type="number"
-                      step="0.001"
-                      value={formState.outputQuantity}
-                      onChange={(event) =>
-                        setField("outputQuantity", event.target.value)
-                      }
-                    />
-                  </div>
+                  <QuantityStepperField
+                    id="outputQuantity"
+                    label="Rendimento *"
+                    value={formState.outputQuantity}
+                    onChange={(value) => setField("outputQuantity", value)}
+                    unit={formState.outputUnit}
+                  />
                   <div className="space-y-2">
                     <Label>Unidade de rendimento</Label>
                     <select
@@ -451,17 +448,15 @@ export default function ReceitaForm() {
                           </select>
                         </div>
 
-                        <div className="space-y-2">
-                          <Label>Quantidade</Label>
-                          <Input
-                            type="number"
-                            step="0.001"
-                            value={component.quantity}
-                            onChange={(event) =>
-                              setComponentField(component.id, "quantity", event.target.value)
-                            }
-                          />
-                        </div>
+                        <QuantityStepperField
+                          id={`component-quantity-${component.id}`}
+                          label="Quantidade"
+                          value={component.quantity}
+                          onChange={(value) =>
+                            setComponentField(component.id, "quantity", value)
+                          }
+                          unit={component.quantityUnit}
+                        />
 
                         <div className="space-y-2">
                           <Label>Unidade</Label>

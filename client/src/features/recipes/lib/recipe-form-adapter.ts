@@ -3,6 +3,11 @@ import type {
   RecipeDetailResponse,
   UpdateRecipeRequest,
 } from "@shared/types";
+import {
+  formatMoneyInput,
+  parseDecimalInput,
+  parseMoneyInputToCents,
+} from "@/features/inventory/lib/inventory-input-helpers";
 import type {
   RecipeComponentFormState,
   RecipeFormState,
@@ -21,9 +26,7 @@ function numberToString(value: number) {
 }
 
 function stringToNumber(value: string) {
-  const normalized = value.replace(",", ".").trim();
-  const parsed = Number.parseFloat(normalized);
-  return Number.isFinite(parsed) ? parsed : 0;
+  return parseDecimalInput(value);
 }
 
 export function createEmptyRecipeComponentState(
@@ -69,7 +72,7 @@ export function adaptRecipeDetailToFormState(
     salePrice:
       response.data.salePriceCents == null
         ? ""
-        : numberToString(response.data.salePriceCents / 100),
+        : formatMoneyInput(String(response.data.salePriceCents)),
     notes: response.data.notes ?? "",
     components: response.data.components.map((component) => ({
       id: component.id,
@@ -113,9 +116,7 @@ export function adaptRecipeFormToCreatePayload(
       outputUnit: state.outputUnit,
       markupPercent: Math.round(stringToNumber(state.markupPercent)),
       salePriceCents:
-        state.salePrice.trim() === ""
-          ? null
-          : Math.round(stringToNumber(state.salePrice) * 100),
+        state.salePrice.trim() === "" ? null : parseMoneyInputToCents(state.salePrice),
       notes: state.notes.trim() || null,
       components: adaptComponents(state.components),
     },
