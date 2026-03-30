@@ -471,8 +471,15 @@ export class RecipesService {
 
     const productParts = productName.split(/\s+-\s+/).map((part) => part.trim());
     const baseProductName = normalizeName(productParts[0] ?? productName);
-    const fillingName =
-      productParts.length > 1 ? normalizeName(productParts.slice(1).join(" - ")) : "";
+    const fillingNames =
+      productParts.length > 1
+        ? productParts
+            .slice(1)
+            .join(" - ")
+            .split("/")
+            .map((value) => normalizeName(value))
+            .filter(Boolean)
+        : [];
 
     const baseProductMatch = sellableRecipes.find(
       (recipe) => normalizeName(recipe.name) === baseProductName,
@@ -482,15 +489,19 @@ export class RecipesService {
       return null;
     }
 
-    const fillingMatch = fillingName
-      ? preparationRecipes.find(
-          (recipe) => normalizeName(recipe.name) === fillingName,
-        ) ?? null
-      : null;
+    const fillingRecipeIds = fillingNames
+      .map(
+        (fillingName) =>
+          preparationRecipes.find(
+            (recipe) => normalizeName(recipe.name) === fillingName,
+          ) ?? null,
+      )
+      .filter((recipe): recipe is RecipeRow => Boolean(recipe))
+      .map((recipe) => recipe.id);
 
     return {
       recipeId: baseProductMatch.id,
-      fillingRecipeIds: fillingMatch?.id ? [fillingMatch.id] : [],
+      fillingRecipeIds,
     };
   }
 

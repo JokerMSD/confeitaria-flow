@@ -3,6 +3,31 @@ import { loadEnvFile } from "../server/load-env";
 
 loadEnvFile();
 
+interface FillingMatch {
+  index: number;
+  id: string;
+  name: string;
+}
+
+interface ParsedSegment {
+  raw: string;
+  fillingIds: string[];
+  fillingNames: string[];
+  hasComboSignal: boolean;
+}
+
+interface OrderItemRow {
+  itemId: string;
+  productName: string;
+  quantity: number;
+  unitPriceCents: number;
+  recipeId: string | null;
+  fillingRecipeId: string | null;
+  secondaryFillingRecipeId: string | null;
+  tertiaryFillingRecipeId: string | null;
+  position: number;
+}
+
 function normalizeText(value: string) {
   return value
     .normalize("NFD")
@@ -29,7 +54,7 @@ function findFillingsInText(
   fillingsByName: Map<string, { id: string; name: string }>,
 ) {
   const normalized = normalizeText(text);
-  const matches: Array<{ index: number; id: string; name: string }> = [];
+  const matches: FillingMatch[] = [];
 
   for (const alias of fillingAliases) {
     const filling = fillingsByName.get(alias.recipeName);
@@ -56,13 +81,77 @@ function findFillingsInText(
   return matches.sort((a, b) => a.index - b.index);
 }
 
-function buildProductName(baseName: string, fillingName: string | null) {
-  return fillingName ? `${baseName} - ${fillingName}` : baseName;
+function uniqueFillings(matches: FillingMatch[]) {
+  const seen = new Set<string>();
+  const result: FillingMatch[] = [];
+
+  for (const match of matches) {
+    if (seen.has(match.id)) {
+      continue;
+    }
+
+    seen.add(match.id);
+    result.push(match);
+  }
+
+  return result;
 }
 
-function groupItems<T extends { productName: string; quantity: number; unitPriceCents: number; recipeId: string | null; fillingRecipeId: string | null }>(
-  items: T[],
+function splitNoteIntoSegments(note: string) {
+  return note
+    .replace(/(?:^|\s)(\d+\s*[\u00BA\u00B0-])/g, "\n$1")
+    .split(/\r?\n|;/)
+    .map((segment) =>
+      segment
+        .replace(/^\s*\d+\s*[\u00BA\u00B0-]\s*/g, "")
+        .trim(),
+    )
+    .filter(Boolean);
+}
+
+function parseSegments(
+  note: string,
+  fillingsByName: Map<string, { id: string; name: string }>,
 ) {
+  return splitNoteIntoSegments(note)
+    .map((segment): ParsedSegment | null => {
+      const fillings = uniqueFillings(findFillingsInText(segment, fillingsByName));
+
+      if (fillings.length === 0) {
+        return null;
+      }
+
+      const normalizedSegment = normalizeText(segment);
+
+      return {
+        raw: segment,
+        fillingIds: fillings.map((filling) => filling.id),
+        fillingNames: fillings.map((filling) => filling.name),
+        hasComboSignal:
+          /(?:1\s*\/\s*2|meio|metade|\bcom\b)/.test(normalizedSegment) ||
+          fillings.length > 1,
+      };
+    })
+    .filter((segment): segment is ParsedSegment => Boolean(segment));
+}
+
+function buildProductName(baseName: string, fillingNames: string[]) {
+  return fillingNames.length > 0
+    ? `${baseName} - ${fillingNames.join(" / ")}`
+    : baseName;
+}
+
+function groupItems<
+  T extends {
+    productName: string;
+    quantity: number;
+    unitPriceCents: number;
+    recipeId: string | null;
+    fillingRecipeId: string | null;
+    secondaryFillingRecipeId: string | null;
+    tertiaryFillingRecipeId: string | null;
+  },
+>(items: T[]) {
   const grouped: T[] = [];
 
   for (const item of items) {
@@ -73,7 +162,9 @@ function groupItems<T extends { productName: string; quantity: number; unitPrice
       last.productName === item.productName &&
       last.unitPriceCents === item.unitPriceCents &&
       last.recipeId === item.recipeId &&
-      last.fillingRecipeId === item.fillingRecipeId
+      last.fillingRecipeId === item.fillingRecipeId &&
+      last.secondaryFillingRecipeId === item.secondaryFillingRecipeId &&
+      last.tertiaryFillingRecipeId === item.tertiaryFillingRecipeId
     ) {
       last.quantity += item.quantity;
       continue;
@@ -83,6 +174,76 @@ function groupItems<T extends { productName: string; quantity: number; unitPrice
   }
 
   return grouped;
+}
+
+function buildAssignmentsForOrder(
+  eligibleItems: OrderItemRow[],
+  parsedSegments: ParsedSegment[],
+  recipesById: Map<string, { id: string; name: string; kind: string }>,
+  fillingsById: Map<string, { id: string; name: string }>,
+) {
+  const eligibleUnits = eligibleItems.flatMap((item) =>
+    Array.from({ length: item.quantity }, () => ({
+      recipeId: item.recipeId!,
+      baseProductName: recipesById.get(item.recipeId!)?.name ?? item.productName,
+      unitPriceCents: item.unitPriceCents,
+    })),
+  );
+
+  const distinctRecipeIds = new Set(eligibleUnits.map((unit) => unit.recipeId));
+  const unitAssignments: ParsedSegment[] = [];
+
+  if (distinctRecipeIds.size > 1 && parsedSegments.length <= 1) {
+    return null;
+  }
+
+  if (parsedSegments.length === eligibleUnits.length) {
+    unitAssignments.push(...parsedSegments);
+  } else if (parsedSegments.length === eligibleItems.length) {
+    for (let index = 0; index < eligibleItems.length; index += 1) {
+      const segment = parsedSegments[index];
+
+      for (let count = 0; count < eligibleItems[index].quantity; count += 1) {
+        unitAssignments.push(segment);
+      }
+    }
+  } else if (parsedSegments.length === 1) {
+    const [segment] = parsedSegments;
+
+    if (
+      eligibleUnits.length > 1 &&
+      !segment.hasComboSignal &&
+      segment.fillingIds.length === eligibleUnits.length
+    ) {
+      for (const fillingId of segment.fillingIds) {
+        const filling = fillingsById.get(fillingId);
+
+        if (!filling) {
+          return null;
+        }
+
+        unitAssignments.push({
+          raw: segment.raw,
+          fillingIds: [filling.id],
+          fillingNames: [filling.name],
+          hasComboSignal: false,
+        });
+      }
+    } else {
+      for (let count = 0; count < eligibleUnits.length; count += 1) {
+        unitAssignments.push(segment);
+      }
+    }
+  }
+
+  if (unitAssignments.length !== eligibleUnits.length) {
+    return null;
+  }
+
+  return eligibleUnits.map((unit, index) => ({
+    ...unit,
+    assignment: unitAssignments[index],
+  }));
 }
 
 async function main() {
@@ -101,10 +262,15 @@ async function main() {
     );
 
     const fillingsByName = new Map<string, { id: string; name: string }>();
+    const fillingsById = new Map<string, { id: string; name: string }>();
+    const recipesById = new Map<string, { id: string; name: string; kind: string }>();
 
     for (const row of recipeRows.rows) {
+      recipesById.set(row.id, { id: row.id, name: row.name, kind: row.kind });
+
       if (row.kind === "Preparacao") {
         fillingsByName.set(row.name, { id: row.id, name: row.name });
+        fillingsById.set(row.id, { id: row.id, name: row.name });
       }
     }
 
@@ -119,6 +285,8 @@ async function main() {
         oi.unit_price_cents,
         oi.recipe_id,
         oi.filling_recipe_id,
+        oi.secondary_filling_recipe_id,
+        oi.tertiary_filling_recipe_id,
         oi.position
       from orders o
       inner join order_items oi on oi.order_id = o.id
@@ -132,15 +300,7 @@ async function main() {
       {
         orderNumber: string;
         notes: string;
-        items: Array<{
-          itemId: string;
-          productName: string;
-          quantity: number;
-          unitPriceCents: number;
-          recipeId: string | null;
-          fillingRecipeId: string | null;
-          position: number;
-        }>;
+        items: OrderItemRow[];
       }
     >();
 
@@ -160,6 +320,8 @@ async function main() {
         unitPriceCents: Number(row.unit_price_cents),
         recipeId: row.recipe_id,
         fillingRecipeId: row.filling_recipe_id,
+        secondaryFillingRecipeId: row.secondary_filling_recipe_id,
+        tertiaryFillingRecipeId: row.tertiary_filling_recipe_id,
         position: Number(row.position),
       });
 
@@ -170,108 +332,56 @@ async function main() {
     let affectedItems = 0;
 
     for (const [orderId, order] of Array.from(orders.entries())) {
-      const noteLines = order.notes
-        .split(/\r?\n/)
-        .map((line) => line.trim())
-        .filter(Boolean);
+      const parsedSegments = parseSegments(order.notes, fillingsByName);
+      const eligibleItems = order.items.filter((item) => item.recipeId);
 
-      const lineFillings = noteLines
-        .map((line) => findFillingsInText(line, fillingsByName)[0] ?? null)
-        .filter((value): value is { id: string; name: string; index: number } => Boolean(value));
+      if (eligibleItems.length === 0 || parsedSegments.length === 0) {
+        continue;
+      }
 
-      const allFillings = findFillingsInText(order.notes, fillingsByName);
-      const eligibleItems = order.items.filter((item) => item.recipeId && !item.fillingRecipeId);
-      const totalEligibleUnits = eligibleItems.reduce(
-        (sum, item) => sum + item.quantity,
-        0,
+      const assignedUnits = buildAssignmentsForOrder(
+        eligibleItems,
+        parsedSegments,
+        recipesById,
+        fillingsById,
       );
 
-      if (eligibleItems.length === 0) {
+      if (!assignedUnits) {
         continue;
       }
 
-      const unitAssignments: Array<{ id: string; name: string }> = [];
-
-      if (lineFillings.length === totalEligibleUnits) {
-        unitAssignments.push(...lineFillings.map((item) => ({ id: item.id, name: item.name })));
-      } else if (allFillings.length === totalEligibleUnits) {
-        unitAssignments.push(...allFillings.map((item) => ({ id: item.id, name: item.name })));
-      } else if (lineFillings.length === eligibleItems.length) {
-        for (let index = 0; index < eligibleItems.length; index += 1) {
-          for (let count = 0; count < eligibleItems[index].quantity; count += 1) {
-            unitAssignments.push({
-              id: lineFillings[index].id,
-              name: lineFillings[index].name,
-            });
-          }
-        }
-      } else if (allFillings.length === eligibleItems.length) {
-        for (let index = 0; index < eligibleItems.length; index += 1) {
-          for (let count = 0; count < eligibleItems[index].quantity; count += 1) {
-            unitAssignments.push({
-              id: allFillings[index].id,
-              name: allFillings[index].name,
-            });
-          }
-        }
-      } else {
-        const uniqueLineFillings = Array.from(new Set(lineFillings.map((item) => item.id)));
-        const uniqueAllFillings = Array.from(new Set(allFillings.map((item) => item.id)));
-
-        if (uniqueLineFillings.length === 1 && lineFillings[0]) {
-          for (let count = 0; count < totalEligibleUnits; count += 1) {
-            unitAssignments.push({
-              id: lineFillings[0].id,
-              name: lineFillings[0].name,
-            });
-          }
-        } else if (uniqueAllFillings.length === 1 && allFillings[0]) {
-          for (let count = 0; count < totalEligibleUnits; count += 1) {
-            unitAssignments.push({
-              id: allFillings[0].id,
-              name: allFillings[0].name,
-            });
-          }
-        }
-      }
-
-      if (unitAssignments.length !== totalEligibleUnits) {
-        continue;
-      }
-
+      const preservedItems = order.items.filter((item) => !item.recipeId);
       const nextItems: Array<{
         productName: string;
         quantity: number;
         unitPriceCents: number;
         recipeId: string | null;
         fillingRecipeId: string | null;
-      }> = [];
-      let assignmentIndex = 0;
+        secondaryFillingRecipeId: string | null;
+        tertiaryFillingRecipeId: string | null;
+      }> = preservedItems.map((item) => ({
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        recipeId: item.recipeId,
+        fillingRecipeId: item.fillingRecipeId,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId,
+      }));
 
-      for (const item of order.items) {
-        if (!item.recipeId || item.fillingRecipeId) {
-          nextItems.push({
-            productName: item.productName,
-            quantity: item.quantity,
-            unitPriceCents: item.unitPriceCents,
-            recipeId: item.recipeId,
-            fillingRecipeId: item.fillingRecipeId,
-          });
-          continue;
-        }
-
-        for (let count = 0; count < item.quantity; count += 1) {
-          const assignment = unitAssignments[assignmentIndex] ?? null;
-          assignmentIndex += 1;
-
-          nextItems.push({
-            productName: buildProductName(item.productName, assignment?.name ?? null),
-            quantity: 1,
-            unitPriceCents: item.unitPriceCents,
-            recipeId: item.recipeId,
-            fillingRecipeId: assignment?.id ?? null,
-          });
-        }
+      for (const unit of assignedUnits) {
+        nextItems.push({
+          productName: buildProductName(
+            unit.baseProductName,
+            unit.assignment.fillingNames,
+          ),
+          quantity: 1,
+          unitPriceCents: unit.unitPriceCents,
+          recipeId: unit.recipeId,
+          fillingRecipeId: unit.assignment.fillingIds[0] ?? null,
+          secondaryFillingRecipeId: unit.assignment.fillingIds[1] ?? null,
+          tertiaryFillingRecipeId: unit.assignment.fillingIds[2] ?? null,
+        });
       }
 
       const groupedItems = groupItems(nextItems);
@@ -286,16 +396,20 @@ async function main() {
             order_id,
             recipe_id,
             filling_recipe_id,
+            secondary_filling_recipe_id,
+            tertiary_filling_recipe_id,
             product_name,
             quantity,
             unit_price_cents,
             line_total_cents,
             position
-          ) values ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
           [
             orderId,
             item.recipeId,
             item.fillingRecipeId,
+            item.secondaryFillingRecipeId,
+            item.tertiaryFillingRecipeId,
             item.productName,
             item.quantity,
             item.unitPriceCents,
