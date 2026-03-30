@@ -2,6 +2,7 @@ import type {
   CreateInventoryItemRequest,
   DeleteInventoryItemResponse,
   InventoryItemDetailResponse,
+  InventoryPurchasePlanResponse,
   ListInventoryItemsFilters,
   ListInventoryItemsResponse,
   UpdateInventoryItemRequest,
@@ -53,6 +54,10 @@ export function deleteInventoryItem(id: string) {
   return httpClient<DeleteInventoryItemResponse>(`/api/inventory-items/${id}`, {
     method: "DELETE",
   });
+}
+
+export function getInventoryPurchasePlan() {
+  return httpClient<InventoryPurchasePlanResponse>("/api/inventory-items/purchase-plan");
 }
 
 function buildInventoryMovementsQuery(filters: ListInventoryMovementsFilters = {}) {

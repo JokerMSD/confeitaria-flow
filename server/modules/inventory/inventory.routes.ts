@@ -21,6 +21,10 @@ export function registerInventoryRoutes(app: Express) {
     controller.list.bind(controller),
   );
   app.get(
+    "/api/inventory-items/purchase-plan",
+    controller.purchasePlan.bind(controller),
+  );
+  app.get(
     "/api/inventory-items/:id",
     validateRequest(inventoryItemIdParamsSchema, "params"),
     controller.detail.bind(controller),

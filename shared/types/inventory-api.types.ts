@@ -3,6 +3,7 @@ import type {
   CreateInventoryMovementInput,
   InventoryItem,
   InventoryMovement,
+  InventoryPurchasePlan,
   ListInventoryItemsFilters,
   ListInventoryMovementsFilters,
   UpdateInventoryItemInput,
@@ -47,4 +48,8 @@ export interface CreateInventoryMovementResponse {
 
 export interface InventoryMovementDetailResponse {
   data: InventoryMovement;
+}
+
+export interface InventoryPurchasePlanResponse {
+  data: InventoryPurchasePlan;
 }

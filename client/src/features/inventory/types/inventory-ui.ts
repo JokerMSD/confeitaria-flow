@@ -28,7 +28,7 @@ export interface InventoryFormState {
   notes: string;
 }
 
-export type UiInventoryMovementType = "Entrada" | "Saída" | "Ajuste";
+export type UiInventoryMovementType = "Entrada" | "Saida" | "Ajuste";
 
 export interface InventoryMovementListItem {
   id: string;
@@ -53,4 +53,35 @@ export interface InventoryMovementFormState {
     | "Cartão de crédito"
     | "Cartão de débito"
     | "Transferência";
+}
+
+export interface InventoryPurchasePlanSourceItem {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: string;
+  productName: string;
+  quantity: number;
+}
+
+export interface InventoryPurchasePlanListItem {
+  itemId: string;
+  itemName: string;
+  itemUnit: UiInventoryUnit;
+  currentQuantity: number;
+  requiredQuantity: number;
+  deficitQuantity: number;
+  suggestedPurchaseQuantity: number;
+  estimatedPurchaseCost: number | null;
+  sourceCount: number;
+  sources: InventoryPurchasePlanSourceItem[];
+}
+
+export interface InventoryPurchasePlanView {
+  pendingOrderCount: number;
+  pendingOrderItemCount: number;
+  shortageItemCount: number;
+  estimatedPurchaseCost: number;
+  hasItemsWithoutCost: boolean;
+  items: InventoryPurchasePlanListItem[];
 }

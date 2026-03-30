@@ -11,13 +11,13 @@ import type {
 
 const apiToUiTypeMap: Record<ApiInventoryMovementType, UiInventoryMovementType> = {
   Entrada: "Entrada",
-  Saida: "Saída",
+  Saida: "Saida",
   Ajuste: "Ajuste",
 };
 
 const uiToApiTypeMap: Record<UiInventoryMovementType, ApiInventoryMovementType> = {
   Entrada: "Entrada",
-  "Saída": "Saida",
+  Saida: "Saida",
   Ajuste: "Ajuste",
 };
 

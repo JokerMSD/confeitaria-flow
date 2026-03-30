@@ -6,6 +6,7 @@ export const inventoryQueryKeys = {
   list: (filters: ListInventoryItemsFilters = {}) =>
     ["inventory-items", "list", filters] as const,
   detail: (id: string) => ["inventory-items", "detail", id] as const,
+  purchasePlan: () => ["inventory-items", "purchase-plan"] as const,
   movements: {
     all: ["inventory-movements"] as const,
     list: (filters: ListInventoryMovementsFilters = {}) =>

@@ -24,7 +24,7 @@ import {
   adaptInventoryMovementFormStateToCreatePayload,
   adaptInventoryMovementsToList,
   createEmptyInventoryMovementFormState,
-} from "@/features/inventory/lib/inventory-movement-adapter";
+} from "../features/inventory/lib/inventory-movement-adapter";
 import type {
   InventoryMovementFormState,
   UiInventoryMovementType,
@@ -110,7 +110,7 @@ export default function EstoqueMovimentacao() {
       return;
     }
 
-    if (item && formState.type === "Saída" && quantity > item.currentQuantity) {
+    if (item && formState.type === "Saida" && quantity > item.currentQuantity) {
       toast({
         title: "Estoque insuficiente",
         description: "A saida nao pode deixar o saldo negativo.",
@@ -229,7 +229,7 @@ export default function EstoqueMovimentacao() {
               <div className="space-y-2">
                 <Label>Tipo de Movimentacao</Label>
                 <div className="flex gap-2">
-                  {(["Entrada", "Saída", "Ajuste"] as UiInventoryMovementType[]).map(
+                  {(["Entrada", "Saida", "Ajuste"] as UiInventoryMovementType[]).map(
                     (type) => (
                       <Button
                         key={type}
@@ -240,8 +240,8 @@ export default function EstoqueMovimentacao() {
                           type === "Entrada" &&
                             formState.type === "Entrada" &&
                             "bg-success hover:bg-success/90 text-success-foreground",
-                          type === "Saída" &&
-                            formState.type === "Saída" &&
+                          type === "Saida" &&
+                            formState.type === "Saida" &&
                             "bg-destructive hover:bg-destructive/90 text-destructive-foreground",
                           type === "Ajuste" &&
                             formState.type === "Ajuste" &&
@@ -294,7 +294,7 @@ export default function EstoqueMovimentacao() {
                   placeholder={
                     formState.type === "Entrada"
                       ? "Ex: Compra NF 1234"
-                      : formState.type === "Saída"
+                      : formState.type === "Saida"
                         ? "Ex: Producao Bolo Morango"
                         : "Ex: Inventario mensal"
                   }
@@ -423,9 +423,9 @@ export default function EstoqueMovimentacao() {
                 ) : (
                   itemMovements.map((movement) => {
                     const isEntrada = movement.type === "Entrada";
-                    const isSaida = movement.type === "Saída";
+                    const isSaida = movement.type === "Saida";
                     const signedQuantity =
-                      movement.type === "Saída"
+                      movement.type === "Saida"
                         ? -Math.abs(movement.quantity)
                         : movement.quantity;
 

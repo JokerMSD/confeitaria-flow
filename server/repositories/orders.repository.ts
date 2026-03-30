@@ -135,6 +135,35 @@ export class OrdersRepository {
       .orderBy(desc(orders.createdAt));
   }
 
+  async listPendingProductionRows(executor: Executor = getDb()) {
+    return executor
+      .select({
+        orderId: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        deliveryDate: orders.deliveryDate,
+        status: orders.status,
+        itemId: orderItems.id,
+        productName: orderItems.productName,
+        recipeId: orderItems.recipeId,
+        fillingRecipeId: orderItems.fillingRecipeId,
+        quantity: orderItems.quantity,
+      })
+      .from(orders)
+      .innerJoin(orderItems, eq(orderItems.orderId, orders.id))
+      .where(
+        and(
+          isNull(orders.deletedAt),
+          notInArray(orders.status, ["Pronto", "Entregue", "Cancelado"]),
+        ),
+      )
+      .orderBy(
+        asc(orders.deliveryDate),
+        asc(orders.createdAt),
+        asc(orderItems.position),
+      );
+  }
+
   async listCashSyncRows(executor: Executor = getDb()) {
     return executor
       .select({

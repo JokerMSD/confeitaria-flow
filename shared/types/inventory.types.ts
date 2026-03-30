@@ -68,3 +68,35 @@ export interface ListInventoryMovementsFilters {
   itemId?: string;
   type?: InventoryMovementType;
 }
+
+export interface InventoryPurchasePlanSource {
+  orderId: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: string;
+  productName: string;
+  quantity: number;
+}
+
+export interface InventoryPurchasePlanItem {
+  itemId: string;
+  itemName: string;
+  itemUnit: InventoryItemUnit;
+  currentQuantity: number;
+  requiredQuantity: number;
+  deficitQuantity: number;
+  suggestedPurchaseQuantity: number;
+  purchaseUnitCostCents: number | null;
+  estimatedPurchaseCostCents: number | null;
+  sourceCount: number;
+  sources: InventoryPurchasePlanSource[];
+}
+
+export interface InventoryPurchasePlan {
+  pendingOrderCount: number;
+  pendingOrderItemCount: number;
+  shortageItemCount: number;
+  estimatedPurchaseCostCents: number;
+  hasItemsWithoutCost: boolean;
+  items: InventoryPurchasePlanItem[];
+}

@@ -1,8 +1,11 @@
 import type { Request, Response } from "express";
 import { InventoryItemsService } from "../../services/inventory-items.service";
+import { InventoryPurchasePlanService } from "../../services/inventory-purchase-plan.service";
 
 export class InventoryController {
   private readonly inventoryItemsService = new InventoryItemsService();
+  private readonly inventoryPurchasePlanService =
+    new InventoryPurchasePlanService();
 
   async list(req: Request, res: Response) {
     const data = await this.inventoryItemsService.list(req.query as any);
@@ -14,6 +17,11 @@ export class InventoryController {
 
   async detail(req: Request, res: Response) {
     const data = await this.inventoryItemsService.getById(String(req.params.id));
+    res.json({ data });
+  }
+
+  async purchasePlan(_req: Request, res: Response) {
+    const data = await this.inventoryPurchasePlanService.getPlan();
     res.json({ data });
   }
 

@@ -3,21 +3,25 @@ import { Link, useLocation } from "wouter";
 import type { ListInventoryItemsFilters } from "@shared/types";
 import {
   AlertTriangle,
+  Calculator,
   Edit,
   PackageSearch,
   Plus,
   Search,
+  ShoppingCart,
   Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { cn } from "@/lib/utils";
+import { cn, formatCurrency } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
 import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-items";
+import { useInventoryPurchasePlan } from "@/features/inventory/hooks/use-inventory-purchase-plan";
 import { useDeleteInventoryItem } from "@/features/inventory/hooks/use-delete-inventory-item";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
+import { adaptInventoryPurchasePlan } from "@/features/inventory/lib/inventory-purchase-plan-adapter";
 
 export default function Estoque() {
   const [, setLocation] = useLocation();
@@ -43,6 +47,7 @@ export default function Estoque() {
   );
 
   const inventoryQuery = useInventoryItems(filters);
+  const purchasePlanQuery = useInventoryPurchasePlan();
   const deleteInventoryMutation = useDeleteInventoryItem();
 
   const inventory = useMemo(
@@ -58,6 +63,13 @@ export default function Estoque() {
         return a.name.localeCompare(b.name);
       }),
     [inventory],
+  );
+  const purchasePlan = useMemo(
+    () =>
+      purchasePlanQuery.data?.data
+        ? adaptInventoryPurchasePlan(purchasePlanQuery.data.data)
+        : null,
+    [purchasePlanQuery.data],
   );
 
   const handleDelete = async (id: string, name: string) => {
@@ -125,6 +137,106 @@ export default function Estoque() {
         </div>
 
         <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
+          <div className="border-b border-border/50 p-5 sm:p-6 bg-muted/20">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5 text-primary" />
+                    Necessidade de Compra
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Calculado pelos pedidos ainda em producao: novo, confirmado e em producao.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2 text-sm">
+                  <span className="px-3 py-1.5 rounded-full border bg-background">
+                    Pedidos: {purchasePlanQuery.isLoading ? "..." : purchasePlan?.pendingOrderCount ?? 0}
+                  </span>
+                  <span className="px-3 py-1.5 rounded-full border bg-background">
+                    Itens faltando: {purchasePlanQuery.isLoading ? "..." : purchasePlan?.shortageItemCount ?? 0}
+                  </span>
+                  <span className="px-3 py-1.5 rounded-full border bg-background font-semibold">
+                    Gasto estimado: {purchasePlanQuery.isLoading ? "..." : formatCurrency(purchasePlan?.estimatedPurchaseCost ?? 0)}
+                  </span>
+                </div>
+              </div>
+
+              {purchasePlanQuery.isLoading ? (
+                <div className="text-sm text-muted-foreground">
+                  Calculando necessidade de compra...
+                </div>
+              ) : purchasePlanQuery.isError ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Nao foi possivel calcular a necessidade de compra.
+                  </p>
+                  <Button variant="outline" onClick={() => purchasePlanQuery.refetch()}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : !purchasePlan || purchasePlan.items.length === 0 ? (
+                <div className="text-sm text-muted-foreground">
+                  Nenhuma compra necessaria para os pedidos ainda nao finalizados.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                  {purchasePlan.items.map((planItem) => (
+                    <div
+                      key={planItem.itemId}
+                      className="rounded-xl border border-border bg-background p-4 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-semibold">{planItem.itemName}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Estoque atual: {planItem.currentQuantity} {planItem.itemUnit} • Necessario: {planItem.requiredQuantity} {planItem.itemUnit}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-destructive">
+                            Comprar {planItem.suggestedPurchaseQuantity} {planItem.itemUnit}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Falta: {planItem.deficitQuantity} {planItem.itemUnit}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground flex items-center gap-1">
+                          <Calculator className="w-4 h-4" />
+                          Gasto estimado
+                        </span>
+                        <span className="font-semibold">
+                          {planItem.estimatedPurchaseCost == null
+                            ? "Sem custo cadastrado"
+                            : formatCurrency(planItem.estimatedPurchaseCost)}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-muted-foreground space-y-1">
+                        <p>Usado em {planItem.sourceCount} item(ns) de pedido.</p>
+                        <p className="line-clamp-2">
+                          {planItem.sources
+                            .slice(0, 3)
+                            .map((source) => `${source.orderNumber} • ${source.productName}`)
+                            .join(" | ")}
+                          {planItem.sources.length > 3 ? " | ..." : ""}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {purchasePlan?.hasItemsWithoutCost && (
+                <p className="text-xs text-amber-700">
+                  Alguns ingredientes sem custo cadastrado ficaram fora do gasto estimado.
+                </p>
+              )}
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
               <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border">
