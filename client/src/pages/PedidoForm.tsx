@@ -142,7 +142,7 @@ export default function PedidoForm() {
       ? "Nao foi possivel carregar produtos"
       : productRecipeOptions.length === 0
         ? "Nenhum produto do catalogo cadastrado"
-        : "Produto livre";
+        : "Selecione um produto do catalogo";
   const fillingSelectPlaceholder = !newItemRecipeId
     ? "Escolha um produto primeiro"
     : fillingRecipesQuery.isLoading
@@ -444,8 +444,8 @@ export default function PedidoForm() {
                   Itens do Pedido
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-muted/30 p-4 rounded-xl border border-border/50">
-                  <div className="space-y-2 md:col-span-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 bg-muted/30 p-4 rounded-xl border border-border/50">
+                  <div className="space-y-2 md:col-span-2 xl:col-span-2">
                     <Label>Produto do catalogo</Label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -480,8 +480,13 @@ export default function PedidoForm() {
                         </option>
                       ))}
                     </select>
+                    {productRecipesQuery.isError && (
+                      <p className="text-xs text-destructive">
+                        Nao foi possivel carregar os produtos do catalogo.
+                      </p>
+                    )}
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2 md:col-span-2 xl:col-span-2">
                     <Label>Produto</Label>
                     <Input
                       placeholder="Ex: Bolo de Cenoura"
@@ -490,7 +495,7 @@ export default function PedidoForm() {
                       disabled={Boolean(newItemRecipeId)}
                     />
                   </div>
-                  <div className="space-y-2 md:col-span-2">
+                  <div className="space-y-2 md:col-span-2 xl:col-span-2">
                     <Label>Recheio</Label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -524,6 +529,11 @@ export default function PedidoForm() {
                         </option>
                       ))}
                     </select>
+                    {newItemRecipeId && fillingRecipesQuery.isError && (
+                      <p className="text-xs text-destructive">
+                        Nao foi possivel carregar os recheios.
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label>Qtd.</Label>
@@ -549,7 +559,7 @@ export default function PedidoForm() {
                     type="button"
                     onClick={handleAddItem}
                     variant="secondary"
-                    className="w-full md:col-span-2"
+                    className="w-full md:col-span-2 xl:self-end"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Adicionar Item
