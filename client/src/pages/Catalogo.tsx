@@ -192,12 +192,12 @@ export default function Catalogo() {
                     </div>
                     <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Preco ideal
+                        Preco praticado
                       </p>
                       <p className="mt-1 font-bold">
-                        {recipe.suggestedSalePrice == null
+                        {recipe.effectiveSalePrice == null
                           ? "-"
-                          : formatCurrency(recipe.suggestedSalePrice)}
+                          : formatCurrency(recipe.effectiveSalePrice)}
                       </p>
                     </div>
                   </div>
@@ -206,6 +206,12 @@ export default function Catalogo() {
                     <p>{recipe.unitCostLabel}</p>
                     <p>{recipe.componentCount} componentes</p>
                     <p>Markup: {recipe.markupPercent}%</p>
+                    <p>
+                      Preco ideal:{" "}
+                      {recipe.suggestedSalePrice == null
+                        ? "-"
+                        : formatCurrency(recipe.suggestedSalePrice)}
+                    </p>
                     {recipe.notes && <p className="line-clamp-3">{recipe.notes}</p>}
                   </div>
                 </div>

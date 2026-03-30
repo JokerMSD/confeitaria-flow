@@ -51,6 +51,7 @@ export function createEmptyRecipeFormState(
     outputQuantity: "",
     outputUnit: kind === "ProdutoVenda" ? "un" : "g",
     markupPercent: "100",
+    salePrice: "",
     notes: "",
     components: [createEmptyRecipeComponentState()],
   };
@@ -65,6 +66,10 @@ export function adaptRecipeDetailToFormState(
     outputQuantity: numberToString(response.data.outputQuantity),
     outputUnit: response.data.outputUnit,
     markupPercent: numberToString(response.data.markupPercent),
+    salePrice:
+      response.data.salePriceCents == null
+        ? ""
+        : numberToString(response.data.salePriceCents / 100),
     notes: response.data.notes ?? "",
     components: response.data.components.map((component) => ({
       id: component.id,
@@ -107,6 +112,10 @@ export function adaptRecipeFormToCreatePayload(
       outputQuantity: stringToNumber(state.outputQuantity),
       outputUnit: state.outputUnit,
       markupPercent: Math.round(stringToNumber(state.markupPercent)),
+      salePriceCents:
+        state.salePrice.trim() === ""
+          ? null
+          : Math.round(stringToNumber(state.salePrice) * 100),
       notes: state.notes.trim() || null,
       components: adaptComponents(state.components),
     },

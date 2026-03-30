@@ -21,6 +21,12 @@ export function adaptRecipesToCards(recipes: RecipeListItem[]): RecipeListCard[]
       recipe.suggestedSalePriceCents == null
         ? null
         : recipe.suggestedSalePriceCents / 100,
+    effectiveSalePrice:
+      recipe.effectiveSalePriceCents == null
+        ? null
+        : recipe.effectiveSalePriceCents / 100,
+    salePrice:
+      recipe.salePriceCents == null ? null : recipe.salePriceCents / 100,
     markupPercent: recipe.markupPercent,
     componentCount: recipe.componentCount,
     notes: recipe.notes ?? "",
@@ -31,7 +37,11 @@ export function adaptProductRecipesToOptions(
   recipes: Array<
     Pick<
       RecipeLookupItem,
-      "id" | "name" | "outputQuantity" | "outputUnit" | "suggestedSalePriceCents"
+      | "id"
+      | "name"
+      | "outputQuantity"
+      | "outputUnit"
+      | "effectiveSalePriceCents"
     >
   >,
 ): ProductRecipeOption[] {
@@ -39,10 +49,10 @@ export function adaptProductRecipesToOptions(
     id: recipe.id,
     name: recipe.name,
     outputLabel: formatOutputLabel(recipe.outputQuantity, recipe.outputUnit),
-    suggestedSalePrice:
-      recipe.suggestedSalePriceCents == null
+    salePrice:
+      recipe.effectiveSalePriceCents == null
         ? null
-        : recipe.suggestedSalePriceCents / 100,
+        : recipe.effectiveSalePriceCents / 100,
   }));
 }
 

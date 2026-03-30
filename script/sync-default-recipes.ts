@@ -29,6 +29,7 @@ interface RecipeSeed {
   outputQuantity: number;
   outputUnit: InventoryUnit;
   markupPercent: number;
+  salePriceCents?: number | null;
   notes: string | null;
   components: RecipeComponentSeed[];
 }
@@ -241,6 +242,7 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 1,
     outputUnit: "un",
     markupPercent: 100,
+    salePriceCents: 3990,
     notes: "Peso nominal 350g. Recheio padrao vinculado a Recheio simples.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 55, quantityUnit: "g" },
@@ -248,11 +250,25 @@ const recipeSeeds: RecipeSeed[] = [
     ],
   },
   {
-    name: "Ovo de Pascoa Recheado 350g",
+    name: "Ovo de colher 500g",
     kind: "ProdutoVenda",
     outputQuantity: 1,
     outputUnit: "un",
     markupPercent: 100,
+    salePriceCents: 4990,
+    notes: "Peso nominal 500g. Casca 100g e recheio 400g.",
+    components: [
+      { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 100, quantityUnit: "g" },
+      { componentType: "Receita", name: "Recheio simples", quantity: 400, quantityUnit: "g" },
+    ],
+  },
+  {
+    name: "Ovo Trufado 350g",
+    kind: "ProdutoVenda",
+    outputQuantity: 1,
+    outputUnit: "un",
+    markupPercent: 100,
+    salePriceCents: 3290,
     notes: "Peso comercial 350g. Componentes informados somam 330g.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 210, quantityUnit: "g" },
@@ -265,6 +281,7 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 1,
     outputUnit: "un",
     markupPercent: 100,
+    salePriceCents: 2790,
     notes: "Peso comercial 350g. Componentes informados somam 315g.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 200, quantityUnit: "g" },
@@ -272,11 +289,12 @@ const recipeSeeds: RecipeSeed[] = [
     ],
   },
   {
-    name: "Ovo de Pascoa Recheado 500g",
+    name: "Ovo Trufado 500g",
     kind: "ProdutoVenda",
     outputQuantity: 1,
     outputUnit: "un",
     markupPercent: 100,
+    salePriceCents: 3930,
     notes: "Peso nominal 500g. Recheio padrao vinculado a Recheio simples.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 100, quantityUnit: "g" },
@@ -289,13 +307,31 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 1,
     outputUnit: "un",
     markupPercent: 100,
+    salePriceCents: 300,
     notes: "Peso nominal 20g. Recheio padrao vinculado a Recheio simples.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 15, quantityUnit: "g" },
       { componentType: "Receita", name: "Recheio simples", quantity: 5, quantityUnit: "g" },
     ],
   },
+  {
+    name: "Caixa com 10 trufas",
+    kind: "ProdutoVenda",
+    outputQuantity: 1,
+    outputUnit: "un",
+    markupPercent: 100,
+    salePriceCents: 2490,
+    notes: "Caixa promocional com 10 unidades de trufa.",
+    components: [
+      { componentType: "Receita", name: "Trufa 20g", quantity: 10, quantityUnit: "un" },
+    ],
+  },
 ];
+
+const legacyRecipeNames = new Map<string, string>([
+  ["Ovo de Pascoa Recheado 350g", "Ovo Trufado 350g"],
+  ["Ovo de Pascoa Recheado 500g", "Ovo Trufado 500g"],
+]);
 
 function toMilli(value: number) {
   return Math.round(value * quantityScale);
@@ -360,8 +396,8 @@ async function upsertRecipe(
   if (existing.rowCount === 0) {
     const inserted = await client.query(
       `insert into recipes (
-        name, kind, output_quantity_milli, output_unit, markup_percent, notes
-      ) values ($1, $2, $3, $4, $5, $6)
+        name, kind, output_quantity_milli, output_unit, markup_percent, sale_price_cents, notes
+      ) values ($1, $2, $3, $4, $5, $6, $7)
       returning id`,
       [
         seed.name,
@@ -369,6 +405,7 @@ async function upsertRecipe(
         toMilli(seed.outputQuantity),
         seed.outputUnit,
         seed.markupPercent,
+        seed.salePriceCents ?? null,
         seed.notes,
       ],
     );
@@ -381,7 +418,8 @@ async function upsertRecipe(
            output_quantity_milli = $3,
            output_unit = $4,
            markup_percent = $5,
-           notes = $6,
+           sale_price_cents = $6,
+           notes = $7,
            deleted_at = null,
            updated_at = now()
        where id = $1`,
@@ -391,6 +429,7 @@ async function upsertRecipe(
         toMilli(seed.outputQuantity),
         seed.outputUnit,
         seed.markupPercent,
+        seed.salePriceCents ?? null,
         seed.notes,
       ],
     );
@@ -436,6 +475,27 @@ async function upsertRecipe(
   }
 }
 
+async function normalizeLegacyRecipeNames(client: Client) {
+  for (const [legacyName, currentName] of Array.from(legacyRecipeNames.entries())) {
+    const target = await client.query(
+      `select id from recipes where name = $1 limit 1`,
+      [currentName],
+    );
+
+    if (target.rowCount > 0) {
+      continue;
+    }
+
+    await client.query(
+      `update recipes
+       set name = $2,
+           updated_at = now()
+       where name = $1`,
+      [legacyName, currentName],
+    );
+  }
+}
+
 async function main() {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required.");
@@ -446,6 +506,7 @@ async function main() {
 
   try {
     await client.query("begin");
+    await normalizeLegacyRecipeNames(client);
 
     const inventoryIds = new Map<string, string>();
 

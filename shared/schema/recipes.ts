@@ -17,6 +17,7 @@ export const recipes = pgTable(
     outputQuantityMilli: integer("output_quantity_milli").notNull(),
     outputUnit: varchar("output_unit", { length: 16 }).notNull(),
     markupPercent: integer("markup_percent").notNull().default(100),
+    salePriceCents: integer("sale_price_cents"),
     notes: varchar("notes", { length: 1000 }),
     createdAt: timestamp("created_at", {
       withTimezone: true,

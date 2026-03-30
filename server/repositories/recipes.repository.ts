@@ -11,6 +11,7 @@ export interface RecipeRowInsert {
   outputQuantityMilli: number;
   outputUnit: string;
   markupPercent: number;
+  salePriceCents: number | null;
   notes: string | null;
 }
 

@@ -337,6 +337,21 @@ export default function ReceitaForm() {
                       }
                     />
                   </div>
+                  {isCatalogRoute && (
+                    <div className="space-y-2">
+                      <Label>Preco praticado</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formState.salePrice}
+                        onChange={(event) =>
+                          setField("salePrice", event.target.value)
+                        }
+                        placeholder="Ex: 39.90"
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label>Rendimento *</Label>
                     <Input
@@ -556,8 +571,24 @@ export default function ReceitaForm() {
                             )}
                       </span>
                     </div>
+                    {recipeSummary.kind === "ProdutoVenda" && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Preco praticado
+                        </span>
+                        <span className="font-bold">
+                          {recipeSummary.effectiveSalePriceCents == null
+                            ? "-"
+                            : formatCurrency(
+                                recipeSummary.effectiveSalePriceCents / 100,
+                              )}
+                        </span>
+                      </div>
+                    )}
                     <div className="text-xs text-muted-foreground pt-2 border-t border-border/50">
                       O preco ideal usa o markup configurado na receita.
+                      {recipeSummary.kind === "ProdutoVenda" &&
+                        " Se houver preco praticado, ele prevalece nos pedidos."}
                     </div>
                   </div>
                 ) : (

@@ -10,6 +10,8 @@ export interface RecipeListCard {
   totalCost: number;
   unitCostLabel: string;
   suggestedSalePrice: number | null;
+  effectiveSalePrice: number | null;
+  salePrice: number | null;
   markupPercent: number;
   componentCount: number;
   notes: string;
@@ -32,6 +34,7 @@ export interface RecipeFormState {
   outputQuantity: string;
   outputUnit: "un" | "kg" | "g" | "l" | "ml" | "caixa";
   markupPercent: string;
+  salePrice: string;
   notes: string;
   components: RecipeComponentFormState[];
 }
@@ -40,7 +43,7 @@ export interface ProductRecipeOption {
   id: string;
   name: string;
   outputLabel: string;
-  suggestedSalePrice: number | null;
+  salePrice: number | null;
 }
 
 export interface FillingRecipeOption {

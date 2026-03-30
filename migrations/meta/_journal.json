@@ -71,6 +71,13 @@
       "when": 1774897200000,
       "tag": "0009_phase9_order_item_filling_recipe",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1774960000000,
+      "tag": "0010_phase10_recipe_sale_price",
+      "breakpoints": true
     }
   ]
 }

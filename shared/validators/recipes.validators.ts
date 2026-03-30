@@ -43,6 +43,7 @@ export const createRecipeInputSchema = z
     outputQuantity: recipeQuantitySchema,
     outputUnit: inventoryItemUnitSchema,
     markupPercent: z.number().int().min(0).max(10000),
+    salePriceCents: z.number().int().min(0).nullable().optional(),
     notes: z.string().trim().max(1000).nullable().optional(),
     components: z.array(createRecipeComponentInputSchema).min(1),
   })

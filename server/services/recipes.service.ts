@@ -32,6 +32,7 @@ interface RecipeCostNode {
   totalCostCents: number;
   unitCostCents: number;
   suggestedSalePriceCents: number | null;
+  effectiveSalePriceCents: number | null;
   hasIncompleteCost: boolean;
   components: RecipeComponentResolved[];
   ingredientUsage: Map<string, number>;
@@ -172,6 +173,8 @@ export class RecipesService {
         totalCostCents: detail.totalCostCents,
         unitCostCents: detail.unitCostCents,
         suggestedSalePriceCents: detail.suggestedSalePriceCents,
+        salePriceCents: detail.salePriceCents,
+        effectiveSalePriceCents: detail.effectiveSalePriceCents,
       });
     }
 
@@ -193,6 +196,7 @@ export class RecipesService {
           outputQuantityMilli: normalized.outputQuantityMilli,
           outputUnit: normalized.outputUnit,
           markupPercent: normalized.markupPercent,
+          salePriceCents: normalized.salePriceCents,
           notes: normalized.notes,
         },
         tx,
@@ -234,6 +238,7 @@ export class RecipesService {
           outputQuantityMilli: normalized.outputQuantityMilli,
           outputUnit: normalized.outputUnit,
           markupPercent: normalized.markupPercent,
+          salePriceCents: normalized.salePriceCents,
           notes: normalized.notes,
           updatedAt: new Date(),
         },
@@ -437,6 +442,7 @@ export class RecipesService {
       totalCostCents: node.totalCostCents,
       unitCostCents: node.unitCostCents,
       suggestedSalePriceCents: node.suggestedSalePriceCents,
+      effectiveSalePriceCents: node.effectiveSalePriceCents,
       hasIncompleteCost: node.hasIncompleteCost,
       components: node.components,
     };
@@ -586,6 +592,11 @@ export class RecipesService {
         recipe.kind === "ProdutoVenda"
           ? roundCents(totalCostCents * (1 + Number(recipe.markupPercent) / 100))
           : null,
+      effectiveSalePriceCents:
+        recipe.kind === "ProdutoVenda"
+          ? recipe.salePriceCents ??
+            roundCents(totalCostCents * (1 + Number(recipe.markupPercent) / 100))
+          : null,
       hasIncompleteCost,
       components,
       ingredientUsage,
@@ -726,6 +737,16 @@ export class RecipesService {
     }
 
     if (
+      input.salePriceCents != null &&
+      (!Number.isInteger(input.salePriceCents) || input.salePriceCents < 0)
+    ) {
+      throw new HttpError(
+        400,
+        "Recipe salePriceCents must be a non-negative integer.",
+      );
+    }
+
+    if (
       input.kind === "ProdutoVenda" &&
       (input.outputUnit !== "un" || input.outputQuantity !== 1)
     ) {
@@ -797,6 +818,7 @@ export class RecipesService {
       outputUnit: input.outputUnit,
       outputQuantityMilli: toMilli(input.outputQuantity),
       markupPercent: input.markupPercent,
+      salePriceCents: input.salePriceCents ?? null,
       notes,
       components,
     };
@@ -810,6 +832,8 @@ export class RecipesService {
       outputQuantity: fromMilli(row.outputQuantityMilli),
       outputUnit: row.outputUnit as InventoryItemUnit,
       markupPercent: row.markupPercent,
+      salePriceCents:
+        row.salePriceCents == null ? null : Number(row.salePriceCents),
       notes: row.notes ?? null,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),

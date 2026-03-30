@@ -11,6 +11,7 @@ export interface Recipe {
   outputQuantity: number;
   outputUnit: InventoryItemUnit;
   markupPercent: number;
+  salePriceCents: number | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -46,6 +47,7 @@ export interface RecipeCostSummary {
   totalCostCents: number;
   unitCostCents: number;
   suggestedSalePriceCents: number | null;
+  effectiveSalePriceCents: number | null;
   hasIncompleteCost: boolean;
 }
 
@@ -66,6 +68,8 @@ export interface RecipeLookupItem {
   totalCostCents: number;
   unitCostCents: number;
   suggestedSalePriceCents: number | null;
+  salePriceCents: number | null;
+  effectiveSalePriceCents: number | null;
 }
 
 export interface CreateRecipeComponentInput {
@@ -84,6 +88,7 @@ export interface CreateRecipeInput {
   outputQuantity: number;
   outputUnit: InventoryItemUnit;
   markupPercent: number;
+  salePriceCents?: number | null;
   notes?: string | null;
   components: CreateRecipeComponentInput[];
 }

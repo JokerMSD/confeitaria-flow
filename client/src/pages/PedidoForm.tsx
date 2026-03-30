@@ -463,9 +463,9 @@ export default function PedidoForm() {
                         if (selectedRecipe) {
                           setNewItemName(selectedRecipe.name);
                           setNewItemPrice(
-                            selectedRecipe.suggestedSalePrice == null
+                            selectedRecipe.salePrice == null
                               ? ""
-                              : selectedRecipe.suggestedSalePrice.toString(),
+                              : selectedRecipe.salePrice.toString(),
                           );
                         } else {
                           setNewItemName("");
