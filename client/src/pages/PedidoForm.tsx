@@ -164,7 +164,12 @@ export default function PedidoForm() {
   };
 
   const handleAddItem = () => {
-    if (!newItemName || !newItemPrice || !newItemQtd) {
+    if (!newItemRecipeId || !newItemName || !newItemPrice || !newItemQtd) {
+      toast({
+        title: "Selecione um produto",
+        description: "Escolha um produto do catalogo antes de adicionar o item.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -487,15 +492,6 @@ export default function PedidoForm() {
                     )}
                   </div>
                   <div className="space-y-2 md:col-span-2 xl:col-span-2">
-                    <Label>Produto</Label>
-                    <Input
-                      placeholder="Ex: Bolo de Cenoura"
-                      value={newItemName}
-                      onChange={(event) => setNewItemName(event.target.value)}
-                      disabled={Boolean(newItemRecipeId)}
-                    />
-                  </div>
-                  <div className="space-y-2 md:col-span-2 xl:col-span-2">
                     <Label>Recheio</Label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -534,6 +530,14 @@ export default function PedidoForm() {
                         Nao foi possivel carregar os recheios.
                       </p>
                     )}
+                  </div>
+                  <div className="rounded-xl border border-border/60 bg-background px-4 py-3 md:col-span-2 xl:col-span-2">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Item que sera adicionado
+                    </p>
+                    <p className="mt-1 font-semibold">
+                      {newItemName || "Selecione produto e recheio"}
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>Qtd.</Label>
