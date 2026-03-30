@@ -50,6 +50,13 @@
       "when": 1774886400000,
       "tag": "0006_phase7_recipes_and_order_recipe_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774890000000,
+      "tag": "0007_phase7_recipe_components_quantity_unit_hotfix",
+      "breakpoints": true
     }
   ]
 }
