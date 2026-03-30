@@ -12,7 +12,6 @@ import { ApiError } from "@/api/http-client";
 import { useCreateOrder } from "@/features/orders/hooks/use-create-order";
 import { useOrder } from "@/features/orders/hooks/use-order";
 import { useUpdateOrder } from "@/features/orders/hooks/use-update-order";
-import { useProductRecipes } from "@/features/recipes/hooks/use-product-recipes";
 import { useRecipes } from "@/features/recipes/hooks/use-recipes";
 import {
   adaptFillingRecipesToOptions,
@@ -84,7 +83,7 @@ export default function PedidoForm() {
   const [newItemFillingRecipeId, setNewItemFillingRecipeId] = useState("");
 
   const orderQuery = useOrder(orderId);
-  const productRecipesQuery = useProductRecipes();
+  const productRecipesQuery = useRecipes({ kind: "ProdutoVenda" });
   const fillingRecipesQuery = useRecipes({ kind: "Preparacao" });
   const createOrderMutation = useCreateOrder();
   const updateOrderMutation = useUpdateOrder();
@@ -137,6 +136,22 @@ export default function PedidoForm() {
       productRecipeOptions.find((recipe) => recipe.id === newItemRecipeId) ?? null,
     [newItemRecipeId, productRecipeOptions],
   );
+  const productSelectPlaceholder = productRecipesQuery.isLoading
+    ? "Carregando produtos..."
+    : productRecipesQuery.isError
+      ? "Nao foi possivel carregar produtos"
+      : productRecipeOptions.length === 0
+        ? "Nenhum produto do catalogo cadastrado"
+        : "Produto livre";
+  const fillingSelectPlaceholder = !newItemRecipeId
+    ? "Escolha um produto primeiro"
+    : fillingRecipesQuery.isLoading
+      ? "Carregando recheios..."
+      : fillingRecipesQuery.isError
+        ? "Nao foi possivel carregar recheios"
+        : fillingRecipeOptions.length === 0
+          ? "Nenhum recheio disponivel"
+          : "Selecione um recheio";
 
   const setField = <K extends keyof OrderFormState>(
     key: K,
@@ -303,7 +318,7 @@ export default function PedidoForm() {
   return (
     <AppLayout title={isEditing ? "Editar Pedido" : "Novo Pedido"}>
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
@@ -321,7 +336,11 @@ export default function PedidoForm() {
               </h2>
             </div>
           </div>
-          <Button onClick={handleSave} className="gap-2 rounded-xl" disabled={isSaving}>
+          <Button
+            onClick={handleSave}
+            className="gap-2 rounded-xl w-full md:w-auto"
+            disabled={isSaving}
+          >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
@@ -425,12 +444,13 @@ export default function PedidoForm() {
                   Itens do Pedido
                 </h3>
 
-                <div className="flex flex-col md:flex-row gap-3 items-end bg-muted/30 p-4 rounded-xl border border-border/50">
-                  <div className="space-y-2 flex-1 w-full">
-                    <Label>Produto cadastrado</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-muted/30 p-4 rounded-xl border border-border/50">
+                  <div className="space-y-2 md:col-span-2">
+                    <Label>Produto do catalogo</Label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                       value={newItemRecipeId}
+                      disabled={productRecipesQuery.isLoading || productRecipesQuery.isError}
                       onChange={(event) => {
                         const selectedId = event.target.value;
                         setNewItemRecipeId(selectedId);
@@ -453,7 +473,7 @@ export default function PedidoForm() {
                         }
                       }}
                     >
-                      <option value="">Produto livre</option>
+                      <option value="">{productSelectPlaceholder}</option>
                       {productRecipeOptions.map((recipe) => (
                         <option key={recipe.id} value={recipe.id}>
                           {recipe.name} ({recipe.outputLabel})
@@ -461,7 +481,7 @@ export default function PedidoForm() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-2 flex-1 w-full">
+                  <div className="space-y-2 md:col-span-2">
                     <Label>Produto</Label>
                     <Input
                       placeholder="Ex: Bolo de Cenoura"
@@ -470,7 +490,7 @@ export default function PedidoForm() {
                       disabled={Boolean(newItemRecipeId)}
                     />
                   </div>
-                  <div className="space-y-2 flex-1 w-full">
+                  <div className="space-y-2 md:col-span-2">
                     <Label>Recheio</Label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
@@ -491,13 +511,13 @@ export default function PedidoForm() {
                           );
                         }
                       }}
-                      disabled={!newItemRecipeId}
+                      disabled={
+                        !newItemRecipeId ||
+                        fillingRecipesQuery.isLoading ||
+                        fillingRecipesQuery.isError
+                      }
                     >
-                      <option value="">
-                        {newItemRecipeId
-                          ? "Selecione um recheio"
-                          : "Escolha um produto primeiro"}
-                      </option>
+                      <option value="">{fillingSelectPlaceholder}</option>
                       {fillingRecipeOptions.map((recipe) => (
                         <option key={recipe.id} value={recipe.id}>
                           {recipe.name} ({recipe.outputLabel})
@@ -505,7 +525,7 @@ export default function PedidoForm() {
                       ))}
                     </select>
                   </div>
-                  <div className="space-y-2 w-full md:w-24">
+                  <div className="space-y-2">
                     <Label>Qtd.</Label>
                     <Input
                       type="number"
@@ -514,7 +534,7 @@ export default function PedidoForm() {
                       onChange={(event) => setNewItemQtd(event.target.value)}
                     />
                   </div>
-                  <div className="space-y-2 w-full md:w-32">
+                  <div className="space-y-2">
                     <Label>Preço Un.</Label>
                     <Input
                       type="number"
@@ -529,10 +549,10 @@ export default function PedidoForm() {
                     type="button"
                     onClick={handleAddItem}
                     variant="secondary"
-                    className="w-full md:w-auto"
+                    className="w-full md:col-span-2"
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Add
+                    Adicionar Item
                   </Button>
                 </div>
 
@@ -545,7 +565,7 @@ export default function PedidoForm() {
                     {formState.items.map((item) => (
                       <div
                         key={item.id}
-                        className="flex items-center justify-between p-3 bg-card hover:bg-muted/30"
+                        className="flex flex-col gap-3 p-3 bg-card hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between"
                       >
                         <div className="flex-1">
                           <p className="font-bold text-sm">
@@ -565,7 +585,7 @@ export default function PedidoForm() {
                             </p>
                           )}
                         </div>
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center justify-between gap-4 sm:justify-end">
                           <span className="font-bold">
                             {formatCurrency(item.subtotal)}
                           </span>

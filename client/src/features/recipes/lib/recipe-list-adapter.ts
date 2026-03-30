@@ -28,7 +28,12 @@ export function adaptRecipesToCards(recipes: RecipeListItem[]): RecipeListCard[]
 }
 
 export function adaptProductRecipesToOptions(
-  recipes: RecipeLookupItem[],
+  recipes: Array<
+    Pick<
+      RecipeLookupItem,
+      "id" | "name" | "outputQuantity" | "outputUnit" | "suggestedSalePriceCents"
+    >
+  >,
 ): ProductRecipeOption[] {
   return recipes.map((recipe) => ({
     id: recipe.id,
