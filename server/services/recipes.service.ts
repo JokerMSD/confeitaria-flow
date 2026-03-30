@@ -17,11 +17,16 @@ import { InventoryItemsRepository } from "../repositories/inventory-items.reposi
 import { InventoryMovementsRepository } from "../repositories/inventory-movements.repository";
 import { RecipeComponentsRepository } from "../repositories/recipe-components.repository";
 import { RecipesRepository } from "../repositories/recipes.repository";
+import {
+  convertQuantity,
+  convertRecipeQuantityToInventoryUnits,
+  normalizeRecipeName,
+  shouldConsumeOrderStock,
+} from "../domain/recipes/recipe-domain";
 import { HttpError } from "../utils/http-error";
 
 const QUANTITY_SCALE = 1000;
 const ORDER_CONSUMPTION_SOURCE = "Pedido";
-const ORDER_STOCK_CONSUMPTION_STATUSES = new Set(["Pronto", "Entregue"]);
 
 type Executor = any;
 type RecipeRow = any;
@@ -52,105 +57,6 @@ function fromMilli(value: number) {
 
 function roundCents(value: number) {
   return Math.round(value);
-}
-
-function normalizeName(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\bovo de pascoa recheado\b/g, "ovo trufado")
-    .replace(/\b(ovo de colher|ovo trufado)\s+(350|500)\b/g, "$1 $2g")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function getUnitFamily(unit: InventoryItemUnit) {
-  if (unit === "g" || unit === "kg") {
-    return "massa";
-  }
-
-  if (unit === "ml" || unit === "l") {
-    return "volume";
-  }
-
-  if (unit === "un") {
-    return "unidade";
-  }
-
-  if (unit === "caixa") {
-    return "caixa";
-  }
-
-  return "desconhecido";
-}
-
-function convertQuantity(
-  quantity: number,
-  fromUnit: InventoryItemUnit,
-  toUnit: InventoryItemUnit,
-) {
-  if (fromUnit === toUnit) {
-    return quantity;
-  }
-
-  const fromFamily = getUnitFamily(fromUnit);
-  const toFamily = getUnitFamily(toUnit);
-
-  if (fromFamily !== toFamily) {
-    throw new HttpError(
-      400,
-      `Recipe quantity unit ${fromUnit} is incompatible with ${toUnit}.`,
-    );
-  }
-
-  if (fromFamily === "massa") {
-    if (fromUnit === "kg" && toUnit === "g") return quantity * 1000;
-    if (fromUnit === "g" && toUnit === "kg") return quantity / 1000;
-  }
-
-  if (fromFamily === "volume") {
-    if (fromUnit === "l" && toUnit === "ml") return quantity * 1000;
-    if (fromUnit === "ml" && toUnit === "l") return quantity / 1000;
-  }
-
-  throw new HttpError(
-    400,
-    `Recipe unit conversion from ${fromUnit} to ${toUnit} is not supported.`,
-  );
-}
-
-function convertRecipeQuantityToInventoryUnits(
-  quantity: number,
-  fromUnit: InventoryItemUnit,
-  item: InventoryItem,
-) {
-  if (fromUnit === item.unit) {
-    return quantity;
-  }
-
-  try {
-    return convertQuantity(quantity, fromUnit, item.unit);
-  } catch {}
-
-  if (
-    item.recipeEquivalentQuantity != null &&
-    item.recipeEquivalentUnit != null &&
-    (item.unit === "un" || item.unit === "caixa")
-  ) {
-    const equivalentQuantity = convertQuantity(
-      quantity,
-      fromUnit,
-      item.recipeEquivalentUnit,
-    );
-
-    return equivalentQuantity / item.recipeEquivalentQuantity;
-  }
-
-  throw new HttpError(
-    400,
-    `Recipe quantity unit ${fromUnit} is incompatible with inventory unit ${item.unit} for item ${item.name}.`,
-  );
 }
 
 export class RecipesService {
@@ -375,7 +281,7 @@ export class RecipesService {
       );
     }
 
-    if (!ORDER_STOCK_CONSUMPTION_STATUSES.has(order.status)) {
+    if (!shouldConsumeOrderStock(order.status)) {
       return;
     }
 
@@ -444,7 +350,7 @@ export class RecipesService {
     productName: string,
     executor?: Executor,
   ): Promise<{ recipeId: string; fillingRecipeIds: string[] } | null> {
-    const normalizedProductName = normalizeName(productName);
+    const normalizedProductName = normalizeRecipeName(productName);
 
     if (!normalizedProductName) {
       return null;
@@ -459,7 +365,7 @@ export class RecipesService {
     );
 
     const exactProductMatch = sellableRecipes.find(
-      (recipe) => normalizeName(recipe.name) === normalizedProductName,
+      (recipe) => normalizeRecipeName(recipe.name) === normalizedProductName,
     );
 
     if (exactProductMatch) {
@@ -470,19 +376,19 @@ export class RecipesService {
     }
 
     const productParts = productName.split(/\s+-\s+/).map((part) => part.trim());
-    const baseProductName = normalizeName(productParts[0] ?? productName);
+    const baseProductName = normalizeRecipeName(productParts[0] ?? productName);
     const fillingNames =
       productParts.length > 1
         ? productParts
             .slice(1)
             .join(" - ")
             .split("/")
-            .map((value) => normalizeName(value))
+            .map((value) => normalizeRecipeName(value))
             .filter(Boolean)
         : [];
 
     const baseProductMatch = sellableRecipes.find(
-      (recipe) => normalizeName(recipe.name) === baseProductName,
+      (recipe) => normalizeRecipeName(recipe.name) === baseProductName,
     );
 
     if (!baseProductMatch) {
@@ -493,7 +399,7 @@ export class RecipesService {
       .map(
         (fillingName) =>
           preparationRecipes.find(
-            (recipe) => normalizeName(recipe.name) === fillingName,
+            (recipe) => normalizeRecipeName(recipe.name) === fillingName,
           ) ?? null,
       )
       .filter((recipe): recipe is RecipeRow => Boolean(recipe))

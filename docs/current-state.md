@@ -67,6 +67,7 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - CORS depende de `CORS_ORIGINS` e redeploy da API ao trocar env.
 
 ## Validacoes Minimas Antes De Encerrar Mudancas
+- `npm run test`
 - `npm run check`
 - `npm run build`
 - Commit do bloco implementado

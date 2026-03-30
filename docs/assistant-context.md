@@ -73,6 +73,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - `docs/runbooks/operations.md`
 
 ## Validacao Esperada Depois De Mudancas Grandes
+- Rodar `npm run test`
 - Rodar `npm run check`
 - Rodar `npm run build`
 - Commits pequenos e frequentes

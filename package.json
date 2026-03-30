@@ -17,6 +17,7 @@
     "start:api": "cross-env NODE_ENV=production SERVE_CLIENT=false node dist/index.cjs",
     "start": "cross-env NODE_ENV=production tsx script/start.ts",
     "check": "tsc",
+    "test": "node --import tsx --test tests/index.test.ts",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {

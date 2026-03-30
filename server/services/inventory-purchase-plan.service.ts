@@ -1,22 +1,11 @@
 import type { InventoryItem, InventoryPurchasePlan } from "@shared/types";
+import {
+  getSuggestedPurchaseQuantity,
+  roundToThreeDecimals,
+} from "../domain/inventory/purchase-plan-domain";
 import { InventoryItemsRepository } from "../repositories/inventory-items.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
 import { RecipesService } from "./recipes.service";
-
-function roundToThreeDecimals(value: number) {
-  return Math.round(value * 1000) / 1000;
-}
-
-function getSuggestedPurchaseQuantity(
-  shortageQuantity: number,
-  itemUnit: InventoryItem["unit"],
-) {
-  if (itemUnit === "un" || itemUnit === "caixa") {
-    return Math.ceil(shortageQuantity);
-  }
-
-  return roundToThreeDecimals(shortageQuantity);
-}
 
 function mapInventoryItem(row: any): InventoryItem {
   return {
