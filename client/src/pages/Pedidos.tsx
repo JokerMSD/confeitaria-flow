@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Plus, Clock, MoreVertical, X, Calendar, DollarSign, Trash2, ClipboardList } from "lucide-react";
+import { Search, Plus, Clock, MoreVertical, X, Calendar, DollarSign, Trash2, ClipboardList, CheckCheck, Loader2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/api/http-client";
 import { useOrders } from "@/features/orders/hooks/use-orders";
 import { useDeleteOrder } from "@/features/orders/hooks/use-delete-order";
+import { useConfirmOrder } from "@/features/orders/hooks/use-confirm-order";
 import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter";
 import {
   mapUiPaymentStatusToApi,
@@ -26,6 +27,7 @@ export default function Pedidos() {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [paymentFilter, setPaymentFilter] = useState<string>("todos");
   const [dateFilter, setDateFilter] = useState("");
+  const [confirmingOrderId, setConfirmingOrderId] = useState<string | null>(null);
 
   const filters = useMemo(
     () =>
@@ -43,6 +45,7 @@ export default function Pedidos() {
 
   const { data, isLoading, isError, error, refetch } = useOrders(filters);
   const deleteOrderMutation = useDeleteOrder();
+  const confirmOrderMutation = useConfirmOrder();
 
   const orders = useMemo(() => adaptOrderListToCards(data?.data ?? []), [data]);
 
@@ -103,6 +106,35 @@ export default function Pedidos() {
         },
       });
     }
+  };
+
+  const handleQuickConfirm = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmingOrderId(id);
+
+    confirmOrderMutation.mutate(id, {
+      onSuccess: () => {
+        toast({
+          title: "Pedido confirmado",
+          description: "O pedido foi confirmado rapidamente.",
+        });
+      },
+      onError: (mutationError) => {
+        const message =
+          mutationError instanceof ApiError
+            ? mutationError.message
+            : "Nao foi possivel confirmar o pedido.";
+
+        toast({
+          title: "Erro ao confirmar pedido",
+          description: message,
+          variant: "destructive",
+        });
+      },
+      onSettled: () => {
+        setConfirmingOrderId(null);
+      },
+    });
   };
 
   const statusOptions = ["todos", "Novo", "Confirmado", "Em produção", "Pronto", "Entregue", "Cancelado"];
@@ -312,9 +344,26 @@ export default function Pedidos() {
                       <p className="text-xs text-muted-foreground mb-0.5">Total</p>
                       <p className="font-bold">{formatCurrency(order.totalAmount)}</p>
                     </div>
-                    <div className="text-right flex flex-col items-end gap-1">
-                      {getPaymentBadge(order.paymentStatus)}
-                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{order.paymentMethod}</span>
+                    <div className="text-right flex flex-col items-end gap-2">
+                      <div className="flex flex-col items-end gap-1">
+                        {getPaymentBadge(order.paymentStatus)}
+                        <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{order.paymentMethod}</span>
+                      </div>
+                      {order.status === "Novo" && (
+                        <Button
+                          size="sm"
+                          className="h-8 rounded-full px-3 bg-emerald-600 hover:bg-emerald-700 text-white"
+                          disabled={confirmingOrderId === order.id}
+                          onClick={(e) => handleQuickConfirm(order.id, e)}
+                        >
+                          {confirmingOrderId === order.id ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <CheckCheck className="w-4 h-4 mr-1" />
+                          )}
+                          Confirmar
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>

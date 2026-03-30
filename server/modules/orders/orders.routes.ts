@@ -25,5 +25,10 @@ export function registerOrdersRoutes(app: Express) {
     validateRequest(updateOrderBodySchema, "body"),
     controller.update.bind(controller),
   );
+  app.post(
+    "/api/orders/:id/confirm",
+    validateRequest(orderIdParamsSchema, "params"),
+    controller.confirm.bind(controller),
+  );
   app.delete("/api/orders/:id", validateRequest(orderIdParamsSchema, "params"), controller.remove.bind(controller));
 }

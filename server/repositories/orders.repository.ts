@@ -36,6 +36,11 @@ export interface OrderRowUpdate extends OrderRowInsert {
   updatedAt: Date;
 }
 
+export interface OrderStatusUpdate {
+  status: OrderStatus;
+  updatedAt: Date;
+}
+
 export class OrdersRepository {
   async list(filters: ListOrdersFilters = {}, executor: Executor = getDb()) {
     const conditions = [isNull(orders.deletedAt)];
@@ -217,6 +222,20 @@ export class OrdersRepository {
   }
 
   async update(id: string, data: OrderRowUpdate, executor: Executor = getDb()) {
+    const [order] = await executor
+      .update(orders)
+      .set(data)
+      .where(and(eq(orders.id, id), isNull(orders.deletedAt)))
+      .returning();
+
+    return order ?? null;
+  }
+
+  async updateStatus(
+    id: string,
+    data: OrderStatusUpdate,
+    executor: Executor = getDb(),
+  ) {
     const [order] = await executor
       .update(orders)
       .set(data)

@@ -52,6 +52,12 @@ export function updateOrder(id: string, payload: UpdateOrderRequest) {
   });
 }
 
+export function confirmOrder(id: string) {
+  return httpClient<OrderDetailResponse>(`/api/orders/${id}/confirm`, {
+    method: "POST",
+  });
+}
+
 export function deleteOrder(id: string) {
   return httpClient<DeleteOrderResponse>(`/api/orders/${id}`, {
     method: "DELETE",

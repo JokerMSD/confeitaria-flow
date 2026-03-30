@@ -307,6 +307,62 @@ export class OrdersService {
     });
   }
 
+  async confirm(id: string) {
+    return withTransaction<OrderDetail>(async (tx) => {
+      const existing = await this.ordersRepository.findById(id, tx);
+
+      if (!existing) {
+        throw new HttpError(404, "Order not found.");
+      }
+
+      if (existing.status === "Cancelado" || existing.status === "Entregue") {
+        throw new HttpError(
+          400,
+          "Only active orders can be confirmed quickly.",
+        );
+      }
+
+      if (existing.status !== "Novo") {
+        const currentItems = await this.orderItemsRepository.listByOrderId(id, tx);
+        return this.mapOrderDetail(existing, currentItems);
+      }
+
+      const updatedOrder = await this.ordersRepository.updateStatus(
+        id,
+        {
+          status: "Confirmado",
+          updatedAt: new Date(),
+        },
+        tx,
+      );
+
+      if (!updatedOrder) {
+        throw new HttpError(404, "Order not found.");
+      }
+
+      const items = await this.orderItemsRepository.listByOrderId(id, tx);
+
+      await this.orderRecipeConsumptionService.syncOrderConsumption(
+        {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          status: updatedOrder.status,
+          items: items.map((item: any) => ({
+            recipeId: item.recipeId ?? null,
+            fillingRecipeId: item.fillingRecipeId ?? null,
+            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+            quantity: item.quantity,
+            productName: item.productName,
+          })),
+        },
+        tx,
+      );
+
+      return this.mapOrderDetail(updatedOrder, items);
+    });
+  }
+
   async remove(id: string) {
     return withTransaction(async (tx) => {
       const deletedAt = new Date();

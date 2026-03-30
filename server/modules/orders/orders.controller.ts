@@ -37,6 +37,11 @@ export class OrdersController {
     res.json({ data });
   }
 
+  async confirm(req: Request, res: Response) {
+    const data = await this.ordersService.confirm(String(req.params.id));
+    res.json({ data });
+  }
+
   async remove(req: Request, res: Response) {
     const data = await this.ordersService.remove(String(req.params.id));
     res.json({ data });
