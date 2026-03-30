@@ -5,6 +5,7 @@ import {
   AlertTriangle,
   Calculator,
   Edit,
+  Minus,
   PackageSearch,
   Plus,
   Search,
@@ -20,6 +21,7 @@ import { ApiError } from "@/api/http-client";
 import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-items";
 import { useInventoryPurchasePlan } from "@/features/inventory/hooks/use-inventory-purchase-plan";
 import { useDeleteInventoryItem } from "@/features/inventory/hooks/use-delete-inventory-item";
+import { useCreateInventoryMovement } from "@/features/inventory/hooks/use-create-inventory-movement";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
 import { adaptInventoryPurchasePlan } from "@/features/inventory/lib/inventory-purchase-plan-adapter";
 
@@ -49,6 +51,7 @@ export default function Estoque() {
   const inventoryQuery = useInventoryItems(filters);
   const purchasePlanQuery = useInventoryPurchasePlan();
   const deleteInventoryMutation = useDeleteInventoryItem();
+  const createInventoryMovementMutation = useCreateInventoryMovement();
 
   const inventory = useMemo(
     () => adaptInventoryItemsToList(inventoryQuery.data?.data ?? []),
@@ -90,6 +93,41 @@ export default function Estoque() {
           error instanceof ApiError
             ? error.message
             : "Não foi possível excluir o item do estoque.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleQuickQuantityChange = async (
+    itemId: string,
+    itemName: string,
+    type: "Entrada" | "Saida",
+  ) => {
+    try {
+      await createInventoryMovementMutation.mutateAsync({
+        data: {
+          itemId,
+          type,
+          quantity: 1,
+          reason:
+            type === "Entrada"
+              ? "Ajuste rapido no estoque"
+              : "Baixa rapida no estoque",
+          reference: "Tela de estoque",
+        },
+      });
+
+      toast({
+        title: "Estoque atualizado",
+        description: `${itemName} ${type === "Entrada" ? "aumentado" : "reduzido"} em 1 ${filteredInventory.find((item) => item.id === itemId)?.unit ?? ""}.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao atualizar estoque",
+        description:
+          error instanceof ApiError
+            ? error.message
+            : "Nao foi possivel atualizar o estoque rapidamente.",
         variant: "destructive",
       });
     }
@@ -340,6 +378,31 @@ export default function Estoque() {
                         onClick={(event) => event.stopPropagation()}
                       >
                         <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                            disabled={
+                              createInventoryMovementMutation.isPending ||
+                              item.currentQuantity <= 0
+                            }
+                            onClick={() =>
+                              handleQuickQuantityChange(item.id, item.name, "Saida")
+                            }
+                          >
+                            <Minus className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            disabled={createInventoryMovementMutation.isPending}
+                            onClick={() =>
+                              handleQuickQuantityChange(item.id, item.name, "Entrada")
+                            }
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

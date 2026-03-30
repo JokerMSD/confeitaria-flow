@@ -28,6 +28,8 @@ export const paymentMethodSchema = z.enum([
 export const createOrderItemInputSchema = z.object({
   recipeId: uuidSchema.nullable().optional(),
   fillingRecipeId: uuidSchema.nullable().optional(),
+  secondaryFillingRecipeId: uuidSchema.nullable().optional(),
+  tertiaryFillingRecipeId: uuidSchema.nullable().optional(),
   productName: z.string().trim().min(1).max(160),
   quantity: z.number().positive(),
   unitPriceCents: centsSchema,

@@ -8,6 +8,8 @@ export interface OrderItemRowInsert {
   orderId: string;
   recipeId: string | null;
   fillingRecipeId: string | null;
+  secondaryFillingRecipeId: string | null;
+  tertiaryFillingRecipeId: string | null;
   productName: string;
   quantity: number;
   unitPriceCents: number;

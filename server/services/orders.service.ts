@@ -112,7 +112,11 @@ export class OrdersService {
       );
       await this.recipesService.assertFillingRecipesArePreparations(
         normalized.items
-          .map((item) => item.fillingRecipeId)
+          .flatMap((item) => [
+            item.fillingRecipeId,
+            item.secondaryFillingRecipeId,
+            item.tertiaryFillingRecipeId,
+          ])
           .filter((recipeId): recipeId is string => Boolean(recipeId)),
         tx,
       );
@@ -145,6 +149,8 @@ export class OrdersService {
           orderId: createdOrder.id,
           recipeId: item.recipeId,
           fillingRecipeId: item.fillingRecipeId,
+          secondaryFillingRecipeId: item.secondaryFillingRecipeId,
+          tertiaryFillingRecipeId: item.tertiaryFillingRecipeId,
           productName: item.productName,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
@@ -174,7 +180,10 @@ export class OrdersService {
           items: createdItems.map((item: any) => ({
             recipeId: item.recipeId ?? null,
             fillingRecipeId: item.fillingRecipeId ?? null,
+            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
             quantity: item.quantity,
+            productName: item.productName,
           })),
         },
         tx,
@@ -212,7 +221,11 @@ export class OrdersService {
       );
       await this.recipesService.assertFillingRecipesArePreparations(
         normalized.items
-          .map((item) => item.fillingRecipeId)
+          .flatMap((item) => [
+            item.fillingRecipeId,
+            item.secondaryFillingRecipeId,
+            item.tertiaryFillingRecipeId,
+          ])
           .filter((recipeId): recipeId is string => Boolean(recipeId)),
         tx,
       );
@@ -250,6 +263,8 @@ export class OrdersService {
           orderId: id,
           recipeId: item.recipeId,
           fillingRecipeId: item.fillingRecipeId,
+          secondaryFillingRecipeId: item.secondaryFillingRecipeId,
+          tertiaryFillingRecipeId: item.tertiaryFillingRecipeId,
           productName: item.productName,
           quantity: item.quantity,
           unitPriceCents: item.unitPriceCents,
@@ -279,7 +294,10 @@ export class OrdersService {
           items: updatedItems.map((item: any) => ({
             recipeId: item.recipeId ?? null,
             fillingRecipeId: item.fillingRecipeId ?? null,
+            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
             quantity: item.quantity,
+            productName: item.productName,
           })),
         },
         tx,
@@ -354,6 +372,8 @@ export class OrdersService {
       return {
         recipeId: item.recipeId ?? null,
         fillingRecipeId: item.fillingRecipeId ?? null,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
         productName,
         quantity,
         unitPriceCents,
@@ -423,6 +443,8 @@ export class OrdersService {
         orderId: item.orderId,
         recipeId: item.recipeId ?? null,
         fillingRecipeId: item.fillingRecipeId ?? null,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
         productName: item.productName,
         quantity: item.quantity,
         unitPriceCents: item.unitPriceCents,

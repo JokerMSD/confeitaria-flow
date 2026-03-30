@@ -61,8 +61,12 @@ export class InventoryPurchasePlanService {
       pendingOrderIds.add(row.orderId);
       const resolvedRecipe = row.recipeId
         ? {
-            recipeId: row.recipeId,
-            fillingRecipeId: row.fillingRecipeId ?? null,
+          recipeId: row.recipeId,
+            fillingRecipeIds: [
+              row.fillingRecipeId,
+              row.secondaryFillingRecipeId,
+              row.tertiaryFillingRecipeId,
+            ].filter((value): value is string => Boolean(value)),
           }
         : await this.recipesService.resolveLegacyOrderItemRecipes(
             row.productName,
@@ -76,7 +80,7 @@ export class InventoryPurchasePlanService {
         resolvedRecipe.recipeId,
         row.quantity,
         undefined,
-        resolvedRecipe.fillingRecipeId,
+        resolvedRecipe.fillingRecipeIds,
       );
 
       for (const [itemId, quantity] of Array.from(exploded.entries())) {

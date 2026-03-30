@@ -147,6 +147,8 @@ export class OrdersRepository {
         productName: orderItems.productName,
         recipeId: orderItems.recipeId,
         fillingRecipeId: orderItems.fillingRecipeId,
+        secondaryFillingRecipeId: orderItems.secondaryFillingRecipeId,
+        tertiaryFillingRecipeId: orderItems.tertiaryFillingRecipeId,
         quantity: orderItems.quantity,
       })
       .from(orders)

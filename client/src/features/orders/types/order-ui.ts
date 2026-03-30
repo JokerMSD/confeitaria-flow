@@ -47,6 +47,8 @@ export interface OrderFormItem {
   id: string;
   recipeId: string | null;
   fillingRecipeId: string | null;
+  secondaryFillingRecipeId: string | null;
+  tertiaryFillingRecipeId: string | null;
   productName: string;
   quantity: number;
   unitPrice: number;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Loader2, Plus, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -66,6 +66,18 @@ function buildPaymentStatusPreview(totalAmount: number, paidAmount: string) {
   return "Parcial";
 }
 
+function normalizeValue(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function supportsMultipleFillings(productName: string) {
+  return normalizeValue(productName).includes("ovo de colher");
+}
+
 export default function PedidoForm() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
@@ -81,6 +93,11 @@ export default function PedidoForm() {
   const [newItemPrice, setNewItemPrice] = useState("");
   const [newItemRecipeId, setNewItemRecipeId] = useState("");
   const [newItemFillingRecipeId, setNewItemFillingRecipeId] = useState("");
+  const [newItemSecondaryFillingRecipeId, setNewItemSecondaryFillingRecipeId] =
+    useState("");
+  const [newItemTertiaryFillingRecipeId, setNewItemTertiaryFillingRecipeId] =
+    useState("");
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const orderQuery = useOrder(orderId);
   const productRecipesQuery = useRecipes({ kind: "ProdutoVenda" });
@@ -136,6 +153,14 @@ export default function PedidoForm() {
       productRecipeOptions.find((recipe) => recipe.id === newItemRecipeId) ?? null,
     [newItemRecipeId, productRecipeOptions],
   );
+  const fillingRecipeOptionsById = useMemo(
+    () => new Map(fillingRecipeOptions.map((recipe) => [recipe.id, recipe])),
+    [fillingRecipeOptions],
+  );
+  const allowsMultipleFillings = useMemo(
+    () => supportsMultipleFillings(selectedProductRecipe?.name ?? newItemName),
+    [newItemName, selectedProductRecipe],
+  );
   const productSelectPlaceholder = productRecipesQuery.isLoading
     ? "Carregando produtos..."
     : productRecipesQuery.isError
@@ -163,6 +188,54 @@ export default function PedidoForm() {
     }));
   };
 
+  const resetItemComposer = () => {
+    setNewItemName("");
+    setNewItemQtd("1");
+    setNewItemPrice("");
+    setNewItemRecipeId("");
+    setNewItemFillingRecipeId("");
+    setNewItemSecondaryFillingRecipeId("");
+    setNewItemTertiaryFillingRecipeId("");
+    setEditingItemId(null);
+  };
+
+  const buildItemNameFromSelections = (
+    productName: string,
+    fillingIds: string[],
+  ) => {
+    const fillingNames = fillingIds
+      .map((id) => fillingRecipeOptionsById.get(id)?.name ?? "")
+      .filter(Boolean);
+
+    return fillingNames.length > 0
+      ? `${productName} - ${fillingNames.join(" / ")}`
+      : productName;
+  };
+
+  const applyItemNameFromSelections = (
+    productName: string,
+    fillingIds: string[],
+  ) => {
+    setNewItemName(buildItemNameFromSelections(productName, fillingIds));
+  };
+
+  const startEditingItem = (itemId: string) => {
+    const item = formState.items.find((currentItem) => currentItem.id === itemId);
+
+    if (!item) {
+      return;
+    }
+
+    setEditingItemId(item.id);
+    setNewItemRecipeId(item.recipeId ?? "");
+    setNewItemFillingRecipeId(item.fillingRecipeId ?? "");
+    setNewItemSecondaryFillingRecipeId(item.secondaryFillingRecipeId ?? "");
+    setNewItemTertiaryFillingRecipeId(item.tertiaryFillingRecipeId ?? "");
+    setNewItemName(item.productName);
+    setNewItemQtd(String(item.quantity));
+    setNewItemPrice(String(item.unitPrice));
+  };
+
   const handleAddItem = () => {
     if (!newItemRecipeId || !newItemName || !newItemPrice || !newItemQtd) {
       toast({
@@ -185,32 +258,54 @@ export default function PedidoForm() {
 
     const quantity = Number.parseInt(newItemQtd, 10);
     const unitPrice = parseCurrencyInput(newItemPrice);
+    const fillingIds = [
+      newItemFillingRecipeId,
+      newItemSecondaryFillingRecipeId,
+      newItemTertiaryFillingRecipeId,
+    ].filter((value): value is string => Boolean(value));
 
     if (!Number.isInteger(quantity) || quantity <= 0 || unitPrice <= 0) {
       return;
     }
 
-    setFormState((current) => ({
-      ...current,
-      items: [
-        ...current.items,
-        buildOrderFormItem(
-          createTemporaryItemId(),
-          newItemRecipeId || null,
-          newItemFillingRecipeId || null,
-          newItemName.trim(),
-          quantity,
-          unitPrice,
-          current.items.length,
-        ),
-      ],
-    }));
+    if (new Set(fillingIds).size !== fillingIds.length) {
+      toast({
+        title: "Recheios repetidos",
+        description: "Escolha recheios diferentes no mesmo item.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    setNewItemName("");
-    setNewItemQtd("1");
-    setNewItemPrice("");
-    setNewItemRecipeId("");
-    setNewItemFillingRecipeId("");
+    const nextItem = buildOrderFormItem(
+      editingItemId ?? createTemporaryItemId(),
+      newItemRecipeId || null,
+      newItemFillingRecipeId || null,
+      allowsMultipleFillings ? newItemSecondaryFillingRecipeId || null : null,
+      allowsMultipleFillings ? newItemTertiaryFillingRecipeId || null : null,
+      buildItemNameFromSelections(selectedProductRecipe?.name ?? newItemName.trim(), fillingIds),
+      quantity,
+      unitPrice,
+      editingItemId == null ? formState.items.length : 0,
+    );
+
+    setFormState((current) => {
+      const items =
+        editingItemId == null
+          ? [...current.items, { ...nextItem, position: current.items.length }]
+          : current.items.map((item, index) =>
+              item.id === editingItemId
+                ? { ...nextItem, position: index }
+                : item,
+            );
+
+      return {
+        ...current,
+        items,
+      };
+    });
+
+    resetItemComposer();
   };
 
   const handleRemoveItem = (id: string) => {
@@ -466,7 +561,7 @@ export default function PedidoForm() {
                         );
 
                         if (selectedRecipe) {
-                          setNewItemName(selectedRecipe.name);
+                          applyItemNameFromSelections(selectedRecipe.name, []);
                           setNewItemPrice(
                             selectedRecipe.salePrice == null
                               ? ""
@@ -476,6 +571,9 @@ export default function PedidoForm() {
                           setNewItemName("");
                           setNewItemPrice("");
                         }
+
+                        setNewItemSecondaryFillingRecipeId("");
+                        setNewItemTertiaryFillingRecipeId("");
                       }}
                     >
                       <option value="">{productSelectPlaceholder}</option>
@@ -501,15 +599,11 @@ export default function PedidoForm() {
                         setNewItemFillingRecipeId(selectedId);
 
                         if (selectedProductRecipe) {
-                          const selectedFilling = fillingRecipeOptions.find(
-                            (recipe) => recipe.id === selectedId,
-                          );
-
-                          setNewItemName(
-                            selectedFilling
-                              ? `${selectedProductRecipe.name} - ${selectedFilling.name}`
-                              : selectedProductRecipe.name,
-                          );
+                          applyItemNameFromSelections(selectedProductRecipe.name, [
+                            selectedId,
+                            newItemSecondaryFillingRecipeId,
+                            newItemTertiaryFillingRecipeId,
+                          ].filter((value): value is string => Boolean(value)));
                         }
                       }}
                       disabled={
@@ -531,6 +625,62 @@ export default function PedidoForm() {
                       </p>
                     )}
                   </div>
+                  {allowsMultipleFillings && (
+                    <div className="space-y-2 md:col-span-2 xl:col-span-2">
+                      <Label>Recheio 2</Label>
+                      <select
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={newItemSecondaryFillingRecipeId}
+                        onChange={(event) => {
+                          const selectedId = event.target.value;
+                          setNewItemSecondaryFillingRecipeId(selectedId);
+
+                          if (selectedProductRecipe) {
+                            applyItemNameFromSelections(selectedProductRecipe.name, [
+                              newItemFillingRecipeId,
+                              selectedId,
+                              newItemTertiaryFillingRecipeId,
+                            ].filter((value): value is string => Boolean(value)));
+                          }
+                        }}
+                      >
+                        <option value="">Opcional</option>
+                        {fillingRecipeOptions.map((recipe) => (
+                          <option key={recipe.id} value={recipe.id}>
+                            {recipe.name} ({recipe.outputLabel})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  {allowsMultipleFillings && (
+                    <div className="space-y-2 md:col-span-2 xl:col-span-2">
+                      <Label>Recheio 3</Label>
+                      <select
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={newItemTertiaryFillingRecipeId}
+                        onChange={(event) => {
+                          const selectedId = event.target.value;
+                          setNewItemTertiaryFillingRecipeId(selectedId);
+
+                          if (selectedProductRecipe) {
+                            applyItemNameFromSelections(selectedProductRecipe.name, [
+                              newItemFillingRecipeId,
+                              newItemSecondaryFillingRecipeId,
+                              selectedId,
+                            ].filter((value): value is string => Boolean(value)));
+                          }
+                        }}
+                      >
+                        <option value="">Opcional</option>
+                        {fillingRecipeOptions.map((recipe) => (
+                          <option key={recipe.id} value={recipe.id}>
+                            {recipe.name} ({recipe.outputLabel})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div className="rounded-xl border border-border/60 bg-background px-4 py-3 md:col-span-2 xl:col-span-2">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">
                       Item que sera adicionado
@@ -565,9 +715,24 @@ export default function PedidoForm() {
                     variant="secondary"
                     className="w-full md:col-span-2 xl:self-end"
                   >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Adicionar Item
+                    {editingItemId ? (
+                      <Save className="w-4 h-4 mr-2" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    {editingItemId ? "Salvar Item" : "Adicionar Item"}
                   </Button>
+                  {editingItemId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={resetItemComposer}
+                      className="w-full md:col-span-2 xl:self-end"
+                    >
+                      <X className="w-4 h-4 mr-2" />
+                      Cancelar Edicao
+                    </Button>
+                  )}
                 </div>
 
                 {formState.items.length === 0 ? (
@@ -598,11 +763,25 @@ export default function PedidoForm() {
                               Recheio selecionado
                             </p>
                           )}
+                          {(item.secondaryFillingRecipeId ||
+                            item.tertiaryFillingRecipeId) && (
+                            <p className="text-[11px] text-muted-foreground">
+                              Multiplos recheios
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center justify-between gap-4 sm:justify-end">
                           <span className="font-bold">
                             {formatCurrency(item.subtotal)}
                           </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-primary"
+                            onClick={() => startEditingItem(item.id)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"

@@ -23,6 +23,18 @@ export const orderItems = pgTable(
     fillingRecipeId: uuid("filling_recipe_id").references(() => recipes.id, {
       onDelete: "restrict",
     }),
+    secondaryFillingRecipeId: uuid("secondary_filling_recipe_id").references(
+      () => recipes.id,
+      {
+        onDelete: "restrict",
+      },
+    ),
+    tertiaryFillingRecipeId: uuid("tertiary_filling_recipe_id").references(
+      () => recipes.id,
+      {
+        onDelete: "restrict",
+      },
+    ),
     productName: varchar("product_name", { length: 160 }).notNull(),
     quantity: integer("quantity").notNull(),
     unitPriceCents: integer("unit_price_cents").notNull(),
@@ -47,5 +59,11 @@ export const orderItems = pgTable(
     fillingRecipeIdIdx: index("order_items_filling_recipe_id_idx").on(
       table.fillingRecipeId,
     ),
+    secondaryFillingRecipeIdIdx: index(
+      "order_items_secondary_filling_recipe_id_idx",
+    ).on(table.secondaryFillingRecipeId),
+    tertiaryFillingRecipeIdIdx: index(
+      "order_items_tertiary_filling_recipe_id_idx",
+    ).on(table.tertiaryFillingRecipeId),
   }),
 );

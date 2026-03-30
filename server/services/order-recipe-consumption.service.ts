@@ -13,6 +13,8 @@ export class OrderRecipeConsumptionService {
       items: Array<{
         recipeId: string | null;
         fillingRecipeId?: string | null;
+        secondaryFillingRecipeId?: string | null;
+        tertiaryFillingRecipeId?: string | null;
         quantity: number;
         productName?: string;
       }>;
@@ -28,6 +30,8 @@ export class OrderRecipeConsumptionService {
       input.items.map((item) => ({
         recipeId: item.recipeId,
         fillingRecipeId: item.fillingRecipeId ?? null,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
         quantity: item.quantity,
         productName: item.productName ?? "",
       })),

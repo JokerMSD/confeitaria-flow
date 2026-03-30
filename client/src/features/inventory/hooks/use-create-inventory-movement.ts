@@ -10,6 +10,9 @@ export function useCreateInventoryMovement() {
     onSuccess: async (_, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: inventoryQueryKeys.purchasePlan(),
+        }),
         queryClient.invalidateQueries({ queryKey: inventoryMovementQueryKeys.all }),
         queryClient.invalidateQueries({
           queryKey: inventoryMovementQueryKeys.item(variables.data.itemId),

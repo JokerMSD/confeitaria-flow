@@ -333,7 +333,15 @@ export class RecipesService {
   async syncOrderInventoryConsumption(
     order: { id: string; orderNumber: string; status: string },
     orderItems: Array<
-      Pick<OrderItem, "recipeId" | "fillingRecipeId" | "quantity" | "productName">
+      Pick<
+        OrderItem,
+        | "recipeId"
+        | "fillingRecipeId"
+        | "secondaryFillingRecipeId"
+        | "tertiaryFillingRecipeId"
+        | "quantity"
+        | "productName"
+      >
     >,
     executor?: Executor,
   ) {
@@ -377,7 +385,11 @@ export class RecipesService {
       const resolvedRecipe = orderItem.recipeId
         ? {
             recipeId: orderItem.recipeId,
-            fillingRecipeId: orderItem.fillingRecipeId ?? null,
+            fillingRecipeIds: [
+              orderItem.fillingRecipeId,
+              orderItem.secondaryFillingRecipeId,
+              orderItem.tertiaryFillingRecipeId,
+            ].filter((value): value is string => Boolean(value)),
           }
         : await this.resolveLegacyOrderItemRecipes(orderItem.productName, executor);
 
@@ -389,7 +401,7 @@ export class RecipesService {
         resolvedRecipe.recipeId,
         orderItem.quantity,
         executor,
-        resolvedRecipe.fillingRecipeId,
+        resolvedRecipe.fillingRecipeIds,
       );
 
       for (const [itemId, quantity] of Array.from(exploded.entries())) {
@@ -431,7 +443,7 @@ export class RecipesService {
   async resolveLegacyOrderItemRecipes(
     productName: string,
     executor?: Executor,
-  ): Promise<{ recipeId: string; fillingRecipeId: string | null } | null> {
+  ): Promise<{ recipeId: string; fillingRecipeIds: string[] } | null> {
     const normalizedProductName = normalizeName(productName);
 
     if (!normalizedProductName) {
@@ -453,7 +465,7 @@ export class RecipesService {
     if (exactProductMatch) {
       return {
         recipeId: exactProductMatch.id,
-        fillingRecipeId: null,
+        fillingRecipeIds: [],
       };
     }
 
@@ -478,7 +490,7 @@ export class RecipesService {
 
     return {
       recipeId: baseProductMatch.id,
-      fillingRecipeId: fillingMatch?.id ?? null,
+      fillingRecipeIds: fillingMatch?.id ? [fillingMatch.id] : [],
     };
   }
 
@@ -486,7 +498,7 @@ export class RecipesService {
     recipeId: string,
     batchCount = 1,
     executor?: Executor,
-    fillingRecipeId?: string | null,
+    fillingRecipeIds: string[] = [],
   ) {
     const aggregation = new Map<string, number>();
     await this.collectInventoryUsage(
@@ -495,7 +507,7 @@ export class RecipesService {
       aggregation,
       [],
       executor,
-      fillingRecipeId ?? null,
+      fillingRecipeIds,
       true,
     );
     return aggregation;
@@ -684,7 +696,7 @@ export class RecipesService {
     aggregation: Map<string, number>,
     stack: string[],
     executor?: Executor,
-    fillingRecipeId?: string | null,
+    fillingRecipeIds: string[] = [],
     allowFillingOverride = false,
   ) {
     if (stack.includes(recipeId)) {
@@ -740,29 +752,52 @@ export class RecipesService {
         throw new HttpError(400, "Recipe component child recipe is invalid.");
       }
 
-      const effectiveChildRecipeId =
-        allowFillingOverride &&
-        fillingRecipeId &&
-        !fillingApplied
-          ? fillingRecipeId
-          : component.childRecipeId;
+      const overrideFillingIds =
+        allowFillingOverride && !fillingApplied ? fillingRecipeIds : [];
+
+      if (overrideFillingIds.length > 0) {
+        fillingApplied = true;
+
+        for (const overrideFillingId of overrideFillingIds) {
+          const childRecipe = await this.recipesRepository.findById(
+            overrideFillingId,
+            executor,
+          );
+
+          if (!childRecipe) {
+            throw new HttpError(404, "Recipe component child recipe not found.");
+          }
+
+          const childOutputQuantity = fromMilli(childRecipe.outputQuantityMilli);
+          const requestedChildQuantity = convertQuantity(
+            requestedQuantity / overrideFillingIds.length,
+            component.quantityUnit,
+            childRecipe.outputUnit,
+          );
+          const childBatchCount =
+            childOutputQuantity > 0 ? requestedChildQuantity / childOutputQuantity : 0;
+
+          await this.collectInventoryUsage(
+            overrideFillingId,
+            childBatchCount,
+            aggregation,
+            nextStack,
+            executor,
+            [],
+            false,
+          );
+        }
+
+        continue;
+      }
 
       const childRecipe = await this.recipesRepository.findById(
-        effectiveChildRecipeId,
+        component.childRecipeId,
         executor,
       );
 
       if (!childRecipe) {
         throw new HttpError(404, "Recipe component child recipe not found.");
-      }
-
-      if (
-        allowFillingOverride &&
-        fillingRecipeId &&
-        !fillingApplied &&
-        component.componentType === "Receita"
-      ) {
-        fillingApplied = true;
       }
 
       const childOutputQuantity = fromMilli(childRecipe.outputQuantityMilli);
@@ -775,12 +810,12 @@ export class RecipesService {
         childOutputQuantity > 0 ? requestedChildQuantity / childOutputQuantity : 0;
 
       await this.collectInventoryUsage(
-        effectiveChildRecipeId!,
+        component.childRecipeId,
         childBatchCount,
         aggregation,
         nextStack,
         executor,
-        null,
+        [],
         false,
       );
     }
