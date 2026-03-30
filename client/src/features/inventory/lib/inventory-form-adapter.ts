@@ -52,7 +52,7 @@ export function createEmptyInventoryFormState(): InventoryFormState {
   return {
     name: "",
     category: "Ingrediente",
-    currentQuantity: "",
+    currentQuantity: "0",
     minQuantity: "0",
     unit: "un",
     recipeEquivalentQuantity: "",

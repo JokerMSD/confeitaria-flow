@@ -68,10 +68,10 @@ export default function EstoqueForm() {
   };
 
   const handleSave = async () => {
-    if (!formState.name.trim() || formState.currentQuantity.trim() === "") {
+    if (!formState.name.trim()) {
       toast({
         title: "Preencha os campos obrigatorios",
-        description: "Nome do item e quantidade atual sao obrigatorios.",
+        description: "Nome do item e obrigatorio.",
         variant: "destructive",
       });
       return;
@@ -242,6 +242,7 @@ export default function EstoqueForm() {
                 placeholder="0"
                 unit={formState.unit}
                 inputClassName="text-xl font-bold font-display"
+                helpText="Itens novos podem ser cadastrados com estoque inicial zero."
               />
 
               <QuantityStepperField

@@ -9,6 +9,7 @@ import {
   parseDecimalInput,
   parseMoneyInputToCents,
 } from "../../client/src/features/inventory/lib/inventory-input-helpers";
+import { createEmptyInventoryFormState } from "../../client/src/features/inventory/lib/inventory-form-adapter";
 
 test("parseDecimalInput handles pt-BR and mixed separators", () => {
   assert.equal(parseDecimalInput(""), 0);
@@ -39,4 +40,10 @@ test("applyQuantityDelta never goes negative and keeps friendly precision", () =
   assert.equal(applyQuantityDelta("0,5", 0.5), "1");
   assert.equal(applyQuantityDelta("1", -5), "0");
   assert.equal(formatQuantityValue(1.23456), "1.235");
+});
+
+test("new inventory items default to zero stock instead of blank quantity", () => {
+  const state = createEmptyInventoryFormState();
+  assert.equal(state.currentQuantity, "0");
+  assert.equal(state.minQuantity, "0");
 });
