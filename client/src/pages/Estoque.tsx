@@ -30,6 +30,8 @@ export default function Estoque() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("todas");
+  const [quickQuantities, setQuickQuantities] = useState<Record<string, string>>({});
+  const [pendingQuickItemId, setPendingQuickItemId] = useState<string | null>(null);
 
   const categories = ["todas", "Produto Pronto", "Ingrediente", "Embalagem"];
 
@@ -75,6 +77,24 @@ export default function Estoque() {
     [purchasePlanQuery.data],
   );
 
+  const getQuickQuantityValue = (itemId: string) => quickQuantities[itemId] ?? "";
+
+  const parseQuickQuantity = (itemId: string) => {
+    const rawValue = getQuickQuantityValue(itemId).replace(",", ".").trim();
+
+    if (!rawValue) {
+      return 1;
+    }
+
+    const parsedValue = Number.parseFloat(rawValue);
+
+    if (!Number.isFinite(parsedValue) || parsedValue <= 0) {
+      return null;
+    }
+
+    return parsedValue;
+  };
+
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir "${name}" do estoque?`)) {
       return;
@@ -103,12 +123,25 @@ export default function Estoque() {
     itemName: string,
     type: "Entrada" | "Saida",
   ) => {
+    const quantity = parseQuickQuantity(itemId);
+
+    if (quantity == null) {
+      toast({
+        title: "Quantidade invalida",
+        description: "Informe uma quantidade maior que zero.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
+      setPendingQuickItemId(itemId);
+
       await createInventoryMovementMutation.mutateAsync({
         data: {
           itemId,
           type,
-          quantity: 1,
+          quantity,
           reason:
             type === "Entrada"
               ? "Ajuste rapido no estoque"
@@ -119,7 +152,7 @@ export default function Estoque() {
 
       toast({
         title: "Estoque atualizado",
-        description: `${itemName} ${type === "Entrada" ? "aumentado" : "reduzido"} em 1 ${filteredInventory.find((item) => item.id === itemId)?.unit ?? ""}.`,
+        description: `${itemName} ${type === "Entrada" ? "aumentado" : "reduzido"} em ${quantity} ${filteredInventory.find((item) => item.id === itemId)?.unit ?? ""}.`,
       });
     } catch (error) {
       toast({
@@ -130,6 +163,8 @@ export default function Estoque() {
             : "Nao foi possivel atualizar o estoque rapidamente.",
         variant: "destructive",
       });
+    } finally {
+      setPendingQuickItemId(null);
     }
   };
 
@@ -378,12 +413,28 @@ export default function Estoque() {
                         onClick={(event) => event.stopPropagation()}
                       >
                         <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <Input
+                            type="number"
+                            min="0.001"
+                            step="0.001"
+                            inputMode="decimal"
+                            value={getQuickQuantityValue(item.id)}
+                            placeholder="1"
+                            className="h-8 w-16 text-right text-xs"
+                            onClick={(event) => event.stopPropagation()}
+                            onChange={(event) =>
+                              setQuickQuantities((current) => ({
+                                ...current,
+                                [item.id]: event.target.value,
+                              }))
+                            }
+                          />
                           <Button
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                             disabled={
-                              createInventoryMovementMutation.isPending ||
+                              pendingQuickItemId === item.id ||
                               item.currentQuantity <= 0
                             }
                             onClick={() =>
@@ -396,7 +447,7 @@ export default function Estoque() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            disabled={createInventoryMovementMutation.isPending}
+                            disabled={pendingQuickItemId === item.id}
                             onClick={() =>
                               handleQuickQuantityChange(item.id, item.name, "Entrada")
                             }

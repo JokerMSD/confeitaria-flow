@@ -7,8 +7,8 @@ import { inventoryMovementQueryKeys } from "../lib/inventory-movement-query-keys
 export function useCreateInventoryMovement() {
   return useMutation({
     mutationFn: createInventoryMovement,
-    onSuccess: async (_, variables) => {
-      await Promise.all([
+    onSuccess: (_, variables) => {
+      void Promise.all([
         queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.all }),
         queryClient.invalidateQueries({
           queryKey: inventoryQueryKeys.purchasePlan(),
