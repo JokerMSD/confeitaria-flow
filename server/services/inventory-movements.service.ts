@@ -105,6 +105,8 @@ export class InventoryMovementsService {
           {
             movementId: createdMovement.id,
             itemName: item.name,
+            quantity: normalized.quantity,
+            unit: item.unit,
             amountCents: normalized.purchaseAmountCents,
             paymentMethod: normalized.purchasePaymentMethod,
           },
@@ -120,6 +122,8 @@ export class InventoryMovementsService {
           {
             movementId: createdMovement.id,
             itemName: item.name,
+            quantity: normalized.quantity,
+            unit: item.unit,
             amountCents: Math.round(normalized.quantity * item.purchaseUnitCostCents),
             paymentMethod: "Pix",
           },

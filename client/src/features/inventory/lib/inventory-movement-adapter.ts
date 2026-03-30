@@ -6,6 +6,7 @@ import type {
 import type {
   InventoryMovementFormState,
   InventoryMovementListItem,
+  UiInventoryUnit,
   UiInventoryMovementType,
 } from "../types/inventory-ui";
 import {
@@ -83,6 +84,32 @@ function moneyStringToCents(value: string) {
   return parseMoneyInputToCents(value);
 }
 
+function isUnitPurchase(unit: UiInventoryUnit | undefined) {
+  return unit === "un" || unit === "caixa";
+}
+
+export function resolveInventoryPurchaseAmountCents(
+  state: InventoryMovementFormState,
+  itemUnit?: UiInventoryUnit,
+) {
+  if (!state.registerPurchase) {
+    return null;
+  }
+
+  const amountCents = moneyStringToCents(state.purchaseAmount);
+
+  if (amountCents == null) {
+    return null;
+  }
+
+  if (isUnitPurchase(itemUnit)) {
+    const quantity = quantityStringToNumber(state.quantity);
+    return Math.round(quantity * amountCents);
+  }
+
+  return amountCents;
+}
+
 const uiToApiPaymentMethodMap = {
   Pix: "Pix",
   Dinheiro: "Dinheiro",
@@ -94,6 +121,7 @@ const uiToApiPaymentMethodMap = {
 export function adaptInventoryMovementFormStateToCreatePayload(
   itemId: string,
   state: InventoryMovementFormState,
+  itemUnit?: UiInventoryUnit,
 ): CreateInventoryMovementInput {
   return {
     itemId,
@@ -101,9 +129,7 @@ export function adaptInventoryMovementFormStateToCreatePayload(
     quantity: quantityStringToNumber(state.quantity),
     reason: state.reason.trim(),
     reference: state.reference.trim() || null,
-    purchaseAmountCents: state.registerPurchase
-      ? moneyStringToCents(state.purchaseAmount)
-      : null,
+    purchaseAmountCents: resolveInventoryPurchaseAmountCents(state, itemUnit),
     purchaseEquivalentQuantity: state.purchaseEquivalentQuantity.trim()
       ? quantityStringToNumber(state.purchaseEquivalentQuantity)
       : null,

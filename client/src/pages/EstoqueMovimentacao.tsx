@@ -25,6 +25,7 @@ import {
   adaptInventoryMovementFormStateToCreatePayload,
   adaptInventoryMovementsToList,
   createEmptyInventoryMovementFormState,
+  resolveInventoryPurchaseAmountCents,
 } from "../features/inventory/lib/inventory-movement-adapter";
 import {
   formatMoneyInput,
@@ -64,6 +65,11 @@ export default function EstoqueMovimentacao() {
 
   const isSaving = createMovementMutation.isPending;
   const isIngredient = item?.category === "Ingrediente";
+  const purchaseUsesUnitPrice = item?.unit === "un" || item?.unit === "caixa";
+  const computedPurchaseTotalCents = useMemo(
+    () => resolveInventoryPurchaseAmountCents(formState, item?.unit),
+    [formState, item?.unit],
+  );
   const allowsPurchaseYield =
     item?.category === "Ingrediente" &&
     item.recipeEquivalentUnit != null &&
@@ -81,7 +87,10 @@ export default function EstoqueMovimentacao() {
 
   const handleSave = async () => {
     const quantity = parseDecimalInput(formState.quantity);
-    const purchaseAmount = parseDecimalInput(formState.purchaseAmount);
+    const purchaseAmountCents = resolveInventoryPurchaseAmountCents(
+      formState,
+      item?.unit,
+    );
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
       toast({
@@ -103,11 +112,15 @@ export default function EstoqueMovimentacao() {
 
     if (
       formState.registerPurchase &&
-      purchaseAmount <= 0
+      (purchaseAmountCents == null || purchaseAmountCents <= 0)
     ) {
       toast({
-        title: "Valor de compra invalido",
-        description: "Informe um valor maior que zero para registrar a compra no caixa.",
+        title: purchaseUsesUnitPrice
+          ? "Preco unitario invalido"
+          : "Valor de compra invalido",
+        description: purchaseUsesUnitPrice
+          ? "Informe um preco por unidade maior que zero para calcular o total da compra."
+          : "Informe um valor maior que zero para registrar a compra no caixa.",
         variant: "destructive",
       });
       return;
@@ -136,7 +149,11 @@ export default function EstoqueMovimentacao() {
 
     try {
       await createMovementMutation.mutateAsync({
-        data: adaptInventoryMovementFormStateToCreatePayload(itemId, formState),
+        data: adaptInventoryMovementFormStateToCreatePayload(
+          itemId,
+          formState,
+          item?.unit,
+        ),
       });
 
       toast({ title: "Movimentacao registrada com sucesso!" });
@@ -350,7 +367,11 @@ export default function EstoqueMovimentacao() {
                   {formState.registerPurchase && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="purchaseAmount">Valor da Compra (R$)</Label>
+                        <Label htmlFor="purchaseAmount">
+                          {purchaseUsesUnitPrice
+                            ? `Preco por ${item.unit} (R$)`
+                            : "Valor total da compra (R$)"}
+                        </Label>
                         <Input
                           id="purchaseAmount"
                           type="text"
@@ -364,6 +385,11 @@ export default function EstoqueMovimentacao() {
                           }
                           placeholder="0,00"
                         />
+                        <p className="text-xs text-muted-foreground">
+                          {purchaseUsesUnitPrice
+                            ? `Quantidade comprada: ${formState.quantity || "0"} ${item.unit}. Total calculado: ${formatCurrency((computedPurchaseTotalCents ?? 0) / 100)}.`
+                            : "Informe o valor total pago nesta compra."}
+                        </p>
                       </div>
 
                       <div className="space-y-2">

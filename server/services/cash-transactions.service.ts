@@ -200,6 +200,8 @@ export class CashTransactionsService {
     input: {
       movementId: string;
       itemName: string;
+      quantity: number;
+      unit: string;
       amountCents: number;
       paymentMethod: PaymentMethod;
     },
@@ -213,7 +215,7 @@ export class CashTransactionsService {
       {
         type: "Saida",
         category: "CompraEstoque",
-        description: `Compra de estoque - ${input.itemName}`,
+        description: `Compra de estoque - ${input.itemName} (${input.quantity} ${input.unit})`,
         amountCents: input.amountCents,
         paymentMethod: input.paymentMethod,
         transactionDate: new Date(),
