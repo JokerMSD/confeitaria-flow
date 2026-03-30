@@ -29,6 +29,7 @@ import {
   buildOrderFormItem,
   createEmptyOrderFormState,
 } from "@/features/orders/lib/order-form-adapter";
+import { supportsMultipleFillings } from "@/features/orders/lib/order-item-composer";
 import type {
   OrderFormState,
   UiOrderStatus,
@@ -62,18 +63,6 @@ function buildPaymentStatusPreview(totalAmount: number, paidAmount: string) {
   }
 
   return "Parcial";
-}
-
-function normalizeValue(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .trim();
-}
-
-function supportsMultipleFillings(productName: string) {
-  return normalizeValue(productName).includes("ovo de colher");
 }
 
 export default function PedidoForm() {
