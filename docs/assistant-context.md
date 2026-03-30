@@ -1,7 +1,7 @@
 # Assistant Context
 
 ## Objetivo
-Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos centrais, revisar este arquivo e `docs/product-rules.md`.
+Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos centrais, revisar este arquivo, `docs/current-state.md`, `docs/product-rules.md` e os arquivos em `docs/decisions/` quando a mudanca tocar um dominio relevante.
 
 ## Arquitetura Atual
 - Monolito com `client/`, `server/` e `shared/`.
@@ -66,6 +66,11 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - `script/backfill-legacy-order-item-recipes.ts`
 - `script/backfill-order-fillings-from-notes.ts`
 - `script/sync-default-recipes.ts`
+
+## Runbooks Relevantes
+- `docs/runbooks/deploy.md`
+- `docs/runbooks/data-backfills.md`
+- `docs/runbooks/operations.md`
 
 ## Validacao Esperada Depois De Mudancas Grandes
 - Rodar `npm run check`
