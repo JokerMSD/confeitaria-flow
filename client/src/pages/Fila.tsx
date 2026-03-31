@@ -48,7 +48,7 @@ function getDayLabel(dateStr: string, todayStr: string, tomorrowStr: string) {
   }
 
   if (dateStr === tomorrowStr) {
-    return "Amanha";
+    return "Amanhã";
   }
 
   return formatDate(dateStr);
@@ -69,7 +69,7 @@ function getTimeRange(orders: OrderQueueCardItem[]) {
     .sort((a, b) => a.localeCompare(b));
 
   if (times.length === 0) {
-    return "Horarios a combinar";
+    return "Horários a combinar";
   }
 
   if (times[0] === times[times.length - 1]) {
@@ -236,10 +236,10 @@ function UpcomingDaysSection({
           <div>
             <h3 className="font-bold flex items-center gap-2">
               <CalendarClock className="w-5 h-5" />
-              Proximos Dias
+              Próximos Dias
             </h3>
             <p className="text-xs text-muted-foreground mt-1">
-              Agenda agrupada por data para facilitar a producao.
+              Agenda agrupada por data para facilitar a produção.
             </p>
           </div>
           <span className="bg-background/70 text-foreground text-sm font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm shrink-0">
@@ -251,7 +251,7 @@ function UpcomingDaysSection({
       <div className="p-3 space-y-3">
         {groupedUpcomingDays.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border/70 bg-background/40 p-5 text-center text-sm text-muted-foreground">
-            Nenhum pedido agendado para os proximos dias
+            Nenhum pedido agendado para os próximos dias
           </div>
         ) : (
           groupedUpcomingDays.map((group) => (
@@ -365,11 +365,11 @@ export default function Fila() {
   }, [orders, todayStr, tomorrowStr]);
 
   return (
-    <AppLayout title="Fila de Producao">
+    <AppLayout title="Fila de Produção">
       <div className="h-full flex flex-col">
         <div className="mb-6">
           <h2 className="text-2xl font-display font-bold text-foreground">
-            Quadro de Producao
+            Quadro de Produção
           </h2>
           <p className="text-muted-foreground">
             Visualize e organize as entregas por data.
@@ -380,7 +380,7 @@ export default function Fila() {
           <div className="flex-1 flex items-center justify-center">
             <div className="glass-card p-8 rounded-2xl border border-border/50 text-center space-y-3 max-w-md">
               <p className="font-semibold text-foreground">
-                Nao foi possivel carregar a fila de producao.
+                Não foi possível carregar a fila de produção.
               </p>
               <p className="text-sm text-muted-foreground">
                 Tente novamente para buscar os pedidos reais da fila.
@@ -399,7 +399,7 @@ export default function Fila() {
             <div className="glass-card p-8 rounded-2xl border border-border/50 text-center space-y-3 max-w-md">
               <div className="flex items-center justify-center gap-2 text-muted-foreground">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Carregando fila de producao...</span>
+                <span>Carregando fila de produção...</span>
               </div>
             </div>
           </div>
@@ -417,7 +417,7 @@ export default function Fila() {
                 </div>
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
-                    Hoje + Amanha
+                    Hoje + Amanhã
                   </p>
                   <p className="mt-2 text-3xl font-display font-bold text-primary">
                     {groupedOrders.hoje.length + groupedOrders.amanha.length}
@@ -442,11 +442,11 @@ export default function Fila() {
               />
 
               <QueueSection
-                title="Amanha"
+                title="Amanhã"
                 orders={groupedOrders.amanha}
                 icon={ArrowRight}
                 headerColor="bg-primary/10 text-primary border-primary/20"
-                mobileDescription="Preparacao imediata para o dia seguinte."
+                mobileDescription="Preparação imediata para o dia seguinte."
               />
 
               <UpcomingDaysSection
@@ -473,7 +473,7 @@ export default function Fila() {
                 />
 
                 <QueueColumn
-                  title="Amanha"
+                  title="Amanhã"
                   orders={groupedOrders.amanha}
                   icon={ArrowRight}
                   headerColor="bg-primary/10 text-primary border-primary/20"

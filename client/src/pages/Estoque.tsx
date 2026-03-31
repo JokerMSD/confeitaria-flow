@@ -128,7 +128,7 @@ export default function Estoque() {
 
     if (quantity == null) {
       toast({
-        title: "Quantidade invalida",
+        title: "Quantidade inválida",
         description: "Informe uma quantidade maior que zero.",
         variant: "destructive",
       });
@@ -161,7 +161,7 @@ export default function Estoque() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Nao foi possivel atualizar o estoque rapidamente.",
+            : "Não foi possível atualizar o estoque rapidamente.",
         variant: "destructive",
       });
     } finally {
@@ -220,7 +220,7 @@ export default function Estoque() {
                     Necessidade de Compra
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Calculado pelos pedidos ainda em producao: novo, confirmado e em producao.
+                    Calculado pelos pedidos ainda em produção: novo, confirmado e em produção.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm">
@@ -243,7 +243,7 @@ export default function Estoque() {
               ) : purchasePlanQuery.isError ? (
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Nao foi possivel calcular a necessidade de compra.
+                    Não foi possível calcular a necessidade de compra.
                   </p>
                   <Button variant="outline" onClick={() => purchasePlanQuery.refetch()}>
                     Tentar novamente

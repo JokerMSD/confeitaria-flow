@@ -61,7 +61,7 @@ export default function Catalogo() {
           description:
             error instanceof ApiError
               ? error.message
-              : "Nao foi possivel excluir o produto.",
+              : "Não foi possível excluir o produto.",
           variant: "destructive",
         });
       },
@@ -69,13 +69,13 @@ export default function Catalogo() {
   };
 
   return (
-    <AppLayout title="Catalogo">
+    <AppLayout title="Catálogo">
       <div className="space-y-6">
         <div className="flex flex-col gap-4">
           <div className="flex justify-between items-center">
             <div>
               <h2 className="text-2xl font-display font-bold text-foreground">
-                Catalogo
+                Catálogo
               </h2>
               <p className="text-muted-foreground">
                 Cadastre os produtos vendidos e seus precos sugeridos.
@@ -119,7 +119,7 @@ export default function Catalogo() {
           ) : recipesQuery.isError ? (
             <div className="col-span-full py-12 text-center text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
               <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>Nao foi possivel carregar o catalogo.</p>
+              <p>Não foi possível carregar o catálogo.</p>
               <Button
                 variant="link"
                 onClick={() => recipesQuery.refetch()}
@@ -192,7 +192,7 @@ export default function Catalogo() {
                     </div>
                     <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Preco praticado
+                        Preço praticado
                       </p>
                       <p className="mt-1 font-bold">
                         {recipe.effectiveSalePrice == null
@@ -207,7 +207,7 @@ export default function Catalogo() {
                     <p>{recipe.componentCount} componentes</p>
                     <p>Markup: {recipe.markupPercent}%</p>
                     <p>
-                      Preco ideal:{" "}
+                      Preço ideal:{" "}
                       {recipe.suggestedSalePrice == null
                         ? "-"
                         : formatCurrency(recipe.suggestedSalePrice)}

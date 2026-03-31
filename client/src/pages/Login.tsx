@@ -44,7 +44,7 @@ export default function Login() {
       const message =
         error instanceof ApiError
           ? error.message
-          : "Nao foi possivel autenticar.";
+          : "Não foi possível autenticar.";
       setErrorMessage(message);
     }
   };

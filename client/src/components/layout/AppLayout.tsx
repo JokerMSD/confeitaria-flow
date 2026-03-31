@@ -33,7 +33,7 @@ export function Sidebar() {
       setLocation("/login");
     } catch {
       toast({
-        title: "Nao foi possivel sair",
+        title: "Não foi possível sair",
         description: "Tente novamente.",
         variant: "destructive",
       });
@@ -45,7 +45,7 @@ export function Sidebar() {
     { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
     { href: "/fila", label: "Fila", icon: ClipboardList },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
-    { href: "/catalogo", label: "Catalogo", icon: Store },
+    { href: "/catalogo", label: "Catálogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
   ];
@@ -108,7 +108,7 @@ export function Sidebar() {
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate text-sidebar-foreground">
-              {user?.name ?? "Usuario"}
+              {user?.name ?? "Usuário"}
             </p>
             <p className="text-xs text-sidebar-foreground/60 truncate">
               {user?.email ?? "usuario@docegestao.com"}
@@ -132,11 +132,11 @@ export function BottomNav() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "Inicio", icon: Home },
+    { href: "/", label: "Início", icon: Home },
     { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
     { href: "/fila", label: "Fila", icon: ClipboardList },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
-    { href: "/catalogo", label: "Catalogo", icon: Store },
+    { href: "/catalogo", label: "Catálogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
   ];

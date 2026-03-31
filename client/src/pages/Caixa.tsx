@@ -76,7 +76,7 @@ export default function Caixa() {
     try {
       await deleteTransactionMutation.mutateAsync(id);
       toast({
-        title: "Movimentacao excluida",
+        title: "Movimentação excluída",
         description: "O registro foi removido do caixa.",
       });
     } catch (error) {
@@ -85,7 +85,7 @@ export default function Caixa() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Nao foi possivel excluir a movimentacao.",
+          : "Não foi possível excluir a movimentação.",
         variant: "destructive",
       });
     }
@@ -197,7 +197,7 @@ export default function Caixa() {
             <CardContent className="p-6 flex flex-col gap-2">
               <div className="flex items-center justify-between text-primary/80">
                 <span className="text-sm font-bold uppercase tracking-wider">
-                  Saldo do Periodo
+                  Saldo do Período
                 </span>
                 <Wallet className="w-5 h-5" />
               </div>
@@ -268,7 +268,7 @@ export default function Caixa() {
                   : "bg-card text-foreground border-border hover:bg-muted",
               )}
             >
-              {type === "todos" ? "Todas as Movimentacoes" : `${type}s`}
+              {type === "todos" ? "Todas as Movimentações" : `${type}s`}
             </button>
           ))}
         </div>
@@ -278,7 +278,7 @@ export default function Caixa() {
             <table className="w-full text-sm text-left">
               <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border">
                 <tr>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4">Descricao</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4">Descrição</th>
                   <th className="px-4 py-3 sm:px-6 sm:py-4 hidden sm:table-cell">
                     Categoria
                   </th>
@@ -286,7 +286,7 @@ export default function Caixa() {
                     Data/Hora
                   </th>
                   <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">Valor</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">Acoes</th>
+                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
@@ -305,7 +305,7 @@ export default function Caixa() {
                       colSpan={5}
                       className="px-6 py-12 text-center text-muted-foreground space-y-3"
                     >
-                      <p>Nao foi possivel carregar o caixa.</p>
+                      <p>Não foi possível carregar o caixa.</p>
                       <Button variant="outline" onClick={() => cashQuery.refetch()}>
                         Tentar novamente
                       </Button>

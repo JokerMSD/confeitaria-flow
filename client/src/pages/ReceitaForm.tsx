@@ -49,7 +49,7 @@ export default function ReceitaForm() {
       : "Nova Receita";
   const pageDescription = isCatalogRoute
     ? "Cadastre os produtos do catalogo vendidos nos pedidos."
-    : "Cadastre bases, recheios e preparacoes usadas na producao.";
+    : "Cadastre bases, recheios e preparações usadas na produção.";
 
   const [formState, setFormState] = useState<RecipeFormState>(
     createEmptyRecipeFormState(defaultKind),
@@ -187,8 +187,8 @@ export default function ReceitaForm() {
   const handleSave = async () => {
     if (!formState.name.trim() || !formState.outputQuantity.trim()) {
       toast({
-        title: "Preencha os campos obrigatorios",
-        description: "Nome e rendimento da receita sao obrigatorios.",
+        title: "Preencha os campos obrigatórios",
+        description: "Nome e rendimento da receita são obrigatórios.",
         variant: "destructive",
       });
       return;
@@ -224,7 +224,7 @@ export default function ReceitaForm() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Nao foi possivel salvar a receita.",
+            : "Não foi possível salvar a receita.",
         variant: "destructive",
       });
     }
@@ -252,7 +252,7 @@ export default function ReceitaForm() {
           <Card className="glass-card">
             <CardContent className="p-10 text-center space-y-4">
               <p className="text-muted-foreground">
-                Nao foi possivel carregar a receita.
+                Não foi possível carregar a receita.
               </p>
               <Button onClick={() => setLocation(listingPath)}>Voltar</Button>
             </CardContent>
@@ -341,7 +341,7 @@ export default function ReceitaForm() {
                   </div>
                   {isCatalogRoute && (
                     <div className="space-y-2">
-                      <Label>Preco praticado</Label>
+                      <Label>Preço praticado</Label>
                       <Input
                         type="text"
                         inputMode="numeric"
@@ -381,7 +381,7 @@ export default function ReceitaForm() {
                     </select>
                   </div>
                   <div className="space-y-2 md:col-span-2">
-                    <Label>Observacoes</Label>
+                    <Label>Observações</Label>
                     <textarea
                       className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
                       value={formState.notes}
@@ -519,7 +519,7 @@ export default function ReceitaForm() {
                         )}
 
                         <div className="space-y-2 md:col-span-2">
-                          <Label>Observacoes do componente</Label>
+                          <Label>Observações do componente</Label>
                           <Input
                             value={component.notes}
                             onChange={(event) =>
@@ -557,7 +557,7 @@ export default function ReceitaForm() {
                       </span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Preco ideal</span>
+                      <span className="text-muted-foreground">Preço ideal</span>
                       <span className="font-bold text-primary">
                         {recipeSummary.suggestedSalePriceCents == null
                           ? "-"
@@ -569,7 +569,7 @@ export default function ReceitaForm() {
                     {recipeSummary.kind === "ProdutoVenda" && (
                       <div className="flex justify-between text-sm">
                         <span className="text-muted-foreground">
-                          Preco praticado
+                          Preço praticado
                         </span>
                         <span className="font-bold">
                           {recipeSummary.effectiveSalePriceCents == null

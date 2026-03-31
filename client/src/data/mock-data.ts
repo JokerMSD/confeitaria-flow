@@ -1,7 +1,7 @@
 export type LegacyOrderStatus =
   | "Novo"
   | "Confirmado"
-  | "Em produÃ§Ã£o"
+  | "Em produção"
   | "Pronto"
   | "Entregue"
   | "Cancelado";
@@ -9,9 +9,9 @@ export type PaymentStatus = "Pendente" | "Parcial" | "Pago";
 export type PaymentMethod =
   | "Pix"
   | "Dinheiro"
-  | "CartÃ£o de crÃ©dito"
-  | "CartÃ£o de dÃ©bito"
-  | "TransferÃªncia";
+  | "Cartão de crédito"
+  | "Cartão de débito"
+  | "Transferência";
 
 export interface LegacyOrderItem {
   id: string;
@@ -45,7 +45,7 @@ export type Order = LegacyOrder;
 
 export interface CashTransaction {
   id: string;
-  type: "Entrada" | "SaÃ­da";
+  type: "Entrada" | "Saída";
   category: string;
   description: string;
   amount: number;
@@ -82,13 +82,13 @@ export const mockOrders: LegacyOrder[] = [
   {
     id: "2",
     orderNumber: "PED-002",
-    customerName: "JoÃ£o Santos",
+    customerName: "João Santos",
     phone: "(11) 91234-5678",
     orderDate: "2023-10-24",
     deliveryDate: "2023-10-25",
     deliveryTime: "10:00",
-    status: "Em produÃ§Ã£o",
-    paymentMethod: "CartÃ£o de crÃ©dito",
+    status: "Em produção",
+    paymentMethod: "Cartão de crédito",
     paymentStatus: "Pago",
     totalAmount: 85.5,
     paidAmount: 85.5,
@@ -128,7 +128,7 @@ export const mockOrders: LegacyOrder[] = [
       {
         id: "i4",
         productId: "p4",
-        productName: "Torta de LimÃ£o",
+        productName: "Torta de Limão",
         quantity: 1,
         unitPrice: 60,
         subtotal: 60,
@@ -150,18 +150,18 @@ export const mockTransactions: CashTransaction[] = [
   },
   {
     id: "2",
-    type: "SaÃ­da",
+    type: "Saída",
     category: "Insumos",
-    description: "Compra AtacadÃ£o",
+    description: "Compra Atacadão",
     amount: 350,
-    paymentMethod: "CartÃ£o de dÃ©bito",
+    paymentMethod: "Cartão de débito",
     date: "2023-10-26T11:30:00",
   },
   {
     id: "3",
     type: "Entrada",
     category: "Venda",
-    description: "Venda BalcÃ£o",
+    description: "Venda Balcão",
     amount: 45,
     paymentMethod: "Pix",
     date: "2023-10-26T14:20:00",

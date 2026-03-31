@@ -70,7 +70,7 @@ export default function EstoqueForm() {
   const handleSave = async () => {
     if (!formState.name.trim()) {
       toast({
-        title: "Preencha os campos obrigatorios",
+        title: "Preencha os campos obrigatórios",
         description: "Nome do item e obrigatorio.",
         variant: "destructive",
       });
@@ -98,7 +98,7 @@ export default function EstoqueForm() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Nao foi possivel salvar o item do estoque.",
+            : "Não foi possível salvar o item do estoque.",
         variant: "destructive",
       });
     }
@@ -127,12 +127,12 @@ export default function EstoqueForm() {
             <CardContent className="p-10 text-center space-y-4">
               <div className="space-y-2">
                 <h2 className="text-xl font-display font-bold text-foreground">
-                  Item indisponivel
+                  Item indisponível
                 </h2>
                 <p className="text-muted-foreground">
                   {inventoryItemQuery.error instanceof ApiError
                     ? inventoryItemQuery.error.message
-                    : "Nao foi possivel carregar o item do estoque."}
+                    : "Não foi possível carregar o item do estoque."}
                 </p>
               </div>
               <div className="flex justify-center gap-3">
@@ -298,7 +298,7 @@ export default function EstoqueForm() {
               {formState.category === "Ingrediente" && (
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="purchaseUnitCost">
-                    Preco unitario de compra do ingrediente
+                    Preço unitário de compra do ingrediente
                   </Label>
                   <Input
                     id="purchaseUnitCost"
@@ -315,13 +315,13 @@ export default function EstoqueForm() {
                     className="text-lg font-display"
                   />
                   <p className="text-xs text-muted-foreground mt-1">
-                    Toda entrada deste ingrediente vai gerar automaticamente uma saida no caixa com base neste preco.
+                    Toda entrada deste ingrediente vai gerar automaticamente uma saída no caixa com base neste preço.
                   </p>
                 </div>
               )}
 
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="notes">Observacoes Opcionais</Label>
+                <Label htmlFor="notes">Observações Opcionais</Label>
                 <textarea
                   id="notes"
                   className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"

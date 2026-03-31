@@ -100,7 +100,7 @@ export default function EstoqueMovimentacao() {
 
     if (!Number.isFinite(quantity) || quantity <= 0) {
       toast({
-        title: "Quantidade invalida",
+        title: "Quantidade inválida",
         description: "A quantidade deve ser maior que zero.",
         variant: "destructive",
       });
@@ -109,7 +109,7 @@ export default function EstoqueMovimentacao() {
 
     if (!formState.reason.trim()) {
       toast({
-        title: "Preencha os campos obrigatorios",
+        title: "Preencha os campos obrigatórios",
         description: "Informe um motivo para a movimentacao.",
         variant: "destructive",
       });
@@ -122,7 +122,7 @@ export default function EstoqueMovimentacao() {
     ) {
       toast({
         title: purchaseUsesUnitPrice
-          ? "Preco unitario invalido"
+          ? "Preço unitário inválido"
           : "Valor de compra invalido",
         description: purchaseUsesUnitPrice
           ? "Informe um preco por unidade maior que zero para calcular o total da compra."
@@ -161,7 +161,7 @@ export default function EstoqueMovimentacao() {
     if (item && formState.type === "Saida" && quantity > item.currentQuantity) {
       toast({
         title: "Estoque insuficiente",
-        description: "A saida nao pode deixar o saldo negativo.",
+        description: "A saída não pode deixar o saldo negativo.",
         variant: "destructive",
       });
       return;
@@ -172,7 +172,7 @@ export default function EstoqueMovimentacao() {
         data: adaptInventoryMovementFormStateToCreatePayload(itemId, formState),
       });
 
-      toast({ title: "Movimentacao registrada com sucesso!" });
+      toast({ title: "Movimentação registrada com sucesso!" });
       setFormState(createEmptyInventoryMovementFormState());
     } catch (error) {
       toast({
@@ -180,7 +180,7 @@ export default function EstoqueMovimentacao() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Nao foi possivel registrar a movimentacao.",
+            : "Não foi possível registrar a movimentação.",
         variant: "destructive",
       });
     }
@@ -209,7 +209,7 @@ export default function EstoqueMovimentacao() {
             <CardContent className="p-10 text-center space-y-4">
               <div className="space-y-2">
                 <h2 className="text-xl font-display font-bold text-foreground">
-                  Item indisponivel
+                  Item indisponível
                 </h2>
                 <p className="text-muted-foreground">
                   {itemQuery.error instanceof ApiError
@@ -265,11 +265,11 @@ export default function EstoqueMovimentacao() {
           <Card className="glass-card h-fit">
             <CardContent className="p-6 space-y-6">
               <h3 className="font-bold text-lg border-b border-border pb-2">
-                Nova Movimentacao
+                Nova Movimentação
               </h3>
 
               <div className="space-y-2">
-                <Label>Tipo de Movimentacao</Label>
+                <Label>Tipo de Movimentação</Label>
                 <div className="flex gap-2">
                   {(["Entrada", "Saida", "Ajuste"] as UiInventoryMovementType[]).map(
                     (type) => (
@@ -320,7 +320,7 @@ export default function EstoqueMovimentacao() {
               />
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Motivo / Observacao *</Label>
+                <Label htmlFor="reason">Motivo / Observação *</Label>
                 <Input
                   id="reason"
                   value={formState.reason}
@@ -385,7 +385,7 @@ export default function EstoqueMovimentacao() {
                       <div className="space-y-2">
                         <Label htmlFor="purchaseAmount">
                           {purchaseUsesUnitPrice
-                            ? `Preco por ${item.unit} (R$)`
+                            ? `Preço por ${item.unit} (R$)`
                             : "Valor total da compra (R$)"}
                         </Label>
                         <Input
@@ -492,7 +492,7 @@ export default function EstoqueMovimentacao() {
               <div className="p-6 pb-4 border-b border-border">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                   <Clock className="w-5 h-5 text-muted-foreground" />
-                  Historico de Movimentacoes
+                  Histórico de Movimentações
                 </h3>
               </div>
 
@@ -504,7 +504,7 @@ export default function EstoqueMovimentacao() {
                   </div>
                 ) : movementsQuery.isError ? (
                   <div className="text-center p-8 text-muted-foreground h-full flex flex-col justify-center items-center gap-3">
-                    <p>Nao foi possivel carregar o historico.</p>
+                    <p>Não foi possível carregar o histórico.</p>
                     <Button variant="outline" onClick={() => movementsQuery.refetch()}>
                       Tentar novamente
                     </Button>

@@ -151,7 +151,7 @@ export default function PedidoForm() {
   const productSelectPlaceholder = productRecipesQuery.isLoading
     ? "Carregando produtos..."
     : productRecipesQuery.isError
-      ? "Nao foi possivel carregar produtos"
+      ? "Não foi possível carregar produtos"
       : productRecipeOptions.length === 0
         ? "Nenhum produto do catalogo cadastrado"
         : "Selecione um produto do catalogo";
@@ -160,7 +160,7 @@ export default function PedidoForm() {
     : fillingRecipesQuery.isLoading
       ? "Carregando recheios..."
       : fillingRecipesQuery.isError
-        ? "Nao foi possivel carregar recheios"
+        ? "Não foi possível carregar recheios"
         : fillingRecipeOptions.length === 0
           ? "Nenhum recheio disponivel"
           : "Selecione um recheio";
@@ -574,7 +574,7 @@ export default function PedidoForm() {
                     </select>
                     {productRecipesQuery.isError && (
                       <p className="text-xs text-destructive">
-                        Nao foi possivel carregar os produtos do catalogo.
+                        Não foi possível carregar os produtos do catálogo.
                       </p>
                     )}
                   </div>
@@ -610,7 +610,7 @@ export default function PedidoForm() {
                     </select>
                     {newItemRecipeId && fillingRecipesQuery.isError && (
                       <p className="text-xs text-destructive">
-                        Nao foi possivel carregar os recheios.
+                        Não foi possível carregar os recheios.
                       </p>
                     )}
                   </div>

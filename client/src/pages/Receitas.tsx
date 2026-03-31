@@ -60,7 +60,7 @@ export default function Receitas() {
           description:
             error instanceof ApiError
               ? error.message
-              : "Nao foi possivel excluir a receita.",
+              : "Não foi possível excluir a receita.",
           variant: "destructive",
         });
       },
@@ -77,7 +77,7 @@ export default function Receitas() {
                 Receitas
               </h2>
               <p className="text-muted-foreground">
-                Cadastre bases, recheios e preparacoes usadas na producao.
+                Cadastre bases, recheios e preparações usadas na produção.
               </p>
             </div>
             <Link href="/receitas/nova">
@@ -118,7 +118,7 @@ export default function Receitas() {
           ) : recipesQuery.isError ? (
             <div className="col-span-full py-12 text-center text-muted-foreground bg-card/50 rounded-2xl border border-dashed border-border">
               <BookOpen className="w-12 h-12 mx-auto mb-3 opacity-20" />
-              <p>Nao foi possivel carregar as receitas.</p>
+              <p>Não foi possível carregar as receitas.</p>
               <Button
                 variant="link"
                 onClick={() => recipesQuery.refetch()}
@@ -191,7 +191,7 @@ export default function Receitas() {
                     </div>
                     <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
                       <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                        Preco ideal
+                        Preço ideal
                       </p>
                       <p className="mt-1 font-bold">
                         {recipe.suggestedSalePrice == null

@@ -123,7 +123,7 @@ export default function Pedidos() {
         const message =
           mutationError instanceof ApiError
             ? mutationError.message
-            : "Nao foi possivel confirmar o pedido.";
+            : "Não foi possível confirmar o pedido.";
 
         toast({
           title: "Erro ao confirmar pedido",
