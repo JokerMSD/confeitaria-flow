@@ -34,9 +34,22 @@ const paymentMethodLabelMap: Record<ApiPaymentMethod, UiPaymentMethod> = {
   Transferencia: "Transferência",
 };
 
+function getPaymentMethod(order: ApiOrderQueueItem): UiPaymentMethod {
+  if (order.paymentMethod) {
+    return paymentMethodLabelMap[order.paymentMethod];
+  }
+
+  return "Pix";
+}
+
 export function adaptOrderQueueItem(
   order: ApiOrderQueueItem,
 ): OrderQueueCardItem {
+  const totalAmountCents = order.subtotalAmountCents ?? 0;
+  const paidAmountCents = order.paidAmountCents ?? 0;
+  const remainingAmountCents =
+    order.remainingAmountCents ?? Math.max(totalAmountCents - paidAmountCents, 0);
+
   return {
     id: order.id,
     orderNumber: order.orderNumber,
@@ -46,13 +59,13 @@ export function adaptOrderQueueItem(
     deliveryDate: order.deliveryDate,
     deliveryTime: order.deliveryTime ?? undefined,
     status: statusLabelMap[order.status],
-    paymentMethod: paymentMethodLabelMap[order.paymentMethod],
+    paymentMethod: getPaymentMethod(order),
     paymentStatus: paymentStatusLabelMap[order.paymentStatus],
     notes: order.notes ?? "",
-    totalAmount: order.subtotalAmountCents / 100,
-    paidAmount: order.paidAmountCents / 100,
-    remainingAmount: order.remainingAmountCents / 100,
-    itemCount: order.itemCount,
+    totalAmount: totalAmountCents / 100,
+    paidAmount: paidAmountCents / 100,
+    remainingAmount: remainingAmountCents / 100,
+    itemCount: order.itemCount ?? order.items.length,
     items: order.items.map((item) => ({
       productName: item.productName,
       quantity: item.quantity,

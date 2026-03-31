@@ -18,7 +18,10 @@ import { useOrdersQueue } from "@/features/orders/hooks/use-orders-queue";
 import { useUpdateOrderStatus } from "@/features/orders/hooks/use-update-order-status";
 import { adaptOrdersQueue } from "@/features/orders/lib/order-queue-adapter";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
-import type { OrderQueueCardItem, UiOrderStatus } from "@/features/orders/types/order-ui";
+import type {
+  OrderQueueCardItem,
+  UiOrderStatus,
+} from "@/features/orders/types/order-ui";
 
 type QueueFilter = "todos" | "acao" | "prontos" | "nao-pagos";
 type QuickStatus = "Confirmado" | "EmProducao" | "Pronto" | "Entregue";
@@ -199,7 +202,11 @@ function buildCalendarDays(referenceMonth: Date) {
   const firstGridDay = startOfWeek(monthStart);
   const days: Date[] = [];
 
-  for (let cursor = new Date(firstGridDay); cursor <= addDays(monthEnd, 13); cursor = addDays(cursor, 1)) {
+  for (
+    let cursor = new Date(firstGridDay);
+    cursor <= addDays(monthEnd, 13);
+    cursor = addDays(cursor, 1)
+  ) {
     days.push(cursor);
     if (days.length >= 42) {
       break;
@@ -258,7 +265,12 @@ function QueueOrderCard({
             <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
               {order.orderNumber}
             </span>
-            <span className={cn("rounded-full border px-2 py-0.5 text-[11px] font-bold", getStatusBadgeClass(order.status))}>
+            <span
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-[11px] font-bold",
+                getStatusBadgeClass(order.status),
+              )}
+            >
               {order.status}
             </span>
             {order.paymentStatus !== "Pago" ? (
@@ -281,18 +293,24 @@ function QueueOrderCard({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Valor</p>
           <p className="mt-1 font-bold">{formatCurrency(order.totalAmount)}</p>
         </div>
         <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Recebido</p>
-          <p className="mt-1 font-bold text-emerald-600">{formatCurrency(order.paidAmount)}</p>
+          <p className="mt-1 font-bold text-emerald-600">
+            {formatCurrency(order.paidAmount)}
+          </p>
         </div>
         <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">Falta receber</p>
-          <p className="mt-1 font-bold text-amber-600">{formatCurrency(order.remainingAmount)}</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            Falta receber
+          </p>
+          <p className="mt-1 font-bold text-amber-600">
+            {formatCurrency(order.remainingAmount)}
+          </p>
         </div>
       </div>
 
@@ -315,7 +333,7 @@ function QueueOrderCard({
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <div className="text-xs text-muted-foreground">
           Criado em {formatDate(order.orderDate)} • {order.paymentMethod}
         </div>
@@ -354,7 +372,9 @@ export default function Fila() {
   const [queueFilter, setQueueFilter] = useState<QueueFilter>("todos");
   const todayKey = toDateKey(new Date());
   const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [visibleMonth, setVisibleMonth] = useState(startOfMonth(parseLocalDate(todayKey)));
+  const [visibleMonth, setVisibleMonth] = useState(
+    startOfMonth(parseLocalDate(todayKey)),
+  );
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const orders = useMemo(
@@ -426,7 +446,9 @@ export default function Fila() {
   );
 
   const readyCount = filteredOrders.filter((order) => order.status === "Pronto").length;
-  const unpaidCount = filteredOrders.filter((order) => order.paymentStatus !== "Pago").length;
+  const unpaidCount = filteredOrders.filter(
+    (order) => order.paymentStatus !== "Pago",
+  ).length;
 
   const agendaGroups = useMemo(() => {
     const groups = new Map<string, OrderQueueCardItem[]>();
@@ -452,7 +474,10 @@ export default function Fila() {
 
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
 
-  const handleMoveStatus = async (order: OrderQueueCardItem, nextStatus: QuickStatus) => {
+  const handleMoveStatus = async (
+    order: OrderQueueCardItem,
+    nextStatus: QuickStatus,
+  ) => {
     try {
       setPendingOrderId(order.id);
       await updateOrderStatusMutation.mutateAsync({
@@ -481,8 +506,8 @@ export default function Fila() {
   return (
     <AppLayout title="Fila de Produção">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
+        <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
+          <div className="max-w-2xl">
             <h2 className="text-2xl font-display font-bold text-foreground">
               Central de Produção
             </h2>
@@ -491,8 +516,8 @@ export default function Fila() {
             </p>
           </div>
 
-          <div className="flex w-full flex-col gap-3 sm:flex-row xl:w-auto">
-            <div className="relative min-w-[260px]">
+          <div className="flex w-full flex-col gap-3 xl:flex-row 2xl:w-auto">
+            <div className="relative w-full xl:max-w-[440px] 2xl:min-w-[360px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 value={searchTerm}
@@ -526,7 +551,7 @@ export default function Fila() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           <QueueStatCard
             title="Atrasados"
             value={overdueOrders.length}
@@ -534,7 +559,7 @@ export default function Fila() {
             tone="danger"
           />
           <QueueStatCard
-            title="Dia Selecionado"
+            title="Dia selecionado"
             value={selectedDayOrders.length}
             description={selectedDate ? getFullDateLabel(selectedDate) : "Sem data"}
             tone="primary"
@@ -546,19 +571,19 @@ export default function Fila() {
             tone="success"
           />
           <QueueStatCard
-            title="A Receber"
+            title="A receber"
             value={formatCurrency(dayReceivable)}
             description={`${unpaidCount} pedido(s) com pendência no filtro.`}
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[1.1fr_1.9fr_0.9fr]">
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[340px_minmax(0,1fr)_340px]">
           <section className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
             <div className="mb-4 flex items-center justify-between gap-3">
               <div>
                 <h3 className="flex items-center gap-2 font-bold">
                   <Calendar className="h-5 w-5 text-primary" />
-                  Calendário Operacional
+                  Calendário operacional
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   Clique no dia para abrir a agenda.
@@ -571,7 +596,14 @@ export default function Fila() {
                   className="h-9 w-9"
                   onClick={() =>
                     setVisibleMonth(
-                      startOfMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() - 1, 1, 12)),
+                      startOfMonth(
+                        new Date(
+                          visibleMonth.getFullYear(),
+                          visibleMonth.getMonth() - 1,
+                          1,
+                          12,
+                        ),
+                      ),
                     )
                   }
                 >
@@ -583,7 +615,14 @@ export default function Fila() {
                   className="h-9 w-9"
                   onClick={() =>
                     setVisibleMonth(
-                      startOfMonth(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 1, 12)),
+                      startOfMonth(
+                        new Date(
+                          visibleMonth.getFullYear(),
+                          visibleMonth.getMonth() + 1,
+                          1,
+                          12,
+                        ),
+                      ),
                     )
                   }
                 >
@@ -619,7 +658,7 @@ export default function Fila() {
                       setVisibleMonth(startOfMonth(date));
                     }}
                     className={cn(
-                      "min-h-[76px] rounded-2xl border p-2 text-left transition-all",
+                      "min-h-[70px] rounded-2xl border p-2 text-left transition-all",
                       isSelected
                         ? "border-primary bg-primary/8 shadow-sm"
                         : "border-border bg-background hover:bg-muted/40",
@@ -655,7 +694,7 @@ export default function Fila() {
               <div>
                 <h3 className="flex items-center gap-2 font-bold">
                   <Clock3 className="h-5 w-5 text-primary" />
-                  Agenda do Dia
+                  Agenda do dia
                 </h3>
                 <p className="text-sm capitalize text-muted-foreground">
                   {selectedDate ? getFullDateLabel(selectedDate) : "Selecione uma data"}
@@ -716,7 +755,7 @@ export default function Fila() {
 
           <section className="space-y-4">
             <div className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
-              <h3 className="font-bold text-foreground">Resumo do Dia</h3>
+              <h3 className="font-bold text-foreground">Resumo do dia</h3>
               <div className="mt-4 space-y-3">
                 {[
                   ["Novos", selectedDayStatusCounts.Novo],
@@ -724,7 +763,10 @@ export default function Fila() {
                   ["Em produção", selectedDayStatusCounts["Em produção"]],
                   ["Prontos", selectedDayStatusCounts.Pronto],
                 ].map(([label, value]) => (
-                  <div key={label} className="flex items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2">
+                  <div
+                    key={label}
+                    className="flex items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2"
+                  >
                     <span className="text-sm text-muted-foreground">{label}</span>
                     <span className="font-bold text-foreground">{value}</span>
                   </div>
@@ -733,7 +775,7 @@ export default function Fila() {
             </div>
 
             <div className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
-              <h3 className="font-bold text-foreground">Modo Operação</h3>
+              <h3 className="font-bold text-foreground">Modo operação</h3>
               <div className="mt-4 space-y-3 text-sm text-muted-foreground">
                 <div className="rounded-xl border border-border/70 bg-background px-3 py-3">
                   Confirme pedidos novos cedo para travar a produção do dia.
