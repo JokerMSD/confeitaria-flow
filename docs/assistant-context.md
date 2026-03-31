@@ -88,3 +88,5 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 ## Regra Operacional
 - Sempre commitar ao fechar cada bloco de implementacao.
 - Se houver mudanca relevante de negocio, atualizar este arquivo ou `docs/product-rules.md`.
+- Em tarefas que permitam paralelismo sem elevar risco, usar o maximo razoavel de agentes em paralelo para acelerar exploracao, validacao e implementacao.
+- O agente principal continua sendo o lider da execucao: decide quando delegar, quantos agentes abrir, integra resultados, valida e faz o commit final.
