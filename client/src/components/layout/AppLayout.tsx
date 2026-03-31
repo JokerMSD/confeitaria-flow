@@ -23,9 +23,7 @@ export function Sidebar() {
   const logoutMutation = useLogout();
 
   const handleLogout = async () => {
-    if (
-      !window.confirm("Deseja sair da sua conta?")
-    ) {
+    if (!window.confirm("Deseja sair da sua conta?")) {
       return;
     }
 
@@ -62,7 +60,7 @@ export function Sidebar() {
         </div>
         <div>
           <h1 className="font-display font-bold text-lg text-sidebar-foreground leading-tight">
-            Doce Gestão
+            Doce Gestao
           </h1>
           <p className="text-xs text-sidebar-foreground/60">Confeitaria</p>
         </div>
@@ -73,6 +71,7 @@ export function Sidebar() {
           const isActive =
             location === item.href ||
             (item.href !== "/" && location.startsWith(item.href));
+
           return (
             <Link key={item.href} href={item.href}>
               <a
@@ -103,11 +102,13 @@ export function Sidebar() {
         <div className="flex items-center gap-3 mb-4 px-2">
           <Avatar className="w-9 h-9 border border-border">
             <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
-            <AvatarFallback>{(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}</AvatarFallback>
+            <AvatarFallback>
+              {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold truncate text-sidebar-foreground">
-              {user?.name ?? "Usuário"}
+              {user?.name ?? "Usuario"}
             </p>
             <p className="text-xs text-sidebar-foreground/60 truncate">
               {user?.email ?? "usuario@docegestao.com"}
@@ -131,8 +132,9 @@ export function BottomNav() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "Início", icon: Home },
+    { href: "/", label: "Inicio", icon: Home },
     { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
+    { href: "/fila", label: "Fila", icon: ClipboardList },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
     { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
@@ -141,16 +143,17 @@ export function BottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bottom-nav-glass pb-safe">
-      <div className="flex items-center justify-around px-2 py-2">
+      <div className="flex items-center justify-between gap-1 px-2 py-2">
         {navItems.map((item) => {
           const isActive =
             location === item.href ||
             (item.href !== "/" && location.startsWith(item.href));
+
           return (
             <Link key={item.href} href={item.href}>
               <a
                 className={cn(
-                  "flex flex-col items-center justify-center w-16 h-14 rounded-2xl transition-all",
+                  "flex min-w-0 flex-1 flex-col items-center justify-center h-14 rounded-2xl transition-all",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -172,7 +175,7 @@ export function BottomNav() {
                 </div>
                 <span
                   className={cn(
-                    "text-[10px] mt-1 font-medium transition-all duration-300",
+                    "mt-1 max-w-full truncate px-1 text-[9px] font-medium transition-all duration-300",
                     isActive ? "opacity-100 font-semibold" : "opacity-80",
                   )}
                 >
@@ -198,7 +201,9 @@ export function MobileHeader({ title }: { title: string }) {
       </h1>
       <Avatar className="w-8 h-8 border border-border">
         <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
-        <AvatarFallback>{(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}</AvatarFallback>
+        <AvatarFallback>
+          {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
+        </AvatarFallback>
       </Avatar>
     </header>
   );

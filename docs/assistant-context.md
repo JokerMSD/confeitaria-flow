@@ -55,6 +55,12 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Usa receitas vinculadas ao pedido para explodir ingredientes.
 - Existe fallback e backfill para pedidos legados sem `recipeId`.
 
+### Fila de Producao
+- A rota `/fila` continua usando leitura dedicada do backend em `/api/orders/queue`.
+- No mobile, a navegacao inferior deve manter acesso direto a `Fila`.
+- A tela de fila usa secao empilhada no mobile e kanban horizontal no desktop.
+- `Proximos Dias` foi enriquecido no frontend com agrupamento por data, janela de horario e cards por dia, sem mudar o contrato da API.
+
 ## Regras Importantes Ja Combinadas
 - Baixa automatica de estoque acontece quando pedido entra em `Pronto` ou `Entregue`.
 - Salvar receita nao depende de saldo atual do estoque.
