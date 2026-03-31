@@ -212,16 +212,23 @@ export function MobileHeader({ title }: { title: string }) {
 export function AppLayout({
   children,
   title = "Dashboard",
+  contentClassName,
 }: {
   children: React.ReactNode;
   title?: string;
+  contentClassName?: string;
 }) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
         <MobileHeader title={title} />
-        <div className="flex-1 p-4 md:p-8 md:pt-8 w-full max-w-7xl mx-auto animate-fade-in">
+        <div
+          className={cn(
+            "flex-1 w-full mx-auto animate-fade-in p-4 md:p-8 md:pt-8 max-w-7xl",
+            contentClassName,
+          )}
+        >
           {children}
         </div>
       </main>

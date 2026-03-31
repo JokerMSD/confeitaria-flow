@@ -230,18 +230,18 @@ function QueueStatCard({
   return (
     <div
       className={cn(
-        "rounded-2xl border p-4 sm:p-5",
+        "rounded-3xl border p-5",
         tone === "danger" && "border-destructive/20 bg-destructive/5",
         tone === "success" && "border-emerald-200 bg-emerald-50",
         tone === "primary" && "border-primary/20 bg-primary/5",
-        tone === "default" && "border-border bg-card/70",
+        tone === "default" && "border-border bg-card/75",
       )}
     >
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {title}
       </p>
-      <p className="mt-2 text-3xl font-display font-bold text-foreground">{value}</p>
-      <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+      <p className="mt-3 text-4xl font-display font-bold text-foreground">{value}</p>
+      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
     </div>
   );
 }
@@ -258,65 +258,67 @@ function QueueOrderCard({
   const actions = getActionsForStatus(order.status);
 
   return (
-    <article className="rounded-2xl border border-border bg-card/80 p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
+    <article className="rounded-3xl border border-border bg-card/90 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
               {order.orderNumber}
             </span>
             <span
               className={cn(
-                "rounded-full border px-2 py-0.5 text-[11px] font-bold",
+                "rounded-full border px-2.5 py-1 text-[11px] font-bold",
                 getStatusBadgeClass(order.status),
               )}
             >
               {order.status}
             </span>
             {order.paymentStatus !== "Pago" ? (
-              <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2 py-0.5 text-[11px] font-bold text-destructive">
+              <span className="rounded-full border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-[11px] font-bold text-destructive">
                 {order.paymentStatus}
               </span>
             ) : null}
           </div>
-          <h3 className="mt-2 text-lg font-bold text-foreground">{order.customerName}</h3>
-          {order.customerPhone ? (
-            <p className="text-sm text-muted-foreground">{order.customerPhone}</p>
-          ) : null}
+          <div>
+            <h3 className="text-xl font-bold text-foreground">{order.customerName}</h3>
+            {order.customerPhone ? (
+              <p className="text-sm text-muted-foreground">{order.customerPhone}</p>
+            ) : null}
+          </div>
         </div>
 
-        <div className="rounded-xl border border-border/70 bg-background px-3 py-2 text-right">
-          <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Entrega</p>
-          <p className="mt-1 font-display text-xl font-bold text-foreground">
+        <div className="min-w-[116px] rounded-2xl border border-border/70 bg-background px-4 py-3 text-right">
+          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Entrega</p>
+          <p className="mt-1 font-display text-3xl font-bold text-foreground">
             {getTimeLabel(order.deliveryTime)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+      <div className="mt-5 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Valor</p>
-          <p className="mt-1 font-bold">{formatCurrency(order.totalAmount)}</p>
+          <p className="mt-2 text-2xl font-bold text-foreground">
+            {formatCurrency(order.totalAmount)}
+          </p>
         </div>
-        <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
+        <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Recebido</p>
-          <p className="mt-1 font-bold text-emerald-600">
+          <p className="mt-2 text-2xl font-bold text-emerald-600">
             {formatCurrency(order.paidAmount)}
           </p>
         </div>
-        <div className="rounded-xl border border-border/70 bg-muted/20 p-3">
-          <p className="text-xs uppercase tracking-wide text-muted-foreground">
-            Falta receber
-          </p>
-          <p className="mt-1 font-bold text-amber-600">
+        <div className="rounded-2xl border border-border/70 bg-muted/20 p-4">
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">Falta receber</p>
+          <p className="mt-2 text-2xl font-bold text-amber-600">
             {formatCurrency(order.remainingAmount)}
           </p>
         </div>
       </div>
 
-      <div className="mt-4 rounded-xl border border-border/70 bg-background/70 p-3">
+      <div className="mt-5 rounded-2xl border border-border/70 bg-background/80 p-4">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">Itens do pedido</p>
-        <ul className="mt-2 space-y-1.5 text-sm">
+        <ul className="mt-3 space-y-2 text-sm leading-6">
           {order.items.map((item, index) => (
             <li key={`${order.id}-${index}`} className="flex gap-2">
               <span className="font-bold">{item.quantity}x</span>
@@ -327,19 +329,19 @@ function QueueOrderCard({
       </div>
 
       {order.notes ? (
-        <div className="mt-3 rounded-xl border border-border/70 bg-muted/20 p-3">
+        <div className="mt-4 rounded-2xl border border-border/70 bg-muted/20 p-4">
           <p className="text-xs uppercase tracking-wide text-muted-foreground">Observações</p>
-          <p className="mt-1 text-sm text-foreground/90">{order.notes}</p>
+          <p className="mt-2 text-sm leading-6 text-foreground/90">{order.notes}</p>
         </div>
       ) : null}
 
-      <div className="mt-4 flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <div className="text-xs text-muted-foreground">
+      <div className="mt-5 flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
+        <div className="text-sm text-muted-foreground">
           Criado em {formatDate(order.orderDate)} • {order.paymentMethod}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={`/pedidos/${order.id}`}>
-            <a className="inline-flex h-9 items-center justify-center rounded-full border border-border px-3 text-sm font-medium text-foreground hover:bg-muted">
+            <a className="inline-flex h-10 items-center justify-center rounded-full border border-border px-4 text-sm font-medium text-foreground hover:bg-muted">
               Abrir pedido
             </a>
           </Link>
@@ -350,7 +352,7 @@ function QueueOrderCard({
               disabled={pending}
               onClick={() => onMoveStatus(order, action.nextStatus)}
               className={cn(
-                "inline-flex h-9 items-center justify-center rounded-full px-3 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
+                "inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 getActionClass(action.tone),
               )}
             >
@@ -506,50 +508,54 @@ export default function Fila() {
   return (
     <AppLayout title="Fila de Produção">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 2xl:flex-row 2xl:items-end 2xl:justify-between">
-          <div className="max-w-2xl">
-            <h2 className="text-2xl font-display font-bold text-foreground">
-              Central de Produção
-            </h2>
-            <p className="text-muted-foreground">
-              Agenda diária com prioridades, horários de entrega e ações rápidas.
-            </p>
-          </div>
+        <section className="rounded-[28px] border border-border bg-card/80 p-6 shadow-sm">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-2xl space-y-2">
+              <h2 className="text-3xl font-display font-bold text-foreground">
+                Central de Produção
+              </h2>
+              <p className="max-w-xl text-base leading-7 text-muted-foreground">
+                Agenda diária com prioridades, horários de entrega e ações rápidas.
+              </p>
+            </div>
 
-          <div className="flex w-full flex-col gap-3 xl:flex-row 2xl:w-auto">
-            <div className="relative w-full xl:max-w-[440px] 2xl:min-w-[360px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Buscar por cliente, pedido ou item..."
-                className="pl-9"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                ["todos", "Tudo"],
-                ["acao", "Precisa agir"],
-                ["prontos", "Prontos"],
-                ["nao-pagos", "Não pagos"],
-              ].map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => setQueueFilter(value as QueueFilter)}
-                  className={cn(
-                    "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
-                    queueFilter === value
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card hover:bg-muted",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
+            <div className="w-full xl:max-w-[760px]">
+              <div className="flex flex-col gap-3">
+                <div className="flex h-12 items-center gap-3 rounded-full border border-border bg-background px-4 shadow-sm">
+                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Buscar por cliente, pedido ou item..."
+                    className="h-auto border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    ["todos", "Tudo"],
+                    ["acao", "Precisa agir"],
+                    ["prontos", "Prontos"],
+                    ["nao-pagos", "Não pagos"],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setQueueFilter(value as QueueFilter)}
+                      className={cn(
+                        "inline-flex h-11 items-center justify-center rounded-full border px-5 text-sm font-medium transition-colors",
+                        queueFilter === value
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border bg-background text-foreground hover:bg-muted",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 2xl:grid-cols-4">
           <QueueStatCard
@@ -577,15 +583,15 @@ export default function Fila() {
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[340px_minmax(0,1fr)_340px]">
-          <section className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
-            <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[380px_minmax(0,1fr)]">
+          <section className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
+            <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <h3 className="flex items-center gap-2 font-bold">
+                <h3 className="flex items-center gap-2 text-xl font-bold text-foreground">
                   <Calendar className="h-5 w-5 text-primary" />
                   Calendário operacional
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">
                   Clique no dia para abrir a agenda.
                 </p>
               </div>
@@ -593,7 +599,7 @@ export default function Fila() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-10 w-10 rounded-full"
                   onClick={() =>
                     setVisibleMonth(
                       startOfMonth(
@@ -612,7 +618,7 @@ export default function Fila() {
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-10 w-10 rounded-full"
                   onClick={() =>
                     setVisibleMonth(
                       startOfMonth(
@@ -631,7 +637,7 @@ export default function Fila() {
               </div>
             </div>
 
-            <div className="mb-3 text-sm font-semibold capitalize text-foreground">
+            <div className="mb-4 text-lg font-semibold capitalize text-foreground">
               {getMonthLabel(visibleMonth)}
             </div>
 
@@ -641,7 +647,7 @@ export default function Fila() {
               ))}
             </div>
 
-            <div className="mt-2 grid grid-cols-7 gap-2">
+            <div className="mt-3 grid grid-cols-7 gap-2">
               {calendarDays.map((date) => {
                 const dateKey = toDateKey(date);
                 const orderCount = dateCounts[dateKey] ?? 0;
@@ -658,7 +664,7 @@ export default function Fila() {
                       setVisibleMonth(startOfMonth(date));
                     }}
                     className={cn(
-                      "min-h-[70px] rounded-2xl border p-2 text-left transition-all",
+                      "min-h-[84px] rounded-3xl border p-2.5 text-left transition-all",
                       isSelected
                         ? "border-primary bg-primary/8 shadow-sm"
                         : "border-border bg-background hover:bg-muted/40",
@@ -689,140 +695,142 @@ export default function Fila() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
-            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h3 className="flex items-center gap-2 font-bold">
-                  <Clock3 className="h-5 w-5 text-primary" />
-                  Agenda do dia
-                </h3>
-                <p className="text-sm capitalize text-muted-foreground">
-                  {selectedDate ? getFullDateLabel(selectedDate) : "Selecione uma data"}
-                </p>
-              </div>
-              <div className="rounded-full border border-border bg-background px-3 py-2 text-sm font-medium text-muted-foreground">
-                {selectedDayOrders.length} pedido(s)
-              </div>
-            </div>
-
-            {queueQuery.isError ? (
-              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-center">
-                <p className="font-semibold text-foreground">
-                  Não foi possível carregar a fila.
-                </p>
-                <Button className="mt-4" variant="outline" onClick={() => queueQuery.refetch()}>
-                  Tentar novamente
-                </Button>
-              </div>
-            ) : queueQuery.isLoading ? (
-              <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-border/60 bg-background/70">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Carregando agenda...</span>
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_320px]">
+            <section className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
+              <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <h3 className="flex items-center gap-2 text-xl font-bold text-foreground">
+                    <Clock3 className="h-5 w-5 text-primary" />
+                    Agenda do dia
+                  </h3>
+                  <p className="mt-2 text-sm capitalize leading-6 text-muted-foreground">
+                    {selectedDate ? getFullDateLabel(selectedDate) : "Selecione uma data"}
+                  </p>
+                </div>
+                <div className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground">
+                  {selectedDayOrders.length} pedido(s)
                 </div>
               </div>
-            ) : agendaGroups.length === 0 ? (
-              <div className="flex min-h-[320px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-background/70 p-8 text-center text-muted-foreground">
-                Nenhum pedido no dia selecionado com o filtro atual.
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {agendaGroups.map((group) => (
-                  <div key={group.slot} className="space-y-3">
-                    <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background px-4 py-3">
-                      <div>
-                        <p className="text-sm font-bold text-foreground">{group.slot}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {group.items.length} pedido(s) nesta faixa
-                        </p>
+
+              {queueQuery.isError ? (
+                <div className="rounded-3xl border border-destructive/20 bg-destructive/5 p-8 text-center">
+                  <p className="font-semibold text-foreground">
+                    Não foi possível carregar a fila.
+                  </p>
+                  <Button className="mt-4" variant="outline" onClick={() => queueQuery.refetch()}>
+                    Tentar novamente
+                  </Button>
+                </div>
+              ) : queueQuery.isLoading ? (
+                <div className="flex min-h-[360px] items-center justify-center rounded-3xl border border-border/60 bg-background/70">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Carregando agenda...</span>
+                  </div>
+                </div>
+              ) : agendaGroups.length === 0 ? (
+                <div className="flex min-h-[360px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-background/70 p-8 text-center text-muted-foreground">
+                  Nenhum pedido no dia selecionado com o filtro atual.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {agendaGroups.map((group) => (
+                    <div key={group.slot} className="space-y-3">
+                      <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background px-4 py-3">
+                        <div>
+                          <p className="text-lg font-bold text-foreground">{group.slot}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {group.items.length} pedido(s) nesta faixa
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-3">
+                        {group.items.map((order) => (
+                          <QueueOrderCard
+                            key={order.id}
+                            order={order}
+                            pending={pendingOrderId === order.id}
+                            onMoveStatus={handleMoveStatus}
+                          />
+                        ))}
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      {group.items.map((order) => (
-                        <QueueOrderCard
-                          key={order.id}
-                          order={order}
-                          pending={pendingOrderId === order.id}
-                          onMoveStatus={handleMoveStatus}
-                        />
-                      ))}
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-4">
+              <div className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
+                <h3 className="text-xl font-bold text-foreground">Resumo do dia</h3>
+                <div className="mt-4 space-y-3">
+                  {[
+                    ["Novos", selectedDayStatusCounts.Novo],
+                    ["Confirmados", selectedDayStatusCounts.Confirmado],
+                    ["Em produção", selectedDayStatusCounts["Em produção"]],
+                    ["Prontos", selectedDayStatusCounts.Pronto],
+                  ].map(([label, value]) => (
+                    <div
+                      key={label}
+                      className="flex items-center justify-between rounded-2xl border border-border/70 bg-background px-4 py-3"
+                    >
+                      <span className="text-sm text-muted-foreground">{label}</span>
+                      <span className="text-lg font-bold text-foreground">{value}</span>
                     </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
+                <h3 className="text-xl font-bold text-foreground">Modo operação</h3>
+                <div className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
+                  <div className="rounded-2xl border border-border/70 bg-background px-4 py-4">
+                    Confirme pedidos novos cedo para travar a produção do dia.
                   </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="space-y-4">
-            <div className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
-              <h3 className="font-bold text-foreground">Resumo do dia</h3>
-              <div className="mt-4 space-y-3">
-                {[
-                  ["Novos", selectedDayStatusCounts.Novo],
-                  ["Confirmados", selectedDayStatusCounts.Confirmado],
-                  ["Em produção", selectedDayStatusCounts["Em produção"]],
-                  ["Prontos", selectedDayStatusCounts.Pronto],
-                ].map(([label, value]) => (
-                  <div
-                    key={label}
-                    className="flex items-center justify-between rounded-xl border border-border/70 bg-background px-3 py-2"
-                  >
-                    <span className="text-sm text-muted-foreground">{label}</span>
-                    <span className="font-bold text-foreground">{value}</span>
+                  <div className="rounded-2xl border border-border/70 bg-background px-4 py-4">
+                    Use os horários como fila de expedição e os atrasados como prioridade máxima.
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card/70 p-4 shadow-sm">
-              <h3 className="font-bold text-foreground">Modo operação</h3>
-              <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-                <div className="rounded-xl border border-border/70 bg-background px-3 py-3">
-                  Confirme pedidos novos cedo para travar a produção do dia.
-                </div>
-                <div className="rounded-xl border border-border/70 bg-background px-3 py-3">
-                  Use os horários como fila de expedição e os atrasados como prioridade máxima.
-                </div>
-                <div className="rounded-xl border border-border/70 bg-background px-3 py-3">
-                  Marcar pronto reduz atrito entre produção, embalagem e retirada.
+                  <div className="rounded-2xl border border-border/70 bg-background px-4 py-4">
+                    Marcar pronto reduz atrito entre produção, embalagem e retirada.
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {overdueOrders.length > 0 ? (
-              <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-destructive">Atrasados</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {overdueOrders.length} pedido(s) ainda aberto(s) antes de hoje.
-                    </p>
-                    <div className="mt-3 space-y-2">
-                      {overdueOrders.slice(0, 5).map((order) => (
-                        <button
-                          key={order.id}
-                          type="button"
-                          className="flex w-full items-center justify-between rounded-xl border border-destructive/20 bg-background px-3 py-2 text-left"
-                          onClick={() => {
-                            setSelectedDate(order.deliveryDate);
-                            setVisibleMonth(startOfMonth(parseLocalDate(order.deliveryDate)));
-                          }}
-                        >
-                          <span className="truncate pr-3 font-medium text-foreground">
-                            {order.orderNumber} • {order.customerName}
-                          </span>
-                          <span className="shrink-0 text-xs text-destructive">
-                            {formatDate(order.deliveryDate)}
-                          </span>
-                        </button>
-                      ))}
+              {overdueOrders.length > 0 ? (
+                <div className="rounded-[28px] border border-destructive/20 bg-destructive/5 p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="mt-0.5 h-5 w-5 text-destructive" />
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-bold text-destructive">Atrasados</h3>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                        {overdueOrders.length} pedido(s) ainda aberto(s) antes de hoje.
+                      </p>
+                      <div className="mt-4 space-y-2">
+                        {overdueOrders.slice(0, 5).map((order) => (
+                          <button
+                            key={order.id}
+                            type="button"
+                            className="flex w-full items-center justify-between rounded-2xl border border-destructive/20 bg-background px-4 py-3 text-left"
+                            onClick={() => {
+                              setSelectedDate(order.deliveryDate);
+                              setVisibleMonth(startOfMonth(parseLocalDate(order.deliveryDate)));
+                            }}
+                          >
+                            <span className="truncate pr-3 font-medium text-foreground">
+                              {order.orderNumber} • {order.customerName}
+                            </span>
+                            <span className="shrink-0 text-xs text-destructive">
+                              {formatDate(order.deliveryDate)}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ) : null}
-          </section>
+              ) : null}
+            </section>
+          </div>
         </div>
       </div>
     </AppLayout>
