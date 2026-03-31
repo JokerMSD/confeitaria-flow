@@ -55,11 +55,18 @@ export class OrdersService {
           id: row.id,
           orderNumber: row.orderNumber,
           customerName: row.customerName,
+          customerPhone: row.customerPhone ?? null,
           orderDate: row.orderDate,
           deliveryDate: row.deliveryDate,
           deliveryTime: row.deliveryTime ?? null,
           status: row.status,
+          paymentMethod: row.paymentMethod,
           paymentStatus: row.paymentStatus,
+          notes: row.notes ?? null,
+          subtotalAmountCents: row.subtotalAmountCents,
+          paidAmountCents: row.paidAmountCents,
+          remainingAmountCents: row.remainingAmountCents,
+          itemCount: row.itemCount,
           items: [] as OrderQueueItem["items"],
         } satisfies OrderQueueItem);
 
@@ -331,6 +338,76 @@ export class OrdersService {
         id,
         {
           status: "Confirmado",
+          updatedAt: new Date(),
+        },
+        tx,
+      );
+
+      if (!updatedOrder) {
+        throw new HttpError(404, "Order not found.");
+      }
+
+      const items = await this.orderItemsRepository.listByOrderId(id, tx);
+
+      await this.orderRecipeConsumptionService.syncOrderConsumption(
+        {
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          status: updatedOrder.status,
+          items: items.map((item: any) => ({
+            recipeId: item.recipeId ?? null,
+            fillingRecipeId: item.fillingRecipeId ?? null,
+            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+            quantity: item.quantity,
+            productName: item.productName,
+          })),
+        },
+        tx,
+      );
+
+      return this.mapOrderDetail(updatedOrder, items);
+    });
+  }
+
+  async updateStatus(id: string, nextStatus: UpdateOrderInput["status"]) {
+    return withTransaction<OrderDetail>(async (tx) => {
+      const existing = await this.ordersRepository.findById(id, tx);
+
+      if (!existing) {
+        throw new HttpError(404, "Order not found.");
+      }
+
+      if (existing.status === "Cancelado") {
+        throw new HttpError(400, "Canceled orders cannot be moved.");
+      }
+
+      if (existing.status === "Entregue" && nextStatus !== "Confirmado") {
+        throw new HttpError(400, "Delivered orders can only be reopened to Confirmado.");
+      }
+
+      const allowedTransitions: Record<string, UpdateOrderInput["status"][]> = {
+        Novo: ["Confirmado", "Cancelado"],
+        Confirmado: ["EmProducao", "Pronto", "Cancelado"],
+        EmProducao: ["Confirmado", "Pronto", "Cancelado"],
+        Pronto: ["Confirmado", "EmProducao", "Entregue", "Cancelado"],
+        Entregue: ["Confirmado"],
+        Cancelado: [],
+      };
+
+      if (existing.status === nextStatus) {
+        const items = await this.orderItemsRepository.listByOrderId(id, tx);
+        return this.mapOrderDetail(existing, items);
+      }
+
+      if (!allowedTransitions[existing.status]?.includes(nextStatus)) {
+        throw new HttpError(400, "Invalid queue status transition.");
+      }
+
+      const updatedOrder = await this.ordersRepository.updateStatus(
+        id,
+        {
+          status: nextStatus,
           updatedAt: new Date(),
         },
         tx,

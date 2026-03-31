@@ -58,8 +58,9 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 ### Fila de Producao
 - A rota `/fila` continua usando leitura dedicada do backend em `/api/orders/queue`.
 - No mobile, a navegacao inferior deve manter acesso direto a `Fila`.
-- A tela de fila usa secao empilhada no mobile e kanban horizontal no desktop.
-- `Proximos Dias` foi enriquecido no frontend com agrupamento por data, janela de horario e cards por dia, sem mudar o contrato da API.
+- A fila agora funciona como central operacional com calendario mensal clicavel, agenda diaria por horario e resumo por status.
+- O payload de `/api/orders/queue` foi enriquecido com telefone, pagamento, totais, saldo pendente e observacoes.
+- Existe acao rapida de status em `/api/orders/:id/status` para mover pedido entre `Confirmado`, `EmProducao`, `Pronto` e `Entregue`.
 
 ## Regras Importantes Ja Combinadas
 - Baixa automatica de estoque acontece quando pedido entra em `Pronto` ou `Entregue`.

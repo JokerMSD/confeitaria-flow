@@ -46,6 +46,10 @@ export interface CreateOrderInput {
 
 export interface UpdateOrderInput extends CreateOrderInput {}
 
+export interface UpdateOrderStatusInput {
+  status: OrderStatus;
+}
+
 export interface ListOrdersFilters {
   search?: string;
   status?: OrderStatus;

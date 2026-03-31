@@ -42,6 +42,14 @@ export class OrdersController {
     res.json({ data });
   }
 
+  async updateStatus(req: Request, res: Response) {
+    const data = await this.ordersService.updateStatus(
+      String(req.params.id),
+      req.body.data.status,
+    );
+    res.json({ data });
+  }
+
   async remove(req: Request, res: Response) {
     const data = await this.ordersService.remove(String(req.params.id));
     res.json({ data });

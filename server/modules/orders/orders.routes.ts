@@ -3,6 +3,7 @@ import {
   createOrderInputSchema,
   listOrdersFiltersSchema,
   orderIdParamsSchema,
+  updateOrderStatusInputSchema,
   updateOrderInputSchema,
 } from "@shared/validators";
 import { OrdersController } from "./orders.controller";
@@ -13,6 +14,7 @@ export function registerOrdersRoutes(app: Express) {
   const controller = new OrdersController();
   const orderBodySchema = z.object({ data: createOrderInputSchema });
   const updateOrderBodySchema = z.object({ data: updateOrderInputSchema });
+  const updateOrderStatusBodySchema = z.object({ data: updateOrderStatusInputSchema });
 
   app.get("/api/orders", validateRequest(listOrdersFiltersSchema, "query"), controller.list.bind(controller));
   app.get("/api/orders/lookup", controller.lookup.bind(controller));
@@ -29,6 +31,12 @@ export function registerOrdersRoutes(app: Express) {
     "/api/orders/:id/confirm",
     validateRequest(orderIdParamsSchema, "params"),
     controller.confirm.bind(controller),
+  );
+  app.post(
+    "/api/orders/:id/status",
+    validateRequest(orderIdParamsSchema, "params"),
+    validateRequest(updateOrderStatusBodySchema, "body"),
+    controller.updateStatus.bind(controller),
   );
   app.delete("/api/orders/:id", validateRequest(orderIdParamsSchema, "params"), controller.remove.bind(controller));
 }

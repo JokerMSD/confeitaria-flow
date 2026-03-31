@@ -6,6 +6,7 @@ import type {
   OrderDetailResponse,
   OrdersLookupResponse,
   OrdersQueueResponse,
+  UpdateOrderStatusRequest,
   UpdateOrderRequest,
 } from "@shared/types";
 import { httpClient } from "./http-client";
@@ -55,6 +56,13 @@ export function updateOrder(id: string, payload: UpdateOrderRequest) {
 export function confirmOrder(id: string) {
   return httpClient<OrderDetailResponse>(`/api/orders/${id}/confirm`, {
     method: "POST",
+  });
+}
+
+export function updateOrderStatus(id: string, payload: UpdateOrderStatusRequest) {
+  return httpClient<OrderDetailResponse>(`/api/orders/${id}/status`, {
+    method: "POST",
+    body: payload,
   });
 }
 

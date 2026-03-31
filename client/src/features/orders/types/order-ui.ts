@@ -73,11 +73,18 @@ export interface OrderQueueCardItem {
   id: string;
   orderNumber: string;
   customerName: string;
+  customerPhone?: string;
   orderDate: string;
   deliveryDate: string;
   deliveryTime?: string;
   status: UiOrderStatus;
+  paymentMethod: UiPaymentMethod;
   paymentStatus: UiPaymentStatus;
+  notes: string;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  itemCount: number;
   items: Array<{
     productName: string;
     quantity: number;

@@ -51,6 +51,10 @@ export const createOrderInputSchema = z.object({
 
 export const updateOrderInputSchema = createOrderInputSchema;
 
+export const updateOrderStatusInputSchema = z.object({
+  status: orderStatusSchema,
+});
+
 export const listOrdersFiltersSchema = z.object({
   search: z.string().trim().max(160).optional(),
   status: orderStatusSchema.optional(),

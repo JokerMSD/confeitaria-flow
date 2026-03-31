@@ -30,6 +30,7 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Itens suportam ate 3 recheios.
 - Produto manual foi removido do composer atual.
 - Pedido invalida views relacionadas apos salvar.
+- Existe endpoint rapido de transicao de status para uso operacional em fila.
 
 ### Receitas E Catalogo
 - Preparacoes ficam em `Receitas`.
@@ -54,6 +55,11 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Painel de compra baseado em pedidos pendentes ativo.
 - Usa custo medio e estoque atual.
 - Ja possui fallback para pedidos antigos sem vinculo completo.
+
+### Fila
+- Tela de fila agora opera com calendario mensal, agenda por horario e resumo diario.
+- Cards exibem valor, recebido, saldo pendente, telefone, observacoes e itens do pedido.
+- Acoes rapidas de status ficam disponiveis diretamente nos cards.
 
 ## Pendencias Intencionais
 - Login continua simples via `AUTH_USERS_JSON`.

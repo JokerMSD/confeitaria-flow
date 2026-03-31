@@ -3,6 +3,7 @@ import type {
   ListOrdersFilters,
   OrderDetail,
   OrderListItem,
+  UpdateOrderStatusInput,
   UpdateOrderInput,
 } from "./order.types";
 import type { OrderLookupItem } from "./order-lookup.types";
@@ -23,6 +24,10 @@ export interface CreateOrderRequest {
 
 export interface UpdateOrderRequest {
   data: UpdateOrderInput;
+}
+
+export interface UpdateOrderStatusRequest {
+  data: UpdateOrderStatusInput;
 }
 
 export interface DeleteOrderResponse {
