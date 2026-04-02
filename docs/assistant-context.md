@@ -32,6 +32,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Campo manual de produto foi removido do composer de itens.
 - Pedidos antigos foram parcialmente corrigidos por scripts de backfill com base nas observacoes.
 - Pedidos agora suportam `deliveryMode` com `Entrega` e `Retirada`, incluindo taxa e endereco condicionais.
+- Ao marcar `Retirada` no formulario, campos operacionais de entrega devem ser limpos para evitar persistencia acidental de endereco, referencia, bairro e taxa.
 
 ### Receitas e Catalogo
 - `Preparacao` fica em `Receitas`.
@@ -73,9 +74,11 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - No mobile, a navegacao inferior deve manter acesso direto a `Fila`.
 - A fila agora funciona como central operacional com calendario mensal clicavel, agenda diaria por horario e resumo por status.
 - O payload de `/api/orders/queue` foi enriquecido com telefone, pagamento, totais, saldo pendente e observacoes.
+- A leitura operacional da fila agora tambem deve expor `deliveryReference` e `deliveryFeeCents`.
 - Existe acao rapida de status em `/api/orders/:id/status` para mover pedido entre `Confirmado`, `EmProducao`, `Pronto` e `Entregue`.
 - A fila deve tratar `deliveryDate` como data de negocio local, sem converter para UTC.
 - O estado padrao da fila deve mostrar todos os pedidos ativos, com calendario apenas como filtro opcional.
+- Sem filtro de data, a agenda da fila deve agrupar por `data -> horario`, e nao misturar pedidos de dias diferentes na mesma faixa.
 
 ## Regras Importantes Ja Combinadas
 - Baixa automatica de estoque acontece quando pedido entra em `Pronto` ou `Entregue`.

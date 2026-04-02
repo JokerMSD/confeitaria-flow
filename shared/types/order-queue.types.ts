@@ -20,7 +20,9 @@ export interface OrderQueueItem {
   deliveryTime: string | null;
   deliveryMode: DeliveryMode;
   deliveryAddress: string | null;
+  deliveryReference: string | null;
   deliveryDistrict: string | null;
+  deliveryFeeCents: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;

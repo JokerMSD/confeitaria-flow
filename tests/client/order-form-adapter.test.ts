@@ -130,3 +130,37 @@ test("order detail rehydrates saved additionals in edit mode", () => {
   assert.equal(state.items[0]?.additionals[0]?.optionName, "Laco");
   assert.equal(state.items[0]?.subtotal, 45.8);
 });
+
+test("pickup orders clear delivery fields and fee in payload", () => {
+  const state = createEmptyOrderFormState();
+  state.customerName = "Cliente";
+  state.deliveryDate = "2026-04-03";
+  state.deliveryMode = "Retirada";
+  state.deliveryAddress = "Rua A";
+  state.deliveryReference = "Casa azul";
+  state.deliveryDistrict = "Centro";
+  state.deliveryFee = "12,50";
+  state.items = [
+    {
+      id: "item-1",
+      recipeId: "recipe-1",
+      fillingRecipeId: "fill-1",
+      secondaryFillingRecipeId: null,
+      tertiaryFillingRecipeId: null,
+      productName: "Ovo de colher 350g - Brigadeiro",
+      quantity: 1,
+      unitPrice: 39.9,
+      subtotal: 39.9,
+      position: 0,
+      additionals: [],
+    },
+  ];
+
+  const payload = adaptFormStateToCreatePayload(state);
+
+  assert.equal(payload.data.deliveryMode, "Retirada");
+  assert.equal(payload.data.deliveryAddress, null);
+  assert.equal(payload.data.deliveryReference, null);
+  assert.equal(payload.data.deliveryDistrict, null);
+  assert.equal(payload.data.deliveryFeeCents, 0);
+});

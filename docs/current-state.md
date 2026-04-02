@@ -32,6 +32,7 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Pedido invalida views relacionadas apos salvar.
 - Existe endpoint rapido de transicao de status para uso operacional em fila.
 - Pedido agora suporta `Entrega` e `Retirada`, com endereco e taxa condicionais no formulario.
+- O formulario agora limpa endereco, bairro, referencia e taxa ao alternar para `Retirada`, e mostra um resumo operacional do modo de atendimento.
 
 ### Receitas E Catalogo
 - Preparacoes ficam em `Receitas`.
@@ -67,6 +68,8 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Acoes rapidas de status ficam disponiveis diretamente nos cards.
 - Estado inicial da fila mostra todos os pedidos ativos; o calendario funciona como filtro opcional.
 - A data operacional foi corrigida para respeitar exatamente o dia cadastrado no pedido.
+- Sem filtro de data, a agenda agora separa pedidos por `data` e depois por `horario`.
+- A leitura operacional da fila reflete melhor `Entrega` x `Retirada`, incluindo endereco, referencia, bairro e taxa quando aplicavel.
 
 ## Pendencias Intencionais
 - Login continua simples via `AUTH_USERS_JSON`.

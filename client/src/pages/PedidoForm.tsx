@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
 import {
   formatMoneyInput,
@@ -226,6 +226,26 @@ export default function PedidoForm() {
       ...current,
       [key]: value,
     }));
+  };
+
+  const setDeliveryMode = (mode: OrderFormState["deliveryMode"]) => {
+    setFormState((current) => {
+      if (mode === "Retirada") {
+        return {
+          ...current,
+          deliveryMode: mode,
+          deliveryAddress: "",
+          deliveryReference: "",
+          deliveryDistrict: "",
+          deliveryFee: "0",
+        };
+      }
+
+      return {
+        ...current,
+        deliveryMode: mode,
+      };
+    });
   };
 
   const getSelectedOptionIdsForGroup = (groupId: string) =>
@@ -506,6 +526,19 @@ export default function PedidoForm() {
       return;
     }
 
+    if (
+      formState.deliveryMode === "Entrega" &&
+      !formState.deliveryAddress.trim()
+    ) {
+      toast({
+        title: "Endereço obrigatório",
+        description:
+          "Pedidos com entrega precisam de um endereço antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       if (isEditing && orderId) {
         await updateOrderMutation.mutateAsync({
@@ -688,7 +721,7 @@ export default function PedidoForm() {
                             formState.deliveryMode === mode ? "default" : "outline"
                           }
                           className="justify-center rounded-xl"
-                          onClick={() => setField("deliveryMode", mode)}
+                          onClick={() => setDeliveryMode(mode)}
                         >
                           {mode}
                         </Button>
@@ -779,6 +812,50 @@ export default function PedidoForm() {
                     Pedido marcado como retirada. Endereço e taxa ficam ocultos.
                   </div>
                 )}
+
+                <div className="rounded-xl border border-border/60 bg-background px-4 py-4 text-sm">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Resumo operacional
+                  </p>
+                  <div className="mt-3 space-y-2 text-foreground">
+                    <p>
+                      <span className="font-semibold">Modo:</span>{" "}
+                      {formState.deliveryMode === "Entrega" ? "Entrega" : "Retirada"}
+                    </p>
+                    <p>
+                      <span className="font-semibold">Entrega:</span>{" "}
+                      {formState.deliveryDate
+                        ? `${formatDate(formState.deliveryDate)}${
+                            formState.deliveryTime ? ` às ${formState.deliveryTime}` : ""
+                          }`
+                        : "Defina a data de entrega"}
+                    </p>
+                    {formState.deliveryMode === "Entrega" ? (
+                      <>
+                        <p>
+                          <span className="font-semibold">Endereço:</span>{" "}
+                          {formState.deliveryAddress || "Não informado"}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Bairro:</span>{" "}
+                          {formState.deliveryDistrict || "Não informado"}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Referência:</span>{" "}
+                          {formState.deliveryReference || "Não informada"}
+                        </p>
+                        <p>
+                          <span className="font-semibold">Taxa:</span>{" "}
+                          {formatCurrency(deliveryFeeAmount)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-muted-foreground">
+                        Cliente retira no local. Não haverá endereço nem taxa neste pedido.
+                      </p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 

@@ -17,6 +17,12 @@ import { ApiError } from "@/api/http-client";
 import { useOrdersQueue } from "@/features/orders/hooks/use-orders-queue";
 import { useUpdateOrderStatus } from "@/features/orders/hooks/use-update-order-status";
 import { adaptOrdersQueue } from "@/features/orders/lib/order-queue-adapter";
+import {
+  buildQueueDateGroups,
+  getTimeLabel,
+  parseOperationalDate,
+  toOperationalDateKey,
+} from "@/features/orders/lib/order-queue-groups";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import type {
   OrderQueueCardItem,
@@ -25,18 +31,6 @@ import type {
 
 type QueueFilter = "todos" | "acao" | "prontos" | "nao-pagos";
 type QuickStatus = "Confirmado" | "EmProducao" | "Pronto" | "Entregue";
-
-function parseLocalDate(dateStr: string) {
-  const [year, month, day] = dateStr.split("-").map(Number);
-  return new Date(year, month - 1, day, 12, 0, 0, 0);
-}
-
-function toDateKey(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -82,24 +76,7 @@ function getFullDateLabel(dateStr: string) {
     weekday: "long",
     day: "2-digit",
     month: "long",
-  }).format(parseLocalDate(dateStr));
-}
-
-function getTimeLabel(value?: string) {
-  return value?.trim() ? value : "Sem horário";
-}
-
-function sortOrders(list: OrderQueueCardItem[]) {
-  return [...list].sort((a, b) => {
-    const timeA = a.deliveryTime || "23:59";
-    const timeB = b.deliveryTime || "23:59";
-
-    if (timeA === timeB) {
-      return a.orderNumber.localeCompare(b.orderNumber);
-    }
-
-    return timeA.localeCompare(timeB);
-  });
+  }).format(parseOperationalDate(dateStr));
 }
 
 function getStatusBadgeClass(status: UiOrderStatus) {
@@ -164,12 +141,12 @@ function orderMatchesFilter(order: OrderQueueCardItem, filter: QueueFilter) {
   }
 }
 
-function getActionsForStatus(status: UiOrderStatus): Array<{
+function getActionsForStatus(order: Pick<OrderQueueCardItem, "status" | "deliveryMode">): Array<{
   label: string;
   nextStatus: QuickStatus;
   tone: "primary" | "secondary" | "success";
 }> {
-  switch (status) {
+  switch (order.status) {
     case "Novo":
       return [{ label: "Confirmar", nextStatus: "Confirmado", tone: "primary" }];
     case "Confirmado":
@@ -182,7 +159,12 @@ function getActionsForStatus(status: UiOrderStatus): Array<{
     case "Pronto":
       return [
         { label: "Reabrir", nextStatus: "Confirmado", tone: "secondary" },
-        { label: "Entregar", nextStatus: "Entregue", tone: "success" },
+        {
+          label:
+            order.deliveryMode === "Retirada" ? "Concluir retirada" : "Entregar",
+          nextStatus: "Entregue",
+          tone: "success",
+        },
       ];
     default:
       return [];
@@ -259,7 +241,7 @@ function QueueOrderCard({
   pending: boolean;
   onMoveStatus: (order: OrderQueueCardItem, nextStatus: QuickStatus) => void;
 }) {
-  const actions = getActionsForStatus(order.status);
+  const actions = getActionsForStatus(order);
 
   return (
     <article className="rounded-3xl border border-border bg-card/90 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md">
@@ -320,6 +302,30 @@ function QueueOrderCard({
         </div>
       </div>
 
+      <div className="mt-5 rounded-2xl border border-border/70 bg-muted/20 p-4">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          {order.deliveryMode === "Entrega" ? "Entrega" : "Retirada"}
+        </p>
+        <div className="mt-2 space-y-1 text-sm leading-6 text-foreground/90">
+          {order.deliveryMode === "Entrega" ? (
+            <>
+              <p>{order.deliveryAddress || "Endereço não informado"}</p>
+              <p className="text-muted-foreground">
+                {order.deliveryDistrict || "Bairro não informado"}
+                {order.deliveryReference ? ` • ${order.deliveryReference}` : ""}
+              </p>
+              <p className="text-muted-foreground">
+                Taxa: {formatCurrency(order.deliveryFee ?? 0)}
+              </p>
+            </>
+          ) : (
+            <p className="text-muted-foreground">
+              Cliente retira no local. Não há taxa de entrega.
+            </p>
+          )}
+        </div>
+      </div>
+
       <div className="mt-5 rounded-2xl border border-border/70 bg-background/80 p-4">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">Itens do pedido</p>
         <ul className="mt-3 space-y-2 text-sm leading-6">
@@ -376,7 +382,7 @@ export default function Fila() {
   const updateOrderStatusMutation = useUpdateOrderStatus();
   const [searchTerm, setSearchTerm] = useState("");
   const [queueFilter, setQueueFilter] = useState<QueueFilter>("todos");
-  const todayKey = toDateKey(new Date());
+  const todayKey = toOperationalDateKey(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
@@ -398,23 +404,21 @@ export default function Fila() {
   const filteredOrders = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return sortOrders(
-      orders.filter((order) => {
-        if (!orderMatchesFilter(order, queueFilter)) {
-          return false;
-        }
+    return orders.filter((order) => {
+      if (!orderMatchesFilter(order, queueFilter)) {
+        return false;
+      }
 
-        if (selectedDate && order.deliveryDate !== selectedDate) {
-          return false;
-        }
+      if (selectedDate && order.deliveryDate !== selectedDate) {
+        return false;
+      }
 
-        if (!normalizedSearch) {
-          return true;
-        }
+      if (!normalizedSearch) {
+        return true;
+      }
 
-        return buildSearchableText(order).includes(normalizedSearch);
-      }),
-    );
+      return buildSearchableText(order).includes(normalizedSearch);
+    });
   }, [orders, queueFilter, searchTerm, selectedDate]);
 
   const overdueOrders = useMemo(
@@ -423,7 +427,10 @@ export default function Fila() {
   );
 
   const selectedDayOrders = useMemo(
-    () => (selectedDate ? filteredOrders.filter((order) => order.deliveryDate === selectedDate) : filteredOrders),
+    () =>
+      selectedDate
+        ? filteredOrders.filter((order) => order.deliveryDate === selectedDate)
+        : filteredOrders,
     [filteredOrders, selectedDate],
   );
 
@@ -442,27 +449,10 @@ export default function Fila() {
     (order) => order.paymentStatus !== "Pago",
   ).length;
 
-  const agendaGroups = useMemo(() => {
-    const groups = new Map<string, OrderQueueCardItem[]>();
-
-    for (const order of selectedDayOrders) {
-      const key = getTimeLabel(order.deliveryTime);
-      const current = groups.get(key) ?? [];
-      current.push(order);
-      groups.set(key, current);
-    }
-
-    return Array.from(groups.entries())
-      .sort(([slotA], [slotB]) => {
-        if (slotA === "Sem horário") return 1;
-        if (slotB === "Sem horário") return -1;
-        return slotA.localeCompare(slotB);
-      })
-      .map(([slot, items]) => ({
-        slot,
-        items: sortOrders(items),
-      }));
-  }, [selectedDayOrders]);
+  const agendaDateGroups = useMemo(
+    () => buildQueueDateGroups(selectedDayOrders),
+    [selectedDayOrders],
+  );
 
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
 
@@ -647,7 +637,7 @@ export default function Fila() {
 
             <div className="mt-3 grid grid-cols-7 gap-2">
               {calendarDays.map((date) => {
-                const dateKey = toDateKey(date);
+                const dateKey = toOperationalDateKey(date);
                 const orderCount = dateCounts[dateKey] ?? 0;
                 const isCurrentMonth = date.getMonth() === visibleMonth.getMonth();
                 const isToday = dateKey === todayKey;
@@ -729,32 +719,55 @@ export default function Fila() {
                     <span>Carregando agenda...</span>
                   </div>
                 </div>
-              ) : agendaGroups.length === 0 ? (
+              ) : agendaDateGroups.length === 0 ? (
                 <div className="flex min-h-[360px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-background/70 p-8 text-center text-muted-foreground">
                   Nenhum pedido no filtro atual.
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {agendaGroups.map((group) => (
-                    <div key={group.slot} className="space-y-3">
-                      <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background px-4 py-3">
-                        <div>
-                          <p className="text-lg font-bold text-foreground">{group.slot}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {group.items.length} pedido(s) nesta faixa
-                          </p>
+                  {agendaDateGroups.map((dateGroup) => (
+                    <div key={dateGroup.dateKey} className="space-y-4">
+                      {!selectedDate ? (
+                        <div className="flex items-center justify-between rounded-2xl border border-primary/15 bg-primary/5 px-4 py-3">
+                          <div>
+                            <p className="text-lg font-bold text-foreground">
+                              {getFullDateLabel(dateGroup.dateKey)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {dateGroup.itemsCount} pedido(s) neste dia
+                            </p>
+                          </div>
+                          <button
+                            type="button"
+                            className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
+                            onClick={() => setSelectedDate(dateGroup.dateKey)}
+                          >
+                            Filtrar dia
+                          </button>
                         </div>
-                      </div>
-                      <div className="space-y-3">
-                        {group.items.map((order) => (
-                          <QueueOrderCard
-                            key={order.id}
-                            order={order}
-                            pending={pendingOrderId === order.id}
-                            onMoveStatus={handleMoveStatus}
-                          />
-                        ))}
-                      </div>
+                      ) : null}
+                      {dateGroup.slots.map((group) => (
+                        <div key={`${dateGroup.dateKey}-${group.slot}`} className="space-y-3">
+                          <div className="flex items-center justify-between rounded-2xl border border-border/70 bg-background px-4 py-3">
+                            <div>
+                              <p className="text-lg font-bold text-foreground">{group.slot}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {group.items.length} pedido(s) nesta faixa
+                              </p>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            {group.items.map((order) => (
+                              <QueueOrderCard
+                                key={order.id}
+                                order={order}
+                                pending={pendingOrderId === order.id}
+                                onMoveStatus={handleMoveStatus}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
@@ -814,7 +827,9 @@ export default function Fila() {
                             className="flex w-full items-center justify-between rounded-2xl border border-destructive/20 bg-background px-4 py-3 text-left"
                             onClick={() => {
                               setSelectedDate(order.deliveryDate);
-                              setVisibleMonth(startOfMonth(parseLocalDate(order.deliveryDate)));
+                              setVisibleMonth(
+                                startOfMonth(parseOperationalDate(order.deliveryDate)),
+                              );
                             }}
                           >
                             <span className="truncate pr-3 font-medium text-foreground">

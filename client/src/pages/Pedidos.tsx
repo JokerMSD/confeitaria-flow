@@ -338,6 +338,19 @@ export default function Pedidos() {
                         </span>
                       </div>
                     </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      {order.deliveryMode === "Entrega" ? (
+                        <span>
+                          {order.deliveryAddress || "Endereço não informado"}
+                          {order.deliveryDistrict ? ` • ${order.deliveryDistrict}` : ""}
+                          {order.deliveryFee > 0
+                            ? ` • Taxa ${formatCurrency(order.deliveryFee)}`
+                            : ""}
+                        </span>
+                      ) : (
+                        <span>Retirada no local</span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="pt-4 mt-auto border-t border-border/50 flex items-center justify-between bg-muted/10 -mx-5 -mb-5 px-5 pb-5">

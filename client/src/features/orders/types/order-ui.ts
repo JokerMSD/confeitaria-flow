@@ -101,7 +101,9 @@ export interface OrderQueueCardItem {
   deliveryTime?: string;
   deliveryMode: UiDeliveryMode;
   deliveryAddress?: string;
+  deliveryReference?: string;
   deliveryDistrict?: string;
+  deliveryFee?: number;
   status: UiOrderStatus;
   paymentMethod: UiPaymentMethod;
   paymentStatus: UiPaymentStatus;

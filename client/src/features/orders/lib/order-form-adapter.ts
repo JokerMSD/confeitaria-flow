@@ -124,10 +124,11 @@ export function adaptOrderDetailToFormState(
     paidAmount: centsToDecimalString(response.data.paidAmountCents),
     notes: response.data.notes ?? "",
     items: response.data.items.map((item) => {
-      const additionals = item.additionals
-        ?.slice()
-        .sort((a, b) => a.position - b.position)
-        .map(mapApiAdditionalToFormItem) ?? [];
+      const additionals =
+        item.additionals
+          ?.slice()
+          .sort((a, b) => a.position - b.position)
+          .map(mapApiAdditionalToFormItem) ?? [];
 
       return {
         id: item.id,
@@ -183,14 +184,24 @@ export function adaptFormStateToCreatePayload(
       deliveryTime: state.deliveryTime.trim() || null,
       deliveryMode: state.deliveryMode,
       deliveryAddress:
-        state.deliveryMode === "Entrega" ? state.deliveryAddress.trim() || null : null,
+        state.deliveryMode === "Entrega"
+          ? state.deliveryAddress.trim() || null
+          : null,
       deliveryReference:
-        state.deliveryMode === "Entrega" ? state.deliveryReference.trim() || null : null,
+        state.deliveryMode === "Entrega"
+          ? state.deliveryReference.trim() || null
+          : null,
       deliveryDistrict:
-        state.deliveryMode === "Entrega" ? state.deliveryDistrict.trim() || null : null,
+        state.deliveryMode === "Entrega"
+          ? state.deliveryDistrict.trim() || null
+          : null,
       deliveryFeeCents:
-        state.deliveryMode === "Entrega" ? decimalStringToCents(state.deliveryFee) : 0,
-      status: uiToApiStatusMap[state.status] as CreateOrderRequest["data"]["status"],
+        state.deliveryMode === "Entrega"
+          ? decimalStringToCents(state.deliveryFee)
+          : 0,
+      status: uiToApiStatusMap[
+        state.status
+      ] as CreateOrderRequest["data"]["status"],
       paymentMethod: uiToApiPaymentMethodMap[
         state.paymentMethod
       ] as CreateOrderRequest["data"]["paymentMethod"],
