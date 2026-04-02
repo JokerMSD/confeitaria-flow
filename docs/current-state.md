@@ -38,6 +38,8 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Produtos vendaveis ficam em `Catalogo`.
 - Receitas suportam ingrediente e receita-base como componentes.
 - Produto vendavel suporta preco praticado.
+- A Fase 1 foi verificada e esta coerente no codigo.
+- A Fase 2 iniciou pelo backend com adicionais estruturados por produto e por item do pedido.
 
 ### Estoque
 - Estoque usa ledger de movimentacoes.

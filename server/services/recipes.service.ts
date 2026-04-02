@@ -4,6 +4,7 @@ import type {
   InventoryItemUnit,
   ListRecipesFilters,
   OrderItem,
+  ProductAdditionalGroupDetail,
   Recipe,
   RecipeComponentResolved,
   RecipeDetail,
@@ -17,6 +18,8 @@ import { InventoryItemsRepository } from "../repositories/inventory-items.reposi
 import { InventoryMovementsRepository } from "../repositories/inventory-movements.repository";
 import { RecipeComponentsRepository } from "../repositories/recipe-components.repository";
 import { RecipesRepository } from "../repositories/recipes.repository";
+import { ProductAdditionalGroupsRepository } from "../repositories/product-additional-groups.repository";
+import { ProductAdditionalOptionsRepository } from "../repositories/product-additional-options.repository";
 import {
   convertQuantity,
   convertRecipeQuantityToInventoryUnits,
@@ -62,6 +65,10 @@ function roundCents(value: number) {
 export class RecipesService {
   private readonly recipesRepository = new RecipesRepository();
   private readonly recipeComponentsRepository = new RecipeComponentsRepository();
+  private readonly productAdditionalGroupsRepository =
+    new ProductAdditionalGroupsRepository();
+  private readonly productAdditionalOptionsRepository =
+    new ProductAdditionalOptionsRepository();
   private readonly inventoryItemsRepository = new InventoryItemsRepository();
   private readonly inventoryMovementsRepository =
     new InventoryMovementsRepository();
@@ -133,6 +140,13 @@ export class RecipesService {
         tx,
       );
 
+      await this.syncProductAdditionalGroups(
+        recipe.id,
+        normalized.kind,
+        normalized.additionalGroups,
+        tx,
+      );
+
       return this.buildRecipeDetail(recipe.id, new Map(), tx);
     });
   }
@@ -178,6 +192,13 @@ export class RecipesService {
           position: component.position ?? index,
           notes: component.notes,
         })),
+        tx,
+      );
+
+      await this.syncProductAdditionalGroups(
+        id,
+        normalized.kind,
+        normalized.additionalGroups,
         tx,
       );
 
@@ -446,7 +467,60 @@ export class RecipesService {
       effectiveSalePriceCents: node.effectiveSalePriceCents,
       hasIncompleteCost: node.hasIncompleteCost,
       components: node.components,
+      additionalGroups: await this.listProductAdditionalGroups(recipeId, executor),
     };
+  }
+
+  private async listProductAdditionalGroups(
+    recipeId: string,
+    executor?: Executor,
+  ): Promise<ProductAdditionalGroupDetail[]> {
+    const groups = await this.productAdditionalGroupsRepository.listByProductRecipeId(
+      recipeId,
+      executor,
+    );
+
+    if ((groups as any[]).length === 0) {
+      return [];
+    }
+
+    const options = await this.productAdditionalOptionsRepository.listByGroupIds(
+      (groups as any[]).map((group) => group.id),
+      executor,
+    );
+
+    const optionsByGroupId = new Map<string, any[]>();
+
+    for (const option of options as any[]) {
+      const current = optionsByGroupId.get(option.groupId) ?? [];
+      current.push(option);
+      optionsByGroupId.set(option.groupId, current);
+    }
+
+    return (groups as any[]).map((group) => ({
+      id: group.id,
+      productRecipeId: group.productRecipeId,
+      name: group.name,
+      selectionType: group.selectionType,
+      minSelections: group.minSelections,
+      maxSelections: group.maxSelections,
+      position: group.position,
+      notes: group.notes ?? null,
+      createdAt: group.createdAt.toISOString(),
+      updatedAt: group.updatedAt.toISOString(),
+      deletedAt: toIsoString(group.deletedAt),
+      options: (optionsByGroupId.get(group.id) ?? []).map((option) => ({
+        id: option.id,
+        groupId: option.groupId,
+        name: option.name,
+        priceDeltaCents: option.priceDeltaCents,
+        position: option.position,
+        notes: option.notes ?? null,
+        createdAt: option.createdAt.toISOString(),
+        updatedAt: option.updatedAt.toISOString(),
+        deletedAt: toIsoString(option.deletedAt),
+      })),
+    }));
   }
 
   private async computeRecipeNode(
@@ -845,7 +919,92 @@ export class RecipesService {
       salePriceCents: input.salePriceCents ?? null,
       notes,
       components,
+      additionalGroups:
+        input.kind === "ProdutoVenda"
+          ? (input.additionalGroups ?? []).map((group, index) => ({
+              name: group.name.trim(),
+              selectionType: group.selectionType,
+              minSelections: group.minSelections ?? 0,
+              maxSelections: group.maxSelections ?? 1,
+              position: group.position ?? index,
+              notes: group.notes?.trim() || null,
+              options: group.options.map((option, optionIndex) => ({
+                name: option.name.trim(),
+                priceDeltaCents: option.priceDeltaCents ?? 0,
+                position: option.position ?? optionIndex,
+                notes: option.notes?.trim() || null,
+              })),
+            }))
+          : [],
     };
+  }
+
+  private async syncProductAdditionalGroups(
+    recipeId: string,
+    kind: RecipeKind,
+    groups: Array<{
+      name: string;
+      selectionType: "single" | "multiple";
+      minSelections: number;
+      maxSelections: number;
+      position: number;
+      notes: string | null;
+      options: Array<{
+        name: string;
+        priceDeltaCents: number;
+        position: number;
+        notes: string | null;
+      }>;
+    }>,
+    executor?: Executor,
+  ) {
+    const existingGroups = await this.productAdditionalGroupsRepository.listByProductRecipeId(
+      recipeId,
+      executor,
+    );
+
+    for (const existingGroup of existingGroups as any[]) {
+      await this.productAdditionalOptionsRepository.markDeletedByGroupId(
+        existingGroup.id,
+        new Date(),
+        executor,
+      );
+      await this.productAdditionalGroupsRepository.markDeleted(
+        existingGroup.id,
+        new Date(),
+        executor,
+      );
+    }
+
+    if (kind !== "ProdutoVenda" || groups.length === 0) {
+      return;
+    }
+
+    for (const group of groups) {
+      const createdGroup = await this.productAdditionalGroupsRepository.create(
+        {
+          productRecipeId: recipeId,
+          name: group.name,
+          selectionType: group.selectionType,
+          minSelections: group.minSelections,
+          maxSelections: group.maxSelections,
+          position: group.position,
+          notes: group.notes,
+        },
+        executor,
+      );
+
+      await this.productAdditionalOptionsRepository.insertMany(
+        group.options.map((option) => ({
+          groupId: createdGroup.id,
+          name: option.name,
+          priceDeltaCents: option.priceDeltaCents,
+          position: option.position,
+          notes: option.notes,
+        })),
+        executor,
+      );
+    }
   }
 
   private mapRecipe(row: RecipeRow): Recipe {

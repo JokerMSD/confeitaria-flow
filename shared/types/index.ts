@@ -10,5 +10,7 @@ export * from "./order-item.types";
 export * from "./order-lookup.types";
 export * from "./order-queue.types";
 export * from "./order.types";
+export * from "./product-additional-api.types";
+export * from "./product-additional.types";
 export * from "./recipe-api.types";
 export * from "./recipe.types";

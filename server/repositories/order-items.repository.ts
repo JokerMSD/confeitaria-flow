@@ -15,6 +15,14 @@ export interface OrderItemRowInsert {
   unitPriceCents: number;
   lineTotalCents: number;
   position: number;
+  additionals?: Array<{
+    groupId: string;
+    optionId: string;
+    groupName: string;
+    optionName: string;
+    priceDeltaCents: number;
+    position: number;
+  }>;
 }
 
 export class OrderItemsRepository {

@@ -1,4 +1,8 @@
 import type { InventoryItemUnit } from "./inventory.types";
+import type {
+  CreateProductAdditionalGroupInput,
+  ProductAdditionalGroupDetail,
+} from "./product-additional.types";
 
 export type RecipeKind = "Preparacao" | "ProdutoVenda";
 
@@ -57,6 +61,7 @@ export interface RecipeListItem extends Recipe, RecipeCostSummary {
 
 export interface RecipeDetail extends RecipeListItem {
   components: RecipeComponentResolved[];
+  additionalGroups: ProductAdditionalGroupDetail[];
 }
 
 export interface RecipeLookupItem {
@@ -91,6 +96,7 @@ export interface CreateRecipeInput {
   salePriceCents?: number | null;
   notes?: string | null;
   components: CreateRecipeComponentInput[];
+  additionalGroups?: CreateProductAdditionalGroupInput[];
 }
 
 export interface UpdateRecipeInput extends CreateRecipeInput {}

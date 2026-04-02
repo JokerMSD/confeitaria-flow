@@ -7,6 +7,7 @@ import { registerCashRoutes } from "./modules/cash/cash.module";
 import { registerHealthRoutes } from "./modules/health/health.routes";
 import { registerInventoryRoutes } from "./modules/inventory/inventory.module";
 import { registerOrdersRoutes } from "./modules/orders/orders.module";
+import { registerProductAdditionalsRoutes } from "./modules/product-additionals/product-additionals.module";
 import { registerRecipesRoutes } from "./modules/recipes/recipes.module";
 
 export async function registerRoutes(
@@ -20,6 +21,7 @@ export async function registerRoutes(
   registerCashRoutes(app);
   registerInventoryRoutes(app);
   registerRecipesRoutes(app);
+  registerProductAdditionalsRoutes(app);
 
   void storage;
 

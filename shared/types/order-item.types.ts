@@ -17,6 +17,19 @@ export type PaymentMethod =
 
 export type DeliveryMode = "Entrega" | "Retirada";
 
+export interface OrderItemAdditional {
+  id: string;
+  orderItemId: string;
+  groupId: string;
+  optionId: string;
+  groupName: string;
+  optionName: string;
+  priceDeltaCents: number;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface OrderItem {
   id: string;
   orderId: string;
@@ -29,8 +42,15 @@ export interface OrderItem {
   unitPriceCents: number;
   lineTotalCents: number;
   position: number;
+  additionals: OrderItemAdditional[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CreateOrderItemAdditionalInput {
+  groupId: string;
+  optionId: string;
+  position?: number;
 }
 
 export interface CreateOrderItemInput {
@@ -42,4 +62,5 @@ export interface CreateOrderItemInput {
   quantity: number;
   unitPriceCents: number;
   position?: number;
+  additionals?: CreateOrderItemAdditionalInput[];
 }

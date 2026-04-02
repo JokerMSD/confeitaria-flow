@@ -11,12 +11,14 @@ import type {
 } from "@shared/types";
 import { OrdersRepository } from "../repositories/orders.repository";
 import { OrderItemsRepository } from "../repositories/order-items.repository";
+import { OrderItemAdditionalsRepository } from "../repositories/order-item-additionals.repository";
 import { withTransaction } from "../db/transaction";
 import { formatOrderNumber } from "../utils/order-number";
 import { HttpError } from "../utils/http-error";
 import { CashTransactionsService } from "./cash-transactions.service";
 import { OrderRecipeConsumptionService } from "./order-recipe-consumption.service";
 import { RecipesService } from "./recipes.service";
+import { ProductAdditionalsService } from "./product-additionals.service";
 
 function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
@@ -34,10 +36,13 @@ function calculatePaymentStatus(
 export class OrdersService {
   private readonly ordersRepository = new OrdersRepository();
   private readonly orderItemsRepository = new OrderItemsRepository();
+  private readonly orderItemAdditionalsRepository =
+    new OrderItemAdditionalsRepository();
   private readonly cashTransactionsService = new CashTransactionsService();
   private readonly orderRecipeConsumptionService =
     new OrderRecipeConsumptionService();
   private readonly recipesService = new RecipesService();
+  private readonly productAdditionalsService = new ProductAdditionalsService();
 
   async list(filters: ListOrdersFilters) {
     const rows = await this.ordersRepository.list(filters);
@@ -107,11 +112,14 @@ export class OrdersService {
     }
 
     const items = await this.orderItemsRepository.listByOrderId(row.id);
-    return this.mapOrderDetail(row, items);
+    const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
+      items.map((item: any) => item.id),
+    );
+    return this.mapOrderDetail(row, items, additionals);
   }
 
   async create(input: CreateOrderInput) {
-    const normalized = this.normalizeOrderInput(input);
+    const normalized = await this.normalizeOrderInput(input);
 
     return withTransaction<OrderDetail>(async (tx) => {
       await this.recipesService.assertOrderRecipesAreSellable(
@@ -175,6 +183,21 @@ export class OrdersService {
         tx,
       );
 
+      await this.orderItemAdditionalsRepository.insertMany(
+        createdItems.flatMap((createdItem: any, index: number) =>
+          normalized.items[index].additionals.map((additional, additionalIndex) => ({
+            orderItemId: createdItem.id,
+            groupId: additional.groupId,
+            optionId: additional.optionId,
+            groupName: additional.groupName,
+            optionName: additional.optionName,
+            priceDeltaCents: additional.priceDeltaCents,
+            position: additional.position ?? additionalIndex,
+          })),
+        ),
+        tx,
+      );
+
       await this.cashTransactionsService.syncOrderReceipt(
         {
           id: createdOrder.id,
@@ -204,6 +227,11 @@ export class OrdersService {
         tx,
       );
 
+      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
+        createdItems.map((item: any) => item.id),
+        tx,
+      );
+
       return this.mapOrderDetail(
         {
           ...createdOrder,
@@ -212,12 +240,13 @@ export class OrdersService {
           deletedAt: createdOrder.deletedAt ?? null,
         },
         createdItems,
+        additionals,
       );
     });
   }
 
   async update(id: string, input: UpdateOrderInput) {
-    const normalized = this.normalizeOrderInput(input);
+    const normalized = await this.normalizeOrderInput(input);
 
     return withTransaction<OrderDetail>(async (tx) => {
       const existing = await this.ordersRepository.findById(id, tx);
@@ -276,6 +305,11 @@ export class OrdersService {
         throw new HttpError(404, "Order not found.");
       }
 
+      const existingItems = await this.orderItemsRepository.listByOrderId(id, tx);
+      await this.orderItemAdditionalsRepository.deleteByOrderItemIds(
+        existingItems.map((item: any) => item.id),
+        tx,
+      );
       await this.orderItemsRepository.deleteByOrderId(id, tx);
 
       const updatedItems = await this.orderItemsRepository.insertMany(
@@ -291,6 +325,21 @@ export class OrdersService {
           lineTotalCents: item.lineTotalCents,
           position: item.position ?? index,
         })),
+        tx,
+      );
+
+      await this.orderItemAdditionalsRepository.insertMany(
+        updatedItems.flatMap((updatedItem: any, index: number) =>
+          normalized.items[index].additionals.map((additional, additionalIndex) => ({
+            orderItemId: updatedItem.id,
+            groupId: additional.groupId,
+            optionId: additional.optionId,
+            groupName: additional.groupName,
+            optionName: additional.optionName,
+            priceDeltaCents: additional.priceDeltaCents,
+            position: additional.position ?? additionalIndex,
+          })),
+        ),
         tx,
       );
 
@@ -323,7 +372,11 @@ export class OrdersService {
         tx,
       );
 
-      return this.mapOrderDetail(updatedOrder, updatedItems);
+      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
+        updatedItems.map((item: any) => item.id),
+        tx,
+      );
+      return this.mapOrderDetail(updatedOrder, updatedItems, additionals);
     });
   }
 
@@ -344,7 +397,12 @@ export class OrdersService {
 
       if (existing.status !== "Novo") {
         const currentItems = await this.orderItemsRepository.listByOrderId(id, tx);
-        return this.mapOrderDetail(existing, currentItems);
+        const additionals =
+          await this.orderItemAdditionalsRepository.listByOrderItemIds(
+            currentItems.map((item: any) => item.id),
+            tx,
+          );
+        return this.mapOrderDetail(existing, currentItems, additionals);
       }
 
       const updatedOrder = await this.ordersRepository.updateStatus(
@@ -379,7 +437,11 @@ export class OrdersService {
         tx,
       );
 
-      return this.mapOrderDetail(updatedOrder, items);
+      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
+        items.map((item: any) => item.id),
+        tx,
+      );
+      return this.mapOrderDetail(updatedOrder, items, additionals);
     });
   }
 
@@ -410,7 +472,12 @@ export class OrdersService {
 
       if (existing.status === nextStatus) {
         const items = await this.orderItemsRepository.listByOrderId(id, tx);
-        return this.mapOrderDetail(existing, items);
+        const additionals =
+          await this.orderItemAdditionalsRepository.listByOrderItemIds(
+            items.map((item: any) => item.id),
+            tx,
+          );
+        return this.mapOrderDetail(existing, items, additionals);
       }
 
       if (!allowedTransitions[existing.status]?.includes(nextStatus)) {
@@ -449,7 +516,11 @@ export class OrdersService {
         tx,
       );
 
-      return this.mapOrderDetail(updatedOrder, items);
+      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
+        items.map((item: any) => item.id),
+        tx,
+      );
+      return this.mapOrderDetail(updatedOrder, items, additionals);
     });
   }
 
@@ -491,7 +562,7 @@ export class OrdersService {
     });
   }
 
-  private normalizeOrderInput(input: CreateOrderInput | UpdateOrderInput) {
+  private async normalizeOrderInput(input: CreateOrderInput | UpdateOrderInput) {
     const customerName = input.customerName.trim();
     const customerPhone = input.customerPhone?.trim() || null;
     const deliveryTime = input.deliveryTime?.trim() || null;
@@ -502,7 +573,7 @@ export class OrdersService {
     const notes = input.notes?.trim() || null;
     const paidAmountCents = Math.max(0, input.paidAmountCents);
 
-    const items = input.items.map((item, index) => {
+    const items = await Promise.all(input.items.map(async (item, index) => {
       const productName = item.productName.trim();
       const quantity = item.quantity;
       const unitPriceCents = item.unitPriceCents;
@@ -519,18 +590,31 @@ export class OrdersService {
         throw new HttpError(400, "Order item unitPriceCents must be a non-negative integer.");
       }
 
+      const additionals =
+        await this.productAdditionalsService.resolveOrderItemAdditionals(
+          item.recipeId ?? null,
+          item.additionals,
+        );
+
       return {
         recipeId: item.recipeId ?? null,
         fillingRecipeId: item.fillingRecipeId ?? null,
         secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
         tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+        additionals,
         productName,
         quantity,
         unitPriceCents,
-        lineTotalCents: quantity * unitPriceCents,
+        lineTotalCents:
+          quantity *
+          (unitPriceCents +
+            additionals.reduce(
+              (sum, additional) => sum + additional.priceDeltaCents,
+              0,
+            )),
         position: item.position ?? index,
       };
-    });
+    }));
 
     if (items.length === 0) {
       throw new HttpError(400, "Order must contain at least one item.");
@@ -596,7 +680,7 @@ export class OrdersService {
     };
   }
 
-  private mapOrderDetail(row: any, items: any[]): OrderDetail {
+  private mapOrderDetail(row: any, items: any[], additionals: any[]): OrderDetail {
     return {
       ...this.mapOrderListItem(row),
       items: items.map<OrderItem>((item) => ({
@@ -611,6 +695,20 @@ export class OrdersService {
         unitPriceCents: item.unitPriceCents,
         lineTotalCents: item.lineTotalCents,
         position: item.position,
+        additionals: additionals
+          .filter((additional) => additional.orderItemId === item.id)
+          .map((additional) => ({
+            id: additional.id,
+            orderItemId: additional.orderItemId,
+            groupId: additional.groupId,
+            optionId: additional.optionId,
+            groupName: additional.groupName,
+            optionName: additional.optionName,
+            priceDeltaCents: additional.priceDeltaCents,
+            position: additional.position,
+            createdAt: additional.createdAt.toISOString(),
+            updatedAt: additional.updatedAt.toISOString(),
+          })),
         createdAt: item.createdAt.toISOString(),
         updatedAt: item.updatedAt.toISOString(),
       })),

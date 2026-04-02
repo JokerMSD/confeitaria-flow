@@ -38,6 +38,13 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - `ProdutoVenda` fica em `Catalogo`.
 - Receitas suportam componentes por ingrediente ou por outra receita.
 - Catalogo suporta preco praticado e preco ideal calculado.
+- A Fase 1 foi auditada e confirmada como implementada.
+- A Fase 2 entrou pelo backend com fundacao de adicionais estruturados por produto:
+  - `product_additional_groups`
+  - `product_additional_options`
+  - `order_item_additionals`
+- `RecipeDetail` agora pode carregar grupos de adicionais para produtos vendaveis.
+- Pedidos ja aceitam adicionais por item no contrato do backend.
 
 ### Estoque
 - Movimentacoes sao ledger real, sem ajuste silencioso de saldo.

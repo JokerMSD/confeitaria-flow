@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { uuidSchema } from "./common.validators";
 import { inventoryItemUnitSchema } from "./inventory.validators";
+import { createProductAdditionalGroupInputSchema } from "./product-additionals.validators";
 
 export const recipeKindSchema = z.enum(["Preparacao", "ProdutoVenda"]);
 
@@ -46,6 +47,7 @@ export const createRecipeInputSchema = z
     salePriceCents: z.number().int().min(0).nullable().optional(),
     notes: z.string().trim().max(1000).nullable().optional(),
     components: z.array(createRecipeComponentInputSchema).min(1),
+    additionalGroups: z.array(createProductAdditionalGroupInputSchema).optional(),
   })
   .superRefine((value, ctx) => {
     if (
@@ -57,6 +59,14 @@ export const createRecipeInputSchema = z
         message:
           "ProdutoVenda recipes must have outputQuantity 1 and outputUnit un.",
         path: ["outputUnit"],
+      });
+    }
+
+    if (value.kind === "Preparacao" && (value.additionalGroups?.length ?? 0) > 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Somente ProdutoVenda pode ter grupos de adicionais.",
+        path: ["additionalGroups"],
       });
     }
   });

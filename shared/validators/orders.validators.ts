@@ -1,10 +1,16 @@
-import { z } from "zod";
+﻿import { z } from "zod";
 import {
   centsSchema,
   deliveryTimeSchema,
   operationalDateSchema,
   uuidSchema,
 } from "./common.validators";
+
+export const createOrderItemAdditionalInputSchema = z.object({
+  groupId: uuidSchema,
+  optionId: uuidSchema,
+  position: z.number().int().nonnegative().optional(),
+});
 
 export const orderStatusSchema = z.enum([
   "Novo",
@@ -36,6 +42,7 @@ export const createOrderItemInputSchema = z.object({
   quantity: z.number().positive(),
   unitPriceCents: centsSchema,
   position: z.number().int().nonnegative().optional(),
+  additionals: z.array(createOrderItemAdditionalInputSchema).optional(),
 });
 
 export const createOrderInputSchema = z
