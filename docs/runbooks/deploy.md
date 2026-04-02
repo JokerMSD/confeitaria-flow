@@ -3,11 +3,14 @@
 ## Backend No Render
 1. Confirmar codigo no GitHub.
 2. Garantir que `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGINS` e `AUTH_USERS_JSON` estao definidos.
-3. Build command:
+3. A API aplica migrations `.sql` pendentes automaticamente no startup por padrao.
+4. Se precisar desligar isso explicitamente, definir:
+   - `AUTO_APPLY_MIGRATIONS=false`
+5. Build command:
    - `npm install --include=dev && npm run build:api`
-4. Start command:
+6. Start command:
    - `npm run start:api`
-5. Validar:
+7. Validar:
    - `/api/health`
 
 ## Frontend Na Vercel
@@ -27,7 +30,7 @@
 
 ## Problemas Comuns
 - API falha ao subir com erro de schema:
-  - o backend agora falha cedo quando faltam tabelas/colunas criticas
+  - o backend agora tenta aplicar migrations pendentes e depois falha cedo quando faltam tabelas/colunas criticas
   - aplicar as migrations pendentes no Neon antes do redeploy
   - casos recentes comuns:
     - `0014_phase14_order_delivery_mode.sql`

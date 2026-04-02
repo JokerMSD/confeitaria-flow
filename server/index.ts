@@ -9,6 +9,7 @@ import { createSessionMiddleware } from "./auth/session";
 import { loadEnvFile } from "./load-env";
 import { CashTransactionsService } from "./services/cash-transactions.service";
 import { assertRuntimeSchemaIsReady } from "./db/schema-guard";
+import { applyPendingRuntimeMigrations } from "./db/runtime-migrations";
 
 const app = express();
 const httpServer = createServer(app);
@@ -91,6 +92,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await applyPendingRuntimeMigrations();
   await assertRuntimeSchemaIsReady();
   await registerRoutes(httpServer, app);
   await new CashTransactionsService().reconcileOrderReceipts();

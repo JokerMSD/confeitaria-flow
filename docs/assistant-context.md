@@ -17,6 +17,8 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Banco em Neon via `DATABASE_URL`.
 - Frontend usa `VITE_API_URL`.
 - Backend usa `CORS_ORIGINS`, `SESSION_SECRET`, `AUTH_USERS_JSON`, `SERVE_CLIENT=false`.
+- A API agora tenta aplicar automaticamente as migrations `.sql` pendentes no startup, usando tabela de historico e lock no Postgres.
+- `AUTO_APPLY_MIGRATIONS=false` desliga esse comportamento se for necessario.
 
 ## Autenticacao
 - Login simples por sessao HTTP no backend.
