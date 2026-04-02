@@ -4,5 +4,6 @@ import "./client/order-form-adapter.test";
 import "./client/order-item-composer.test";
 import "./client/order-queue-groups.test.ts";
 import "./server/api-smoke.test";
+import "./server/schema-guard.test";
 import "./server/recipe-domain.test";
 import "./server/purchase-plan-domain.test";

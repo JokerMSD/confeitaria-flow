@@ -106,6 +106,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Rodar `npm run build`
 - Commits pequenos e frequentes
 - A suite de testes inclui smoke tests HTTP para rotas criticas (`/api/health`, `/api/auth/login`, `/api/orders`, `/api/orders/queue`) para capturar regressao de validacao, auth e montagem de rotas antes de virar erro 500 no frontend.
+- O backend agora valida no startup se o schema do banco contem as tabelas e colunas criticas de runtime; se o banco estiver atrasado, a API deve falhar cedo com mensagem clara de migration pendente, em vez de subir e devolver `relation/column does not exist` durante os fetchs.
 
 ## Regra Operacional
 - Sempre commitar ao fechar cada bloco de implementacao.

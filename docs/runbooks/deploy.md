@@ -26,6 +26,12 @@
 5. Testar guia de compra.
 
 ## Problemas Comuns
+- API falha ao subir com erro de schema:
+  - o backend agora falha cedo quando faltam tabelas/colunas criticas
+  - aplicar as migrations pendentes no Neon antes do redeploy
+  - casos recentes comuns:
+    - `0014_phase14_order_delivery_mode.sql`
+    - `0015_phase15_product_additionals.sql`
 - CORS:
   - corrigir `CORS_ORIGINS`
   - redeployar API

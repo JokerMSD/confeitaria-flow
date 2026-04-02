@@ -1,0 +1,212 @@
+import { getPool } from "./client";
+
+interface RequiredSchemaShape {
+  tables: string[];
+  columnsByTable: Record<string, string[]>;
+}
+
+interface SchemaSnapshot {
+  tables: Set<string>;
+  columnsByTable: Map<string, Set<string>>;
+}
+
+interface SchemaValidationResult {
+  missingTables: string[];
+  missingColumns: Array<{ table: string; column: string }>;
+}
+
+const requiredRuntimeSchema: RequiredSchemaShape = {
+  tables: [
+    "orders",
+    "order_items",
+    "recipes",
+    "recipe_components",
+    "cash_transactions",
+    "inventory_items",
+    "inventory_movements",
+    "product_additional_groups",
+    "product_additional_options",
+    "order_item_additionals",
+  ],
+  columnsByTable: {
+    orders: [
+      "delivery_mode",
+      "delivery_address",
+      "delivery_reference",
+      "delivery_district",
+      "delivery_fee_cents",
+    ],
+    order_items: [
+      "recipe_id",
+      "filling_recipe_id",
+      "secondary_filling_recipe_id",
+      "tertiary_filling_recipe_id",
+    ],
+    cash_transactions: ["source_type", "source_id", "is_system_generated"],
+    inventory_items: [
+      "purchase_unit_cost_cents",
+      "recipe_equivalent_quantity",
+      "recipe_equivalent_unit",
+      "pricing_accumulated_quantity",
+      "pricing_accumulated_cost_cents",
+    ],
+    inventory_movements: [
+      "purchase_amount_cents",
+      "purchase_discount_cents",
+      "purchase_payment_method",
+      "purchase_recipe_yield_quantity",
+      "purchase_recipe_yield_unit",
+    ],
+    product_additional_groups: [
+      "product_recipe_id",
+      "selection_type",
+      "min_selections",
+      "max_selections",
+    ],
+    product_additional_options: ["group_id", "price_delta_cents"],
+    order_item_additionals: [
+      "order_item_id",
+      "group_id",
+      "option_id",
+      "group_name",
+      "option_name",
+      "price_delta_cents",
+    ],
+  },
+};
+
+const migrationHints: Record<string, string> = {
+  "orders.delivery_mode": "0014_phase14_order_delivery_mode.sql",
+  "orders.delivery_address": "0014_phase14_order_delivery_mode.sql",
+  "orders.delivery_reference": "0014_phase14_order_delivery_mode.sql",
+  "orders.delivery_district": "0014_phase14_order_delivery_mode.sql",
+  "orders.delivery_fee_cents": "0014_phase14_order_delivery_mode.sql",
+  product_additional_groups: "0015_phase15_product_additionals.sql",
+  product_additional_options: "0015_phase15_product_additionals.sql",
+  order_item_additionals: "0015_phase15_product_additionals.sql",
+  "product_additional_groups.product_recipe_id":
+    "0015_phase15_product_additionals.sql",
+  "product_additional_groups.selection_type":
+    "0015_phase15_product_additionals.sql",
+  "product_additional_groups.min_selections":
+    "0015_phase15_product_additionals.sql",
+  "product_additional_groups.max_selections":
+    "0015_phase15_product_additionals.sql",
+  "product_additional_options.group_id": "0015_phase15_product_additionals.sql",
+  "product_additional_options.price_delta_cents":
+    "0015_phase15_product_additionals.sql",
+  "order_item_additionals.order_item_id":
+    "0015_phase15_product_additionals.sql",
+  "order_item_additionals.group_id": "0015_phase15_product_additionals.sql",
+  "order_item_additionals.option_id": "0015_phase15_product_additionals.sql",
+  "order_item_additionals.group_name": "0015_phase15_product_additionals.sql",
+  "order_item_additionals.option_name":
+    "0015_phase15_product_additionals.sql",
+  "order_item_additionals.price_delta_cents":
+    "0015_phase15_product_additionals.sql",
+};
+
+export function validateSchemaSnapshot(
+  snapshot: SchemaSnapshot,
+): SchemaValidationResult {
+  const missingTables = requiredRuntimeSchema.tables.filter(
+    (table) => !snapshot.tables.has(table),
+  );
+
+  const missingColumns: Array<{ table: string; column: string }> = [];
+
+  for (const [table, columns] of Object.entries(
+    requiredRuntimeSchema.columnsByTable,
+  )) {
+    const existingColumns = snapshot.columnsByTable.get(table) ?? new Set<string>();
+
+    for (const column of columns) {
+      if (!existingColumns.has(column)) {
+        missingColumns.push({ table, column });
+      }
+    }
+  }
+
+  return {
+    missingTables,
+    missingColumns,
+  };
+}
+
+export function formatSchemaMismatchMessage(
+  result: SchemaValidationResult,
+) {
+  const parts: string[] = [];
+
+  if (result.missingTables.length > 0) {
+    parts.push(
+      `missing tables: ${result.missingTables
+        .map((table) => {
+          const hint = migrationHints[table];
+          return hint ? `${table} (${hint})` : table;
+        })
+        .join(", ")}`,
+    );
+  }
+
+  if (result.missingColumns.length > 0) {
+    parts.push(
+      `missing columns: ${result.missingColumns
+        .map(({ table, column }) => {
+          const key = `${table}.${column}`;
+          const hint = migrationHints[key];
+          return hint ? `${table}.${column} (${hint})` : `${table}.${column}`;
+        })
+        .join(", ")}`,
+    );
+  }
+
+  return `Database schema is behind the runtime code; apply pending migrations before starting the API (${parts.join(
+    "; ",
+  )}).`;
+}
+
+async function loadCurrentSchemaSnapshot(): Promise<SchemaSnapshot> {
+  const pool = getPool();
+
+  const tablesResult = await pool.query<{
+    table_name: string;
+  }>(
+    `select table_name
+     from information_schema.tables
+     where table_schema = 'public'`,
+  );
+
+  const columnsResult = await pool.query<{
+    table_name: string;
+    column_name: string;
+  }>(
+    `select table_name, column_name
+     from information_schema.columns
+     where table_schema = 'public'`,
+  );
+
+  const columnsByTable = new Map<string, Set<string>>();
+
+  for (const row of columnsResult.rows) {
+    const current = columnsByTable.get(row.table_name) ?? new Set<string>();
+    current.add(row.column_name);
+    columnsByTable.set(row.table_name, current);
+  }
+
+  return {
+    tables: new Set(tablesResult.rows.map((row) => row.table_name)),
+    columnsByTable,
+  };
+}
+
+export async function assertRuntimeSchemaIsReady() {
+  const snapshot = await loadCurrentSchemaSnapshot();
+  const result = validateSchemaSnapshot(snapshot);
+
+  if (result.missingTables.length === 0 && result.missingColumns.length === 0) {
+    return;
+  }
+
+  throw new Error(formatSchemaMismatchMessage(result));
+}

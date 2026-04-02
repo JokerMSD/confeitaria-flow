@@ -94,6 +94,7 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
   - `GET /api/orders`
   - `GET /api/orders/queue`
 - O objetivo desses smoke tests e detectar regressao de montagem de rota, validacao e auth antes de erro 500 chegar ao frontend.
+- Existe teste da guarda de schema do backend para detectar mismatch entre runtime e migrations recentes.
 
 ## Validacoes Minimas Antes De Encerrar Mudancas
 - `npm run test`
