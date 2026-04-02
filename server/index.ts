@@ -92,8 +92,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await applyPendingRuntimeMigrations();
-  await assertRuntimeSchemaIsReady();
+  // await applyPendingRuntimeMigrations();
+  // await assertRuntimeSchemaIsReady();
   await registerRoutes(httpServer, app);
   await new CashTransactionsService().reconcileOrderReceipts();
 
