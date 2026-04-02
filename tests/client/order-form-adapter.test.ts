@@ -112,7 +112,7 @@ test("order detail rehydrates saved additionals in edit mode", () => {
               groupId: "group-1",
               optionId: "option-1",
               groupName: "Extras",
-              optionName: "Laco",
+              optionName: "Laço",
               priceDeltaCents: 590,
               position: 0,
               createdAt: "2026-04-02T10:00:00.000Z",
@@ -127,33 +127,31 @@ test("order detail rehydrates saved additionals in edit mode", () => {
   });
 
   assert.equal(state.items[0]?.additionals.length, 1);
-  assert.equal(state.items[0]?.additionals[0]?.optionName, "Laco");
+  assert.equal(state.items[0]?.additionals[0]?.optionName, "Laço");
   assert.equal(state.items[0]?.subtotal, 45.8);
 });
 
-test("pickup orders clear delivery fields and fee in payload", () => {
+test("retirada payload clears delivery fields and fee", () => {
   const state = createEmptyOrderFormState();
   state.customerName = "Cliente";
   state.deliveryDate = "2026-04-03";
   state.deliveryMode = "Retirada";
   state.deliveryAddress = "Rua A";
-  state.deliveryReference = "Casa azul";
+  state.deliveryReference = "Portão lateral";
   state.deliveryDistrict = "Centro";
   state.deliveryFee = "12,50";
   state.items = [
-    {
-      id: "item-1",
-      recipeId: "recipe-1",
-      fillingRecipeId: "fill-1",
-      secondaryFillingRecipeId: null,
-      tertiaryFillingRecipeId: null,
-      productName: "Ovo de colher 350g - Brigadeiro",
-      quantity: 1,
-      unitPrice: 39.9,
-      subtotal: 39.9,
-      position: 0,
-      additionals: [],
-    },
+    buildOrderFormItem(
+      "item-1",
+      "recipe-1",
+      "fill-1",
+      null,
+      null,
+      "Ovo de colher 350g - Brigadeiro",
+      1,
+      39.9,
+      0,
+    ),
   ];
 
   const payload = adaptFormStateToCreatePayload(state);
@@ -163,4 +161,38 @@ test("pickup orders clear delivery fields and fee in payload", () => {
   assert.equal(payload.data.deliveryReference, null);
   assert.equal(payload.data.deliveryDistrict, null);
   assert.equal(payload.data.deliveryFeeCents, 0);
+});
+
+test("order detail adapter keeps payment labels and status labels readable", () => {
+  const state = adaptOrderDetailToFormState({
+    data: {
+      id: "order-2",
+      orderNumber: "PED-000002",
+      customerName: "Cliente",
+      customerPhone: null,
+      orderDate: "2026-04-02",
+      deliveryDate: "2026-04-03",
+      deliveryTime: "15:00",
+      deliveryMode: "Retirada",
+      deliveryAddress: null,
+      deliveryReference: null,
+      deliveryDistrict: null,
+      deliveryFeeCents: 0,
+      status: "EmProducao",
+      paymentMethod: "CartaoCredito",
+      paymentStatus: "Parcial",
+      notes: null,
+      subtotalAmountCents: 3990,
+      paidAmountCents: 1500,
+      remainingAmountCents: 2490,
+      itemCount: 0,
+      createdAt: "2026-04-02T10:00:00.000Z",
+      updatedAt: "2026-04-02T10:00:00.000Z",
+      deletedAt: null,
+      items: [],
+    },
+  });
+
+  assert.equal(state.status, "Em produção");
+  assert.equal(state.paymentMethod, "Cartão de crédito");
 });

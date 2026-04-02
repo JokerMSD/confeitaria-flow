@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   AlertCircle,
@@ -120,6 +121,10 @@ function buildSearchableText(order: OrderQueueCardItem) {
     order.orderNumber,
     order.customerName,
     order.customerPhone,
+    order.deliveryMode,
+    order.deliveryAddress,
+    order.deliveryDistrict,
+    order.deliveryReference,
     order.notes,
     ...order.items.map((item) => item.productName),
   ]
@@ -161,7 +166,9 @@ function getActionsForStatus(order: Pick<OrderQueueCardItem, "status" | "deliver
         { label: "Reabrir", nextStatus: "Confirmado", tone: "secondary" },
         {
           label:
-            order.deliveryMode === "Retirada" ? "Concluir retirada" : "Entregar",
+            order.deliveryMode === "Retirada"
+              ? "Concluir retirada"
+              : "Marcar entregue",
           nextStatus: "Entregue",
           tone: "success",
         },
@@ -251,6 +258,9 @@ function QueueOrderCard({
             <span className="text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">
               {order.orderNumber}
             </span>
+            <span className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-[11px] font-bold text-muted-foreground">
+              {order.deliveryMode}
+            </span>
             <span
               className={cn(
                 "rounded-full border px-2.5 py-1 text-[11px] font-bold",
@@ -274,7 +284,9 @@ function QueueOrderCard({
         </div>
 
         <div className="min-w-[116px] rounded-2xl border border-border/70 bg-background px-4 py-3 text-right">
-          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Entrega</p>
+          <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">
+            {order.deliveryMode === "Entrega" ? "Entrega" : "Retirada"}
+          </p>
           <p className="mt-1 font-display text-3xl font-bold text-foreground">
             {getTimeLabel(order.deliveryTime)}
           </p>

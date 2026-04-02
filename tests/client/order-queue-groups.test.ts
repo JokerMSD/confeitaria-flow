@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildQueueDateGroups } from "../../client/src/features/orders/lib/order-queue-groups";
+import {
+  buildQueueDateGroups,
+  parseOperationalDate,
+} from "../../client/src/features/orders/lib/order-queue-groups";
 import type { OrderQueueCardItem } from "../../client/src/features/orders/types/order-ui";
 
 function buildOrder(
@@ -54,4 +57,13 @@ test("queue groups place orders without time at the end of each day", () => {
 
   assert.equal(groups[0]?.slots[0]?.slot, "10:00");
   assert.equal(groups[0]?.slots[1]?.slot, "Sem horário");
+});
+
+test("parseOperationalDate keeps the business day stable", () => {
+  const date = parseOperationalDate("2026-04-02");
+
+  assert.equal(date.getFullYear(), 2026);
+  assert.equal(date.getMonth(), 3);
+  assert.equal(date.getDate(), 2);
+  assert.equal(date.getHours(), 12);
 });

@@ -84,6 +84,10 @@ function buildAdditionalGroupRule(group: ProductAdditionalGroupDetail) {
   return `Ate ${group.maxSelections} opcao(oes)`;
 }
 
+function getDeliveryMomentLabel(mode: OrderFormState["deliveryMode"]) {
+  return mode === "Entrega" ? "entrega" : "retirada";
+}
+
 export default function PedidoForm() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
@@ -689,7 +693,9 @@ export default function PedidoForm() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="deliveryDate">Data de Entrega *</Label>
+                    <Label htmlFor="deliveryDate">
+                      Data de {getDeliveryMomentLabel(formState.deliveryMode)} *
+                    </Label>
                     <Input
                       id="deliveryDate"
                       type="date"
@@ -700,7 +706,9 @@ export default function PedidoForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="deliveryTime">Horário</Label>
+                    <Label htmlFor="deliveryTime">
+                      Horário de {getDeliveryMomentLabel(formState.deliveryMode)}
+                    </Label>
                     <Input
                       id="deliveryTime"
                       type="time"
@@ -809,7 +817,7 @@ export default function PedidoForm() {
                   </div>
                 ) : (
                   <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-                    Pedido marcado como retirada. Endereço e taxa ficam ocultos.
+                    Pedido marcado como retirada. Endereço, bairro, referência e taxa ficam fora do payload final.
                   </div>
                 )}
 
@@ -823,12 +831,14 @@ export default function PedidoForm() {
                       {formState.deliveryMode === "Entrega" ? "Entrega" : "Retirada"}
                     </p>
                     <p>
-                      <span className="font-semibold">Entrega:</span>{" "}
+                      <span className="font-semibold">
+                        {formState.deliveryMode === "Entrega" ? "Entrega" : "Retirada"}:
+                      </span>{" "}
                       {formState.deliveryDate
                         ? `${formatDate(formState.deliveryDate)}${
                             formState.deliveryTime ? ` às ${formState.deliveryTime}` : ""
                           }`
-                        : "Defina a data de entrega"}
+                        : `Defina a data de ${getDeliveryMomentLabel(formState.deliveryMode)}`}
                     </p>
                     {formState.deliveryMode === "Entrega" ? (
                       <>
