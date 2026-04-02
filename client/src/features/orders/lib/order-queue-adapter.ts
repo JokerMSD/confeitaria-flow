@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   OrderQueueItem as ApiOrderQueueItem,
   OrderStatus as ApiOrderStatus,
   PaymentMethod as ApiPaymentMethod,
@@ -58,6 +58,9 @@ export function adaptOrderQueueItem(
     orderDate: order.orderDate,
     deliveryDate: order.deliveryDate,
     deliveryTime: order.deliveryTime ?? undefined,
+    deliveryMode: order.deliveryMode,
+    deliveryAddress: order.deliveryAddress ?? undefined,
+    deliveryDistrict: order.deliveryDistrict ?? undefined,
     status: statusLabelMap[order.status],
     paymentMethod: getPaymentMethod(order),
     paymentStatus: paymentStatusLabelMap[order.paymentStatus],

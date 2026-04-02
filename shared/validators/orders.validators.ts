@@ -25,6 +25,8 @@ export const paymentMethodSchema = z.enum([
   "Transferencia",
 ]);
 
+export const deliveryModeSchema = z.enum(["Entrega", "Retirada"]);
+
 export const createOrderItemInputSchema = z.object({
   recipeId: uuidSchema.nullable().optional(),
   fillingRecipeId: uuidSchema.nullable().optional(),
@@ -36,18 +38,33 @@ export const createOrderItemInputSchema = z.object({
   position: z.number().int().nonnegative().optional(),
 });
 
-export const createOrderInputSchema = z.object({
-  customerName: z.string().trim().min(1).max(160),
-  customerPhone: z.string().trim().max(40).nullable().optional(),
-  orderDate: operationalDateSchema,
-  deliveryDate: operationalDateSchema,
-  deliveryTime: deliveryTimeSchema.nullable().optional(),
-  status: orderStatusSchema,
-  paymentMethod: paymentMethodSchema,
-  paidAmountCents: centsSchema,
-  notes: z.string().trim().max(2000).nullable().optional(),
-  items: z.array(createOrderItemInputSchema).min(1),
-});
+export const createOrderInputSchema = z
+  .object({
+    customerName: z.string().trim().min(1).max(160),
+    customerPhone: z.string().trim().max(40).nullable().optional(),
+    orderDate: operationalDateSchema,
+    deliveryDate: operationalDateSchema,
+    deliveryTime: deliveryTimeSchema.nullable().optional(),
+    deliveryMode: deliveryModeSchema,
+    deliveryAddress: z.string().trim().max(240).nullable().optional(),
+    deliveryReference: z.string().trim().max(240).nullable().optional(),
+    deliveryDistrict: z.string().trim().max(120).nullable().optional(),
+    deliveryFeeCents: centsSchema.optional().default(0),
+    status: orderStatusSchema,
+    paymentMethod: paymentMethodSchema,
+    paidAmountCents: centsSchema,
+    notes: z.string().trim().max(2000).nullable().optional(),
+    items: z.array(createOrderItemInputSchema).min(1),
+  })
+  .superRefine((value, ctx) => {
+    if (value.deliveryMode === "Entrega" && !value.deliveryAddress?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["deliveryAddress"],
+        message: "Endereço de entrega é obrigatório para pedidos com entrega.",
+      });
+    }
+  });
 
 export const updateOrderInputSchema = createOrderInputSchema;
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
   AlertCircle,
@@ -8,10 +8,10 @@ import {
   Clock3,
   Loader2,
   Search,
+  X,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { ApiError } from "@/api/http-client";
 import { useOrdersQueue } from "@/features/orders/hooks/use-orders-queue";
@@ -27,11 +27,15 @@ type QueueFilter = "todos" | "acao" | "prontos" | "nao-pagos";
 type QuickStatus = "Confirmado" | "EmProducao" | "Pronto" | "Entregue";
 
 function parseLocalDate(dateStr: string) {
-  return new Date(`${dateStr}T12:00:00`);
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day, 12, 0, 0, 0);
 }
 
 function toDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function addDays(date: Date, days: number) {
@@ -373,10 +377,8 @@ export default function Fila() {
   const [searchTerm, setSearchTerm] = useState("");
   const [queueFilter, setQueueFilter] = useState<QueueFilter>("todos");
   const todayKey = toDateKey(new Date());
-  const [selectedDate, setSelectedDate] = useState(todayKey);
-  const [visibleMonth, setVisibleMonth] = useState(
-    startOfMonth(parseLocalDate(todayKey)),
-  );
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const orders = useMemo(
@@ -393,28 +395,16 @@ export default function Fila() {
     [orders],
   );
 
-  useEffect(() => {
-    if (dateCounts[selectedDate]) {
-      return;
-    }
-
-    const nextDate =
-      Object.keys(dateCounts)
-        .filter((date) => date >= todayKey)
-        .sort()[0] ??
-      Object.keys(dateCounts).sort()[0] ??
-      todayKey;
-
-    setSelectedDate(nextDate);
-    setVisibleMonth(startOfMonth(parseLocalDate(nextDate)));
-  }, [dateCounts, selectedDate, todayKey]);
-
   const filteredOrders = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
     return sortOrders(
       orders.filter((order) => {
         if (!orderMatchesFilter(order, queueFilter)) {
+          return false;
+        }
+
+        if (selectedDate && order.deliveryDate !== selectedDate) {
           return false;
         }
 
@@ -425,7 +415,7 @@ export default function Fila() {
         return buildSearchableText(order).includes(normalizedSearch);
       }),
     );
-  }, [orders, queueFilter, searchTerm]);
+  }, [orders, queueFilter, searchTerm, selectedDate]);
 
   const overdueOrders = useMemo(
     () => filteredOrders.filter((order) => order.deliveryDate < todayKey),
@@ -433,7 +423,7 @@ export default function Fila() {
   );
 
   const selectedDayOrders = useMemo(
-    () => filteredOrders.filter((order) => order.deliveryDate === selectedDate),
+    () => (selectedDate ? filteredOrders.filter((order) => order.deliveryDate === selectedDate) : filteredOrders),
     [filteredOrders, selectedDate],
   );
 
@@ -442,9 +432,9 @@ export default function Fila() {
     [selectedDayOrders],
   );
 
-  const dayReceivable = useMemo(
-    () => selectedDayOrders.reduce((sum, order) => sum + order.remainingAmount, 0),
-    [selectedDayOrders],
+  const receivableAmount = useMemo(
+    () => filteredOrders.reduce((sum, order) => sum + order.remainingAmount, 0),
+    [filteredOrders],
   );
 
   const readyCount = filteredOrders.filter((order) => order.status === "Pronto").length;
@@ -506,52 +496,60 @@ export default function Fila() {
   };
 
   return (
-    <AppLayout title="Fila de Produção">
+    <AppLayout title="Fila de Produção" contentClassName="max-w-[1700px] 2xl:px-10">
       <div className="space-y-6">
         <section className="rounded-[28px] border border-border bg-card/80 p-6 shadow-sm">
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-            <div className="max-w-2xl space-y-2">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(420px,680px)] xl:items-start">
+            <div className="max-w-3xl space-y-2">
               <h2 className="text-3xl font-display font-bold text-foreground">
                 Central de Produção
               </h2>
-              <p className="max-w-xl text-base leading-7 text-muted-foreground">
-                Agenda diária com prioridades, horários de entrega e ações rápidas.
+              <p className="max-w-2xl text-base leading-7 text-muted-foreground">
+                Visão operacional completa, com todos os pedidos ativos por padrão e calendário apenas como filtro opcional.
               </p>
             </div>
 
-            <div className="w-full xl:max-w-[760px]">
-              <div className="flex flex-col gap-3">
-                <div className="flex h-12 items-center gap-3 rounded-full border border-border bg-background px-4 shadow-sm">
-                  <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <Input
-                    value={searchTerm}
-                    onChange={(event) => setSearchTerm(event.target.value)}
-                    placeholder="Buscar por cliente, pedido ou item..."
-                    className="h-auto border-0 bg-transparent px-0 py-0 text-sm shadow-none focus-visible:ring-0"
-                  />
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    ["todos", "Tudo"],
-                    ["acao", "Precisa agir"],
-                    ["prontos", "Prontos"],
-                    ["nao-pagos", "Não pagos"],
-                  ].map(([value, label]) => (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => setQueueFilter(value as QueueFilter)}
-                      className={cn(
-                        "inline-flex h-11 items-center justify-center rounded-full border px-5 text-sm font-medium transition-colors",
-                        queueFilter === value
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border bg-background text-foreground hover:bg-muted",
-                      )}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={searchTerm}
+                  onChange={(event) => setSearchTerm(event.target.value)}
+                  placeholder="Buscar por cliente, pedido ou item..."
+                  className="h-12 w-full rounded-full border border-border bg-background pl-11 pr-4 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ["todos", "Tudo"],
+                  ["acao", "Precisa agir"],
+                  ["prontos", "Prontos"],
+                  ["nao-pagos", "Não pagos"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setQueueFilter(value as QueueFilter)}
+                    className={cn(
+                      "inline-flex h-11 items-center justify-center rounded-full border px-5 text-sm font-medium transition-colors",
+                      queueFilter === value
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted",
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+                {selectedDate ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(null)}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-border bg-background px-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                    Limpar filtro
+                  </button>
+                ) : null}
               </div>
             </div>
           </div>
@@ -565,9 +563,9 @@ export default function Fila() {
             tone="danger"
           />
           <QueueStatCard
-            title="Dia selecionado"
+            title="No filtro"
             value={selectedDayOrders.length}
-            description={selectedDate ? getFullDateLabel(selectedDate) : "Sem data"}
+            description={selectedDate ? getFullDateLabel(selectedDate) : "Todos os pedidos ativos."}
             tone="primary"
           />
           <QueueStatCard
@@ -578,12 +576,12 @@ export default function Fila() {
           />
           <QueueStatCard
             title="A receber"
-            value={formatCurrency(dayReceivable)}
+            value={formatCurrency(receivableAmount)}
             description={`${unpaidCount} pedido(s) com pendência no filtro.`}
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-[380px_minmax(0,1fr)]">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[360px_minmax(0,1fr)]">
           <section className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
@@ -695,16 +693,19 @@ export default function Fila() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.35fr)_320px]">
+          <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.3fr)_320px] 2xl:grid-cols-[minmax(0,1.4fr)_340px]">
+
             <section className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
               <div className="mb-5 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <h3 className="flex items-center gap-2 text-xl font-bold text-foreground">
                     <Clock3 className="h-5 w-5 text-primary" />
-                    Agenda do dia
+                    Agenda operacional
                   </h3>
                   <p className="mt-2 text-sm capitalize leading-6 text-muted-foreground">
-                    {selectedDate ? getFullDateLabel(selectedDate) : "Selecione uma data"}
+                    {selectedDate
+                      ? getFullDateLabel(selectedDate)
+                      : "Todos os pedidos ativos organizados por data e horário."}
                   </p>
                 </div>
                 <div className="rounded-full border border-border bg-background px-4 py-2 text-sm font-medium text-muted-foreground">
@@ -730,7 +731,7 @@ export default function Fila() {
                 </div>
               ) : agendaGroups.length === 0 ? (
                 <div className="flex min-h-[360px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-background/70 p-8 text-center text-muted-foreground">
-                  Nenhum pedido no dia selecionado com o filtro atual.
+                  Nenhum pedido no filtro atual.
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -762,14 +763,14 @@ export default function Fila() {
 
             <section className="space-y-4">
               <div className="rounded-[28px] border border-border bg-card/75 p-5 shadow-sm">
-                <h3 className="text-xl font-bold text-foreground">Resumo do dia</h3>
+                <h3 className="text-xl font-bold text-foreground">Resumo do filtro</h3>
                 <div className="mt-4 space-y-3">
-                  {[
+                  {([
                     ["Novos", selectedDayStatusCounts.Novo],
                     ["Confirmados", selectedDayStatusCounts.Confirmado],
                     ["Em produção", selectedDayStatusCounts["Em produção"]],
                     ["Prontos", selectedDayStatusCounts.Pronto],
-                  ].map(([label, value]) => (
+                  ] as const).map(([label, value]) => (
                     <div
                       key={label}
                       className="flex items-center justify-between rounded-2xl border border-border/70 bg-background px-4 py-3"
@@ -836,3 +837,8 @@ export default function Fila() {
     </AppLayout>
   );
 }
+
+
+
+
+
