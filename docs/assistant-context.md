@@ -33,6 +33,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Pedidos antigos foram parcialmente corrigidos por scripts de backfill com base nas observacoes.
 - Pedidos agora suportam `deliveryMode` com `Entrega` e `Retirada`, incluindo taxa e endereco condicionais.
 - Ao marcar `Retirada` no formulario, campos operacionais de entrega devem ser limpos para evitar persistencia acidental de endereco, referencia, bairro e taxa.
+- O adapter de pedidos deve manter labels legiveis em pt-BR para status e formas de pagamento na edicao.
 
 ### Receitas e Catalogo
 - `Preparacao` fica em `Receitas`.
@@ -79,6 +80,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - A fila deve tratar `deliveryDate` como data de negocio local, sem converter para UTC.
 - O estado padrao da fila deve mostrar todos os pedidos ativos, com calendario apenas como filtro opcional.
 - Sem filtro de data, a agenda da fila deve agrupar por `data -> horario`, e nao misturar pedidos de dias diferentes na mesma faixa.
+- A busca da fila deve considerar tambem modo, endereco, bairro e referencia quando existirem.
 
 ## Regras Importantes Ja Combinadas
 - Baixa automatica de estoque acontece quando pedido entra em `Pronto` ou `Entregue`.

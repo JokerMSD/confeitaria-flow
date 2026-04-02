@@ -1,6 +1,6 @@
 ﻿import { useMemo, useState } from "react";
-import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { useEffect } from "react";
 import {
   AlertCircle,
   Calendar,
@@ -32,6 +32,8 @@ import type {
 
 type QueueFilter = "todos" | "acao" | "prontos" | "nao-pagos";
 type QuickStatus = "Confirmado" | "EmProducao" | "Pronto" | "Entregue";
+const QUEUE_FILTER_STORAGE_KEY = "queue-filter";
+const QUEUE_DATE_STORAGE_KEY = "queue-date";
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -393,10 +395,35 @@ export default function Fila() {
   const queueQuery = useOrdersQueue();
   const updateOrderStatusMutation = useUpdateOrderStatus();
   const [searchTerm, setSearchTerm] = useState("");
-  const [queueFilter, setQueueFilter] = useState<QueueFilter>("todos");
+  const [queueFilter, setQueueFilter] = useState<QueueFilter>(() => {
+    if (typeof window === "undefined") {
+      return "todos";
+    }
+
+    const storedFilter = window.sessionStorage.getItem(QUEUE_FILTER_STORAGE_KEY);
+
+    if (
+      storedFilter === "todos" ||
+      storedFilter === "acao" ||
+      storedFilter === "prontos" ||
+      storedFilter === "nao-pagos"
+    ) {
+      return storedFilter;
+    }
+
+    return "todos";
+  });
   const todayKey = toOperationalDateKey(new Date());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [visibleMonth, setVisibleMonth] = useState(startOfMonth(new Date()));
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+
+    return window.sessionStorage.getItem(QUEUE_DATE_STORAGE_KEY) || null;
+  });
+  const [visibleMonth, setVisibleMonth] = useState(() =>
+    startOfMonth(new Date()),
+  );
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const orders = useMemo(
@@ -467,6 +494,28 @@ export default function Fila() {
   );
 
   const calendarDays = useMemo(() => buildCalendarDays(visibleMonth), [visibleMonth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.sessionStorage.setItem(QUEUE_FILTER_STORAGE_KEY, queueFilter);
+  }, [queueFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (!selectedDate) {
+      window.sessionStorage.removeItem(QUEUE_DATE_STORAGE_KEY);
+      return;
+    }
+
+    window.sessionStorage.setItem(QUEUE_DATE_STORAGE_KEY, selectedDate);
+    setVisibleMonth(startOfMonth(parseOperationalDate(selectedDate)));
+  }, [selectedDate]);
 
   const handleMoveStatus = async (
     order: OrderQueueCardItem,
