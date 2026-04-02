@@ -388,9 +388,21 @@ export class RecipesService {
       );
 
       if (!updated) {
+        const itemRow = await this.inventoryItemsRepository.findById(itemId, executor);
+        const shortageDetail = itemRow
+          ? formatInventoryShortage(
+              this.mapInventoryItem(itemRow),
+              normalizeInventoryQuantity(
+                Math.max(quantity - Number(itemRow.currentQuantity), quantity),
+              ),
+            )
+          : "ingredientes sem saldo suficiente";
+        const actionLabel =
+          order.status === "Entregue" ? "entregue" : "pronto";
+
         throw new HttpError(
           400,
-          `Order ${order.orderNumber} would make stock negative for one or more ingredients.`,
+          `Estoque insuficiente para marcar o pedido ${order.orderNumber} como ${actionLabel}. Faltam: ${shortageDetail}.`,
         );
       }
 

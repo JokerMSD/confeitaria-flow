@@ -8,6 +8,7 @@ import type {
 import { getDb } from "../db";
 
 type Executor = ReturnType<typeof getDb> | any;
+const INVENTORY_QUANTITY_DECIMALS = 3;
 
 export interface InventoryItemRowInsert {
   name: string;
@@ -142,17 +143,20 @@ export class InventoryItemsRepository {
     updatedAt: Date,
     executor: Executor = getDb(),
   ) {
+    const nextQuantityExpression =
+      sql`round((${inventoryItems.currentQuantity} + ${delta})::numeric, ${INVENTORY_QUANTITY_DECIMALS})::double precision`;
+
     const [item] = await executor
       .update(inventoryItems)
       .set({
-        currentQuantity: sql`${inventoryItems.currentQuantity} + ${delta}`,
+        currentQuantity: nextQuantityExpression,
         updatedAt,
       })
       .where(
         and(
           eq(inventoryItems.id, id),
           isNull(inventoryItems.deletedAt),
-          sql`${inventoryItems.currentQuantity} + ${delta} >= 0`,
+          sql`round((${inventoryItems.currentQuantity} + ${delta})::numeric, ${INVENTORY_QUANTITY_DECIMALS}) >= 0`,
         ),
       )
       .returning();

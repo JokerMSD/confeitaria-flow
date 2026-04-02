@@ -74,6 +74,7 @@ test("convertRecipeQuantityToInventoryUnits uses recipe equivalence for unit-bas
 test("normalizeInventoryQuantity trims floating point noise for stock operations", () => {
   assert.equal(normalizeInventoryQuantity(0.7050000000000001), 0.705);
   assert.equal(normalizeInventoryQuantity(0.3333333333333333), 0.333);
+  assert.equal(normalizeInventoryQuantity(2.7393689107827037), 2.739);
 });
 
 test("formatInventoryShortage shows equivalent recipe unit for unit-based items", () => {
