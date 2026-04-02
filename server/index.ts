@@ -92,8 +92,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // await applyPendingRuntimeMigrations();
-  // await assertRuntimeSchemaIsReady();
+  await applyPendingRuntimeMigrations();
+  await assertRuntimeSchemaIsReady();
   await registerRoutes(httpServer, app);
   await new CashTransactionsService().reconcileOrderReceipts();
 
@@ -131,10 +131,7 @@ app.use((req, res, next) => {
       : await findAvailablePort(requestedPort, host);
 
   if (process.env.NODE_ENV !== "production" && port !== requestedPort) {
-    log(
-      `port ${requestedPort} is busy, using port ${port} instead`,
-      "express",
-    );
+    log(`port ${requestedPort} is busy, using port ${port} instead`, "express");
   }
 
   httpServer.listen(
