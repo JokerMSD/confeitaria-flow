@@ -23,6 +23,8 @@ import { ProductAdditionalOptionsRepository } from "../repositories/product-addi
 import {
   convertQuantity,
   convertRecipeQuantityToInventoryUnits,
+  formatInventoryShortage,
+  normalizeInventoryQuantity,
   normalizeRecipeName,
   shouldConsumeOrderStock,
 } from "../domain/recipes/recipe-domain";
@@ -281,7 +283,7 @@ export class RecipesService {
     for (const movement of existingMovements as any[]) {
       const reversed = await this.inventoryItemsRepository.applyQuantityDelta(
         movement.itemId,
-        -Number(movement.quantity),
+        normalizeInventoryQuantity(-Number(movement.quantity)),
         new Date(),
         executor,
       );
@@ -332,11 +334,52 @@ export class RecipesService {
       );
 
       for (const [itemId, quantity] of Array.from(exploded.entries())) {
-        requirements.set(itemId, (requirements.get(itemId) ?? 0) + quantity);
+        requirements.set(
+          itemId,
+          normalizeInventoryQuantity((requirements.get(itemId) ?? 0) + quantity),
+        );
       }
     }
 
-    for (const [itemId, quantity] of Array.from(requirements.entries())) {
+    const shortages: string[] = [];
+
+    for (const [itemId, rawQuantity] of Array.from(requirements.entries())) {
+      const quantity = normalizeInventoryQuantity(rawQuantity);
+      const itemRow = await this.inventoryItemsRepository.findById(itemId, executor);
+
+      if (!itemRow) {
+        throw new HttpError(
+          400,
+          "Failed to validate automatic stock consumption for the order.",
+        );
+      }
+
+      const availableQuantity = normalizeInventoryQuantity(
+        Number(itemRow.currentQuantity),
+      );
+      const missingQuantity = normalizeInventoryQuantity(
+        quantity - availableQuantity,
+      );
+
+      if (missingQuantity > 0) {
+        shortages.push(
+          formatInventoryShortage(this.mapInventoryItem(itemRow), missingQuantity),
+        );
+      }
+    }
+
+    if (shortages.length > 0) {
+      const actionLabel =
+        order.status === "Entregue" ? "entregue" : "pronto";
+
+      throw new HttpError(
+        400,
+        `Estoque insuficiente para marcar o pedido ${order.orderNumber} como ${actionLabel}. Faltam: ${shortages.join(", ")}.`,
+      );
+    }
+
+    for (const [itemId, rawQuantity] of Array.from(requirements.entries())) {
+      const quantity = normalizeInventoryQuantity(rawQuantity);
       const updated = await this.inventoryItemsRepository.applyQuantityDelta(
         itemId,
         -quantity,

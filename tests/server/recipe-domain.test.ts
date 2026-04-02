@@ -4,6 +4,8 @@ import type { InventoryItem } from "@shared/types";
 import {
   convertQuantity,
   convertRecipeQuantityToInventoryUnits,
+  formatInventoryShortage,
+  normalizeInventoryQuantity,
   normalizeRecipeName,
   shouldConsumeOrderStock,
 } from "../../server/domain/recipes/recipe-domain";
@@ -67,4 +69,16 @@ test("convertRecipeQuantityToInventoryUnits uses direct conversion when possible
 test("convertRecipeQuantityToInventoryUnits uses recipe equivalence for unit-based ingredients", () => {
   assert.equal(convertRecipeQuantityToInventoryUnits(5, "g", butterItem), 0.01);
   assert.equal(convertRecipeQuantityToInventoryUnits(250, "g", butterItem), 0.5);
+});
+
+test("normalizeInventoryQuantity trims floating point noise for stock operations", () => {
+  assert.equal(normalizeInventoryQuantity(0.7050000000000001), 0.705);
+  assert.equal(normalizeInventoryQuantity(0.3333333333333333), 0.333);
+});
+
+test("formatInventoryShortage shows equivalent recipe unit for unit-based items", () => {
+  assert.equal(
+    formatInventoryShortage(butterItem, 0.25),
+    "Manteiga (faltam aprox. 125 g)",
+  );
 });

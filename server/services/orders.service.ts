@@ -9,6 +9,7 @@ import type {
   PaymentStatus,
   UpdateOrderInput,
 } from "@shared/types";
+import { shouldConsumeOrderStock } from "../domain/recipes/recipe-domain";
 import { OrdersRepository } from "../repositories/orders.repository";
 import { OrderItemsRepository } from "../repositories/order-items.repository";
 import { OrderItemAdditionalsRepository } from "../repositories/order-item-additionals.repository";
@@ -422,22 +423,27 @@ export class OrdersService {
 
       const items = await this.orderItemsRepository.listByOrderId(id, tx);
 
-      await this.orderRecipeConsumptionService.syncOrderConsumption(
-        {
-          orderId: updatedOrder.id,
-          orderNumber: updatedOrder.orderNumber,
-          status: updatedOrder.status,
-          items: items.map((item: any) => ({
-            recipeId: item.recipeId ?? null,
-            fillingRecipeId: item.fillingRecipeId ?? null,
-            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-            quantity: item.quantity,
-            productName: item.productName,
-          })),
-        },
-        tx,
-      );
+      if (
+        shouldConsumeOrderStock(existing.status) !==
+        shouldConsumeOrderStock(updatedOrder.status)
+      ) {
+        await this.orderRecipeConsumptionService.syncOrderConsumption(
+          {
+            orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            status: updatedOrder.status,
+            items: items.map((item: any) => ({
+              recipeId: item.recipeId ?? null,
+              fillingRecipeId: item.fillingRecipeId ?? null,
+              secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+              tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+              quantity: item.quantity,
+              productName: item.productName,
+            })),
+          },
+          tx,
+        );
+      }
 
       const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
         items.map((item: any) => item.id),

@@ -2,9 +2,14 @@ import type { InventoryItem, InventoryItemUnit } from "@shared/types";
 import { HttpError } from "../../utils/http-error";
 
 const ORDER_STOCK_CONSUMPTION_STATUSES = new Set(["Pronto", "Entregue"]);
+const INVENTORY_QUANTITY_SCALE = 1000;
 
 export function shouldConsumeOrderStock(status: string) {
   return ORDER_STOCK_CONSUMPTION_STATUSES.has(status);
+}
+
+export function normalizeInventoryQuantity(quantity: number) {
+  return Math.round(quantity * INVENTORY_QUANTITY_SCALE) / INVENTORY_QUANTITY_SCALE;
 }
 
 export function normalizeRecipeName(value: string) {
@@ -104,4 +109,43 @@ export function convertRecipeQuantityToInventoryUnits(
     400,
     `Recipe quantity unit ${fromUnit} is incompatible with inventory unit ${item.unit} for item ${item.name}.`,
   );
+}
+
+function roundForDisplay(value: number) {
+  if (value >= 10) {
+    return Math.round(value * 10) / 10;
+  }
+
+  if (value >= 1) {
+    return Math.round(value * 100) / 100;
+  }
+
+  return Math.round(value * 1000) / 1000;
+}
+
+function formatNumberPtBr(value: number) {
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 3,
+  }).format(roundForDisplay(value));
+}
+
+function formatQuantityWithUnit(quantity: number, unit: InventoryItemUnit) {
+  return `${formatNumberPtBr(quantity)} ${unit}`;
+}
+
+export function formatInventoryShortage(item: InventoryItem, missingQuantity: number) {
+  if (
+    (item.unit === "un" || item.unit === "caixa") &&
+    item.recipeEquivalentQuantity != null &&
+    item.recipeEquivalentUnit != null
+  ) {
+    const equivalentShortage = missingQuantity * item.recipeEquivalentQuantity;
+    return `${item.name} (faltam aprox. ${formatQuantityWithUnit(
+      equivalentShortage,
+      item.recipeEquivalentUnit,
+    )})`;
+  }
+
+  return `${item.name} (faltam ${formatQuantityWithUnit(missingQuantity, item.unit)})`;
 }

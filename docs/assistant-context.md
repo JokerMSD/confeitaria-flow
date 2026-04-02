@@ -60,6 +60,8 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Entrada de ingrediente pode atualizar custo medio ponderado.
 - Itens comprados em `un` ou `caixa` podem ter equivalencia para consumo em `g`, `kg`, `ml` ou `l`.
 - Ajustes rapidos em estoque usam movimentacoes reais e agora aceitam quantidade customizada.
+- Ao tentar mover pedido para `Pronto` ou `Entregue` sem estoque suficiente, o backend deve devolver mensagem diagnostica com os ingredientes faltantes, em vez de erro generico de estoque negativo.
+- Transicao `Pronto -> Entregue` nao deve reverter e reaplicar consumo de estoque se o pedido ja estava em um status consumidor.
 
 ### Caixa
 - Caixa tem movimentos automaticos ligados a pedidos e compras de estoque.

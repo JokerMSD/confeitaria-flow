@@ -52,6 +52,8 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Conversao entre unidade de compra e unidade de receita suportada.
 - Ajuste rapido com `+/-` e quantidade customizada ativo.
 - Campo numerico contextual melhorado.
+- Bloqueio de estoque em `Pronto`/`Entregue` agora deve devolver mensagem diagnostica com ingredientes faltantes.
+- Transicao `Pronto -> Entregue` nao deve reconsumir estoque se o pedido ja estava em status consumidor.
 
 ### Caixa
 - Entradas e saidas manuais funcionam.
