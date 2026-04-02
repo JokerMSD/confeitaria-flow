@@ -59,6 +59,9 @@ export class OrdersService {
           orderDate: row.orderDate,
           deliveryDate: row.deliveryDate,
           deliveryTime: row.deliveryTime ?? null,
+          deliveryMode: row.deliveryMode,
+          deliveryAddress: row.deliveryAddress ?? null,
+          deliveryDistrict: row.deliveryDistrict ?? null,
           status: row.status,
           paymentMethod: row.paymentMethod,
           paymentStatus: row.paymentStatus,
@@ -139,6 +142,11 @@ export class OrdersService {
           orderDate: normalized.orderDate,
           deliveryDate: normalized.deliveryDate,
           deliveryTime: normalized.deliveryTime,
+          deliveryMode: normalized.deliveryMode,
+          deliveryAddress: normalized.deliveryAddress,
+          deliveryReference: normalized.deliveryReference,
+          deliveryDistrict: normalized.deliveryDistrict,
+          deliveryFeeCents: normalized.deliveryFeeCents,
           status: normalized.status,
           paymentMethod: normalized.paymentMethod,
           paymentStatus: normalized.paymentStatus,
@@ -246,6 +254,11 @@ export class OrdersService {
           orderDate: normalized.orderDate,
           deliveryDate: normalized.deliveryDate,
           deliveryTime: normalized.deliveryTime,
+          deliveryMode: normalized.deliveryMode,
+          deliveryAddress: normalized.deliveryAddress,
+          deliveryReference: normalized.deliveryReference,
+          deliveryDistrict: normalized.deliveryDistrict,
+          deliveryFeeCents: normalized.deliveryFeeCents,
           status: normalized.status,
           paymentMethod: normalized.paymentMethod,
           paymentStatus: normalized.paymentStatus,
@@ -482,6 +495,10 @@ export class OrdersService {
     const customerName = input.customerName.trim();
     const customerPhone = input.customerPhone?.trim() || null;
     const deliveryTime = input.deliveryTime?.trim() || null;
+    const deliveryAddress = input.deliveryAddress?.trim() || null;
+    const deliveryReference = input.deliveryReference?.trim() || null;
+    const deliveryDistrict = input.deliveryDistrict?.trim() || null;
+    const deliveryFeeCents = Math.max(0, input.deliveryFeeCents ?? 0);
     const notes = input.notes?.trim() || null;
     const paidAmountCents = Math.max(0, input.paidAmountCents);
 
@@ -519,10 +536,11 @@ export class OrdersService {
       throw new HttpError(400, "Order must contain at least one item.");
     }
 
-    const subtotalAmountCents = items.reduce(
+    const itemsSubtotalAmountCents = items.reduce(
       (sum, item) => sum + item.lineTotalCents,
       0,
     );
+    const subtotalAmountCents = itemsSubtotalAmountCents + deliveryFeeCents;
 
     const remainingAmountCents = Math.max(0, subtotalAmountCents - paidAmountCents);
     const paymentStatus = calculatePaymentStatus(subtotalAmountCents, paidAmountCents);
@@ -533,6 +551,11 @@ export class OrdersService {
       orderDate: input.orderDate,
       deliveryDate: input.deliveryDate,
       deliveryTime,
+      deliveryMode: input.deliveryMode,
+      deliveryAddress: input.deliveryMode === "Entrega" ? deliveryAddress : null,
+      deliveryReference: input.deliveryMode === "Entrega" ? deliveryReference : null,
+      deliveryDistrict: input.deliveryMode === "Entrega" ? deliveryDistrict : null,
+      deliveryFeeCents: input.deliveryMode === "Entrega" ? deliveryFeeCents : 0,
       status: input.status,
       paymentMethod: input.paymentMethod,
       paymentStatus,
@@ -554,6 +577,11 @@ export class OrdersService {
       orderDate: row.orderDate,
       deliveryDate: row.deliveryDate,
       deliveryTime: row.deliveryTime ?? null,
+      deliveryMode: row.deliveryMode,
+      deliveryAddress: row.deliveryAddress ?? null,
+      deliveryReference: row.deliveryReference ?? null,
+      deliveryDistrict: row.deliveryDistrict ?? null,
+      deliveryFeeCents: row.deliveryFeeCents ?? 0,
       status: row.status,
       paymentMethod: row.paymentMethod,
       paymentStatus: row.paymentStatus,

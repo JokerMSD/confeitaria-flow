@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import { Link } from "wouter";
 import {
   CalendarDays,
@@ -18,7 +18,7 @@ import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter"
 import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-items";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
 import type { UiOrderStatus } from "@/features/orders/types/order-ui";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, getTodayLocalDateKey } from "@/lib/utils";
 
 function getStatusColor(status: UiOrderStatus) {
   switch (status) {
@@ -40,7 +40,7 @@ function getStatusColor(status: UiOrderStatus) {
 }
 
 export default function Dashboard() {
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = getTodayLocalDateKey();
   const ordersQuery = useOrders();
   const cashQuery = useCashTransactions({
     dateFrom: todayStr,
@@ -406,3 +406,4 @@ export default function Dashboard() {
     </AppLayout>
   );
 }
+

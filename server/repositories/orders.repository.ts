@@ -22,6 +22,11 @@ export interface OrderRowInsert {
   orderDate: string;
   deliveryDate: string;
   deliveryTime: string | null;
+  deliveryMode: "Entrega" | "Retirada";
+  deliveryAddress: string | null;
+  deliveryReference: string | null;
+  deliveryDistrict: string | null;
+  deliveryFeeCents: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
@@ -104,6 +109,9 @@ export class OrdersRepository {
         orderDate: orders.orderDate,
         deliveryDate: orders.deliveryDate,
         deliveryTime: orders.deliveryTime,
+        deliveryMode: orders.deliveryMode,
+        deliveryAddress: orders.deliveryAddress,
+        deliveryDistrict: orders.deliveryDistrict,
         status: orders.status,
         paymentMethod: orders.paymentMethod,
         paymentStatus: orders.paymentStatus,

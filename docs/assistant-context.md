@@ -31,6 +31,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Itens podem ter ate 3 recheios.
 - Campo manual de produto foi removido do composer de itens.
 - Pedidos antigos foram parcialmente corrigidos por scripts de backfill com base nas observacoes.
+- Pedidos agora suportam `deliveryMode` com `Entrega` e `Retirada`, incluindo taxa e endereco condicionais.
 
 ### Receitas e Catalogo
 - `Preparacao` fica em `Receitas`.
@@ -61,6 +62,8 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - A fila agora funciona como central operacional com calendario mensal clicavel, agenda diaria por horario e resumo por status.
 - O payload de `/api/orders/queue` foi enriquecido com telefone, pagamento, totais, saldo pendente e observacoes.
 - Existe acao rapida de status em `/api/orders/:id/status` para mover pedido entre `Confirmado`, `EmProducao`, `Pronto` e `Entregue`.
+- A fila deve tratar `deliveryDate` como data de negocio local, sem converter para UTC.
+- O estado padrao da fila deve mostrar todos os pedidos ativos, com calendario apenas como filtro opcional.
 
 ## Regras Importantes Ja Combinadas
 - Baixa automatica de estoque acontece quando pedido entra em `Pronto` ou `Entregue`.
@@ -78,6 +81,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - `docs/runbooks/deploy.md`
 - `docs/runbooks/data-backfills.md`
 - `docs/runbooks/operations.md`
+- `docs/roadmap.md`
 
 ## Validacao Esperada Depois De Mudancas Grandes
 - Rodar `npm run test`

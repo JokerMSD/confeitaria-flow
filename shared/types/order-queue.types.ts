@@ -1,4 +1,5 @@
 import type {
+  DeliveryMode,
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
@@ -17,6 +18,9 @@ export interface OrderQueueItem {
   orderDate: string;
   deliveryDate: string;
   deliveryTime: string | null;
+  deliveryMode: DeliveryMode;
+  deliveryAddress: string | null;
+  deliveryDistrict: string | null;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
