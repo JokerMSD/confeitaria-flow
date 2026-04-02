@@ -50,10 +50,6 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
   - item do pedido seleciona adicionais por grupo
   - subtotal local considera preco base + adicionais por quantidade
   - edicao do pedido reidrata adicionais salvos
-- O frontend agora fecha esse ciclo:
-  - `Catalogo` configura grupos e opcoes de adicionais dentro do formulario do produto.
-  - `PedidoForm` seleciona adicionais por item, respeita min/max e recalcula subtotal local.
-  - A edicao do pedido reidrata adicionais salvos por item.
 
 ### Estoque
 - Movimentacoes sao ledger real, sem ajuste silencioso de saldo.
@@ -104,9 +100,11 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Rodar `npm run check`
 - Rodar `npm run build`
 - Commits pequenos e frequentes
+- A suite de testes inclui smoke tests HTTP para rotas criticas (`/api/health`, `/api/auth/login`, `/api/orders`, `/api/orders/queue`) para capturar regressao de validacao, auth e montagem de rotas antes de virar erro 500 no frontend.
 
 ## Regra Operacional
 - Sempre commitar ao fechar cada bloco de implementacao.
 - Se houver mudanca relevante de negocio, atualizar este arquivo ou `docs/product-rules.md`.
 - Em tarefas que permitam paralelismo sem elevar risco, usar o maximo razoavel de agentes em paralelo para acelerar exploracao, validacao e implementacao.
 - O agente principal continua sendo o lider da execucao: decide quando delegar, quantos agentes abrir, integra resultados, valida e faz o commit final.
+- A cada modificacao relevante, rodar a bateria completa de validacao (`test`, `check`, `build`) antes de encerrar o bloco.

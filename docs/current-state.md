@@ -79,6 +79,15 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Banco: Neon.
 - CORS depende de `CORS_ORIGINS` e redeploy da API ao trocar env.
 
+## Cobertura De Testes Atual
+- Existe suite unitaria para helpers e dominios puros de estoque, receitas, pedidos e planejamento de compra.
+- Existe smoke test HTTP para rotas criticas do backend:
+  - `GET /api/health`
+  - `POST /api/auth/login`
+  - `GET /api/orders`
+  - `GET /api/orders/queue`
+- O objetivo desses smoke tests e detectar regressao de montagem de rota, validacao e auth antes de erro 500 chegar ao frontend.
+
 ## Validacoes Minimas Antes De Encerrar Mudancas
 - `npm run test`
 - `npm run check`
