@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   OrderListItem as ApiOrderListItem,
   OrderStatus as ApiOrderStatus,
   PaymentMethod as ApiPaymentMethod,
@@ -55,11 +55,6 @@ export function adaptOrderListItemToCard(order: ApiOrderListItem): OrderListCard
     orderDate: order.orderDate,
     deliveryDate: order.deliveryDate,
     deliveryTime: order.deliveryTime ?? undefined,
-    deliveryMode: order.deliveryMode,
-    deliveryAddress: order.deliveryAddress ?? "",
-    deliveryReference: order.deliveryReference ?? "",
-    deliveryDistrict: order.deliveryDistrict ?? "",
-    deliveryFee: (order.deliveryFeeCents ?? 0) / 100,
     status: statusLabelMap[order.status],
     paymentMethod: paymentMethodLabelMap[order.paymentMethod],
     paymentStatus: paymentStatusLabelMap[order.paymentStatus],

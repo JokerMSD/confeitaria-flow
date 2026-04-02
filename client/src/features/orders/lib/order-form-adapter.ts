@@ -7,7 +7,6 @@ import {
   formatMoneyInput,
   parseMoneyInputToCents,
 } from "@/features/inventory/lib/inventory-input-helpers";
-import { getTodayLocalDateKey } from "@/lib/utils";
 import type {
   OrderFormItem,
   OrderFormState,
@@ -69,14 +68,9 @@ export function createEmptyOrderFormState(): OrderFormState {
   return {
     customerName: "",
     phone: "",
-    orderDate: getTodayLocalDateKey(),
+    orderDate: new Date().toISOString().split("T")[0],
     deliveryDate: "",
     deliveryTime: "",
-    deliveryMode: "Entrega",
-    deliveryAddress: "",
-    deliveryReference: "",
-    deliveryDistrict: "",
-    deliveryFee: "0",
     status: "Novo",
     paymentMethod: "Pix",
     paidAmount: "0",
@@ -94,11 +88,6 @@ export function adaptOrderDetailToFormState(
     orderDate: response.data.orderDate,
     deliveryDate: response.data.deliveryDate,
     deliveryTime: response.data.deliveryTime ?? "",
-    deliveryMode: response.data.deliveryMode,
-    deliveryAddress: response.data.deliveryAddress ?? "",
-    deliveryReference: response.data.deliveryReference ?? "",
-    deliveryDistrict: response.data.deliveryDistrict ?? "",
-    deliveryFee: centsToDecimalString(response.data.deliveryFeeCents ?? 0),
     status: apiToUiStatusMap[response.data.status],
     paymentMethod: apiToUiPaymentMethodMap[response.data.paymentMethod],
     paidAmount: centsToDecimalString(response.data.paidAmountCents),
@@ -141,15 +130,6 @@ export function adaptFormStateToCreatePayload(
       orderDate: state.orderDate,
       deliveryDate: state.deliveryDate,
       deliveryTime: state.deliveryTime.trim() || null,
-      deliveryMode: state.deliveryMode,
-      deliveryAddress:
-        state.deliveryMode === "Entrega" ? state.deliveryAddress.trim() || null : null,
-      deliveryReference:
-        state.deliveryMode === "Entrega" ? state.deliveryReference.trim() || null : null,
-      deliveryDistrict:
-        state.deliveryMode === "Entrega" ? state.deliveryDistrict.trim() || null : null,
-      deliveryFeeCents:
-        state.deliveryMode === "Entrega" ? decimalStringToCents(state.deliveryFee) : 0,
       status: uiToApiStatusMap[state.status] as CreateOrderRequest["data"]["status"],
       paymentMethod: uiToApiPaymentMethodMap[
         state.paymentMethod

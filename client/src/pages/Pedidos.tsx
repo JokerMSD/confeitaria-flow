@@ -1,9 +1,9 @@
-﻿import { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Search, Plus, Clock, MoreVertical, X, Calendar, DollarSign, Trash2, ClipboardList, CheckCheck, Loader2 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
-import { cn, formatCurrency, formatDate, getTodayLocalDateKey } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -46,7 +46,6 @@ export default function Pedidos() {
   const { data, isLoading, isError, error, refetch } = useOrders(filters);
   const deleteOrderMutation = useDeleteOrder();
   const confirmOrderMutation = useConfirmOrder();
-  const todayKey = getTodayLocalDateKey();
 
   const orders = useMemo(() => adaptOrderListToCards(data?.data ?? []), [data]);
 
@@ -324,17 +323,17 @@ export default function Pedidos() {
                     <div className="flex items-center gap-4 text-sm mt-4">
                       <div
                         className={cn(
-                          "flex items-center gap-1.5 rounded-md border px-2 py-1",
-                          order.deliveryDate < todayKey &&
+                          "flex items-center gap-1.5 px-2 py-1 rounded-md border",
+                          order.deliveryDate < new Date().toISOString().split("T")[0] &&
                             order.status !== "Entregue" &&
                             order.status !== "Cancelado"
-                            ? "border-destructive/20 bg-destructive/10 font-bold text-destructive"
-                            : "border-transparent bg-muted/50 text-muted-foreground",
+                            ? "bg-destructive/10 text-destructive border-destructive/20 font-bold"
+                            : "bg-muted/50 text-muted-foreground border-transparent",
                         )}
                       >
                         <Clock className="w-3.5 h-3.5" />
                         <span>
-                          {order.deliveryMode === "Retirada" ? "Retirada" : "Entrega"} • {formatDate(order.deliveryDate)} {order.deliveryTime && `às ${order.deliveryTime}`}
+                          {formatDate(order.deliveryDate)} {order.deliveryTime && `às ${order.deliveryTime}`}
                         </span>
                       </div>
                     </div>
@@ -376,5 +375,3 @@ export default function Pedidos() {
     </AppLayout>
   );
 }
-
-

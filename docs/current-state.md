@@ -31,7 +31,6 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Produto manual foi removido do composer atual.
 - Pedido invalida views relacionadas apos salvar.
 - Existe endpoint rapido de transicao de status para uso operacional em fila.
-- Pedido agora suporta `Entrega` e `Retirada`, com endereco e taxa condicionais no formulario.
 
 ### Receitas E Catalogo
 - Preparacoes ficam em `Receitas`.
@@ -61,8 +60,6 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Tela de fila agora opera com calendario mensal, agenda por horario e resumo diario.
 - Cards exibem valor, recebido, saldo pendente, telefone, observacoes e itens do pedido.
 - Acoes rapidas de status ficam disponiveis diretamente nos cards.
-- Estado inicial da fila mostra todos os pedidos ativos; o calendario funciona como filtro opcional.
-- A data operacional foi corrigida para respeitar exatamente o dia cadastrado no pedido.
 
 ## Pendencias Intencionais
 - Login continua simples via `AUTH_USERS_JSON`.

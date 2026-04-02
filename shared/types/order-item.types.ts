@@ -15,8 +15,6 @@ export type PaymentMethod =
   | "CartaoDebito"
   | "Transferencia";
 
-export type DeliveryMode = "Entrega" | "Retirada";
-
 export interface OrderItem {
   id: string;
   orderId: string;

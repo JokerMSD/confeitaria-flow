@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { ArrowLeft, Loader2, Pencil, Plus, Save, Trash2, X } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -106,22 +106,9 @@ export default function PedidoForm() {
     }
   }, [isEditing, orderQuery.data]);
 
-  const itemsTotalAmount = useMemo(
+  const totalAmount = useMemo(
     () => formState.items.reduce((sum, item) => sum + item.subtotal, 0),
     [formState.items],
-  );
-
-  const deliveryFeeAmount = useMemo(
-    () =>
-      formState.deliveryMode === "Entrega"
-        ? parseCurrencyInput(formState.deliveryFee)
-        : 0,
-    [formState.deliveryFee, formState.deliveryMode],
-  );
-
-  const totalAmount = useMemo(
-    () => itemsTotalAmount + deliveryFeeAmount,
-    [deliveryFeeAmount, itemsTotalAmount],
   );
 
   const paidAmountValue = useMemo(
@@ -166,8 +153,8 @@ export default function PedidoForm() {
     : productRecipesQuery.isError
       ? "Não foi possível carregar produtos"
       : productRecipeOptions.length === 0
-        ? "Nenhum produto do catálogo cadastrado"
-        : "Selecione um produto do catálogo";
+        ? "Nenhum produto do catalogo cadastrado"
+        : "Selecione um produto do catalogo";
   const fillingSelectPlaceholder = !newItemRecipeId
     ? "Escolha um produto primeiro"
     : fillingRecipesQuery.isLoading
@@ -496,7 +483,7 @@ export default function PedidoForm() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="deliveryTime">Horário</Label>
+                    <Label htmlFor="deliveryTime">Horário de Entrega</Label>
                     <Input
                       id="deliveryTime"
                       type="time"
@@ -505,24 +492,6 @@ export default function PedidoForm() {
                         setField("deliveryTime", event.target.value)
                       }
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Modo do Pedido</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(["Entrega", "Retirada"] as const).map((mode) => (
-                        <Button
-                          key={mode}
-                          type="button"
-                          variant={
-                            formState.deliveryMode === mode ? "default" : "outline"
-                          }
-                          className="justify-center rounded-xl"
-                          onClick={() => setField("deliveryMode", mode)}
-                        >
-                          {mode}
-                        </Button>
-                      ))}
-                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Status do Pedido</Label>
@@ -553,61 +522,6 @@ export default function PedidoForm() {
                     />
                   </div>
                 </div>
-
-                {formState.deliveryMode === "Entrega" ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-border pt-4">
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="deliveryAddress">Endereço de entrega *</Label>
-                      <Input
-                        id="deliveryAddress"
-                        value={formState.deliveryAddress}
-                        onChange={(event) =>
-                          setField("deliveryAddress", event.target.value)
-                        }
-                        placeholder="Rua, número e complemento"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="deliveryDistrict">Bairro</Label>
-                      <Input
-                        id="deliveryDistrict"
-                        value={formState.deliveryDistrict}
-                        onChange={(event) =>
-                          setField("deliveryDistrict", event.target.value)
-                        }
-                        placeholder="Ex: Centro"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="deliveryFee">Taxa de entrega</Label>
-                      <Input
-                        id="deliveryFee"
-                        type="text"
-                        inputMode="numeric"
-                        value={formState.deliveryFee}
-                        onChange={(event) =>
-                          setField("deliveryFee", formatMoneyInput(event.target.value))
-                        }
-                        placeholder="0,00"
-                      />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="deliveryReference">Referência</Label>
-                      <Input
-                        id="deliveryReference"
-                        value={formState.deliveryReference}
-                        onChange={(event) =>
-                          setField("deliveryReference", event.target.value)
-                        }
-                        placeholder="Ponto de referência, bloco, apartamento..."
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
-                    Pedido marcado como retirada. Endereço e taxa ficam ocultos.
-                  </div>
-                )}
               </CardContent>
             </Card>
 
@@ -619,7 +533,7 @@ export default function PedidoForm() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-6 gap-3 bg-muted/30 p-4 rounded-xl border border-border/50">
                   <div className="space-y-2 md:col-span-2 xl:col-span-2">
-                    <Label>Produto do catálogo</Label>
+                    <Label>Produto do catalogo</Label>
                     <select
                       className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                       value={newItemRecipeId}
@@ -758,7 +672,7 @@ export default function PedidoForm() {
                   )}
                   <div className="rounded-xl border border-border/60 bg-background px-4 py-3 md:col-span-2 xl:col-span-2">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                      Item que será adicionado
+                      Item que sera adicionado
                     </p>
                     <p className="mt-1 font-semibold">
                       {newItemName || "Selecione produto e recheio"}
@@ -773,7 +687,7 @@ export default function PedidoForm() {
                     min="1"
                   />
                   <div className="space-y-2">
-                    <Label>Preço un.</Label>
+                    <Label>Preço Un.</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -806,7 +720,7 @@ export default function PedidoForm() {
                       className="w-full md:col-span-2 xl:self-end"
                     >
                       <X className="w-4 h-4 mr-2" />
-                      Cancelar edição
+                      Cancelar Edicao
                     </Button>
                   )}
                 </div>
@@ -931,23 +845,13 @@ export default function PedidoForm() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Valor Pago:</span>
-                        <span className="font-bold text-success">
-                          {formatCurrency(paidAmountValue)}
-                        </span>
-                      </div>
-                      {formState.deliveryMode === "Entrega" ? (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Taxa de entrega:
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(deliveryFeeAmount)}
-                          </span>
-                        </div>
-                      ) : null}
-                      <div className="flex justify-between text-sm border-t border-border/50 pt-2 mt-2">
-                        <span className="text-muted-foreground">Falta Pagar:</span>
-                        <span className="font-bold text-destructive">
+                      <span className="font-bold text-success">
+                        {formatCurrency(paidAmountValue)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm border-t border-border/50 pt-2 mt-2">
+                      <span className="text-muted-foreground">Falta Pagar:</span>
+                      <span className="font-bold text-destructive">
                         {formatCurrency(remainingAmountPreview)}
                       </span>
                     </div>
@@ -978,7 +882,7 @@ export default function PedidoForm() {
                 </h3>
                 <textarea
                   className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
-                  placeholder="Detalhes da decoração, restrições alimentares, sabores, embalagem, etc."
+                  placeholder="Detalhes da decoração, restrições alimentares, etc."
                   value={formState.notes}
                   onChange={(event) => setField("notes", event.target.value)}
                 />

@@ -1,15 +1,15 @@
-import { Link, useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
+import { cn } from "@/lib/utils";
 import {
-  BookOpen,
-  ClipboardList,
   Home,
-  LogOut,
+  ClipboardList,
   PackageSearch,
-  Store,
   Wallet,
+  LogOut,
+  BookOpen,
+  Store,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 import { useLogout } from "@/features/auth/hooks/use-logout";
@@ -53,20 +53,20 @@ export function Sidebar() {
   const user = authSessionQuery.data?.data;
 
   return (
-    <aside className="sticky left-0 top-0 hidden min-h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex">
-      <div className="flex items-center gap-3 p-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-display text-xl font-bold text-primary-foreground">
+    <aside className="hidden md:flex flex-col w-64 bg-sidebar border-r border-sidebar-border min-h-screen sticky top-0 left-0">
+      <div className="p-6 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-display font-bold text-xl">
           D
         </div>
         <div>
-          <h1 className="font-display text-lg font-bold leading-tight text-sidebar-foreground">
+          <h1 className="font-display font-bold text-lg text-sidebar-foreground leading-tight">
             Doce Gestao
           </h1>
           <p className="text-xs text-sidebar-foreground/60">Confeitaria</p>
         </div>
       </div>
 
-      <nav className="mt-4 flex-1 space-y-2 px-4">
+      <nav className="flex-1 px-4 space-y-2 mt-4">
         {navItems.map((item) => {
           const isActive =
             location === item.href ||
@@ -76,7 +76,8 @@ export function Sidebar() {
             <Link key={item.href} href={item.href}>
               <a
                 className={cn(
-                  "flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all duration-200 hover-elevate",
+                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200",
+                  "text-sm font-medium hover-elevate",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                     : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -84,7 +85,7 @@ export function Sidebar() {
               >
                 <item.icon
                   className={cn(
-                    "h-5 w-5",
+                    "w-5 h-5",
                     isActive
                       ? "text-primary-foreground"
                       : "text-sidebar-foreground/60",
@@ -97,30 +98,29 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto border-t border-sidebar-border p-4">
-        <div className="mb-4 flex items-center gap-3 px-2">
-          <Avatar className="h-9 w-9 border border-border">
+      <div className="p-4 mt-auto border-t border-sidebar-border">
+        <div className="flex items-center gap-3 mb-4 px-2">
+          <Avatar className="w-9 h-9 border border-border">
             <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
             <AvatarFallback>
               {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-semibold text-sidebar-foreground">
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold truncate text-sidebar-foreground">
               {user?.name ?? "Usuário"}
             </p>
-            <p className="truncate text-xs text-sidebar-foreground/60">
+            <p className="text-xs text-sidebar-foreground/60 truncate">
               {user?.email ?? "usuario@docegestao.com"}
             </p>
           </div>
         </div>
-
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+          className="flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors w-full"
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="w-4 h-4" />
           Sair
         </button>
       </div>
@@ -142,7 +142,7 @@ export function BottomNav() {
   ];
 
   return (
-    <nav className="bottom-nav-glass fixed bottom-0 left-0 right-0 z-50 pb-safe md:hidden">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bottom-nav-glass pb-safe">
       <div className="flex items-center justify-between gap-1 px-2 py-2">
         {navItems.map((item) => {
           const isActive =
@@ -153,7 +153,7 @@ export function BottomNav() {
             <Link key={item.href} href={item.href}>
               <a
                 className={cn(
-                  "flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-2xl transition-all",
+                  "flex min-w-0 flex-1 flex-col items-center justify-center h-14 rounded-2xl transition-all",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -161,13 +161,13 @@ export function BottomNav() {
               >
                 <div
                   className={cn(
-                    "rounded-xl p-1.5 transition-all duration-300",
+                    "p-1.5 rounded-xl transition-all duration-300",
                     isActive ? "bg-primary/10" : "bg-transparent",
                   )}
                 >
                   <item.icon
                     className={cn(
-                      "h-5 w-5 transition-transform duration-300",
+                      "w-5 h-5 transition-transform duration-300",
                       isActive ? "scale-110" : "scale-100",
                     )}
                     strokeWidth={isActive ? 2.5 : 2}
@@ -176,7 +176,7 @@ export function BottomNav() {
                 <span
                   className={cn(
                     "mt-1 max-w-full truncate px-1 text-[9px] font-medium transition-all duration-300",
-                    isActive ? "font-semibold opacity-100" : "opacity-80",
+                    isActive ? "opacity-100 font-semibold" : "opacity-80",
                   )}
                 >
                   {item.label}
@@ -195,9 +195,11 @@ export function MobileHeader({ title }: { title: string }) {
   const user = authSessionQuery.data?.data;
 
   return (
-    <header className="sticky left-0 right-0 top-0 z-40 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 pt-safe backdrop-blur-md md:hidden">
-      <h1 className="font-display text-xl font-bold text-foreground">{title}</h1>
-      <Avatar className="h-8 w-8 border border-border">
+    <header className="md:hidden sticky top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border py-4 px-6 flex items-center justify-between pt-safe">
+      <h1 className="font-display font-bold text-xl text-foreground">
+        {title}
+      </h1>
+      <Avatar className="w-8 h-8 border border-border">
         <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
         <AvatarFallback>
           {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
@@ -219,11 +221,11 @@ export function AppLayout({
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
-      <main className="flex min-w-0 flex-1 flex-col pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
+      <main className="flex-1 flex flex-col min-w-0 pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0">
         <MobileHeader title={title} />
         <div
           className={cn(
-            "mx-auto flex-1 w-full max-w-7xl animate-fade-in p-4 md:p-8 md:pt-8",
+            "flex-1 w-full mx-auto animate-fade-in p-4 md:p-8 md:pt-8 max-w-7xl",
             contentClassName,
           )}
         >

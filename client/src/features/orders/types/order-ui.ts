@@ -1,4 +1,4 @@
-﻿import type { OrderDetail, OrderItem as SharedOrderItem } from "@shared/types";
+import type { OrderDetail, OrderItem as SharedOrderItem } from "@shared/types";
 
 export interface OrderItem extends SharedOrderItem {}
 
@@ -23,8 +23,6 @@ export type UiPaymentMethod =
   | "Cartão de débito"
   | "Transferência";
 
-export type UiDeliveryMode = "Entrega" | "Retirada";
-
 export interface OrderListCardItem {
   id: string;
   orderNumber: string;
@@ -33,11 +31,6 @@ export interface OrderListCardItem {
   orderDate: string;
   deliveryDate: string;
   deliveryTime?: string;
-  deliveryMode: UiDeliveryMode;
-  deliveryAddress: string;
-  deliveryReference: string;
-  deliveryDistrict: string;
-  deliveryFee: number;
   status: UiOrderStatus;
   paymentMethod: UiPaymentMethod;
   paymentStatus: UiPaymentStatus;
@@ -69,11 +62,6 @@ export interface OrderFormState {
   orderDate: string;
   deliveryDate: string;
   deliveryTime: string;
-  deliveryMode: UiDeliveryMode;
-  deliveryAddress: string;
-  deliveryReference: string;
-  deliveryDistrict: string;
-  deliveryFee: string;
   status: UiOrderStatus;
   paymentMethod: UiPaymentMethod;
   paidAmount: string;
@@ -89,9 +77,6 @@ export interface OrderQueueCardItem {
   orderDate: string;
   deliveryDate: string;
   deliveryTime?: string;
-  deliveryMode: UiDeliveryMode;
-  deliveryAddress?: string;
-  deliveryDistrict?: string;
   status: UiOrderStatus;
   paymentMethod: UiPaymentMethod;
   paymentStatus: UiPaymentStatus;

@@ -1,6 +1,5 @@
 import type {
   CreateOrderItemInput,
-  DeliveryMode,
   OrderItem,
   OrderStatus,
   PaymentMethod,
@@ -15,11 +14,6 @@ export interface OrderListItem {
   orderDate: string;
   deliveryDate: string;
   deliveryTime: string | null;
-  deliveryMode: DeliveryMode;
-  deliveryAddress: string | null;
-  deliveryReference: string | null;
-  deliveryDistrict: string | null;
-  deliveryFeeCents: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
@@ -43,11 +37,6 @@ export interface CreateOrderInput {
   orderDate: string;
   deliveryDate: string;
   deliveryTime?: string | null;
-  deliveryMode: DeliveryMode;
-  deliveryAddress?: string | null;
-  deliveryReference?: string | null;
-  deliveryDistrict?: string | null;
-  deliveryFeeCents?: number;
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paidAmountCents: number;
