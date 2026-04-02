@@ -90,24 +90,10 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "price_delta_cents",
         ]),
       ],
-      [
-        "customers",
-        new Set([
-          "first_name",
-          "last_name",
-          "email",
-          "is_active",
-        ]),
-      ],
+      ["customers", new Set(["first_name", "last_name", "email", "is_active"])],
       [
         "users",
-        new Set([
-          "username",
-          "email",
-          "password",
-          "role",
-          "is_active",
-        ]),
+        new Set(["username", "email", "password", "role", "is_active"]),
       ],
     ]),
   });

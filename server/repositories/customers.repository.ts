@@ -35,11 +35,18 @@ export class CustomersRepository {
   }
 
   async create(data: InsertCustomer, executor: Executor = getDb()) {
-    const [customer] = await executor.insert(customers).values(data).returning();
+    const [customer] = await executor
+      .insert(customers)
+      .values(data)
+      .returning();
     return customer;
   }
 
-  async update(id: string, data: Partial<InsertCustomer>, executor: Executor = getDb()) {
+  async update(
+    id: string,
+    data: Partial<InsertCustomer>,
+    executor: Executor = getDb(),
+  ) {
     const [customer] = await executor
       .update(customers)
       .set({ ...data, updatedAt: new Date() })

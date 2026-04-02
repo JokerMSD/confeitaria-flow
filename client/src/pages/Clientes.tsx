@@ -4,7 +4,14 @@ import { Plus, Loader2, User as UserIcon } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
 import { formatDate } from "@/lib/utils";
 
@@ -29,17 +36,24 @@ export default function Clientes() {
       <Card>
         {isLoading ? (
           <div className="p-10 text-center text-muted-foreground">
-            <Loader2 className="inline h-5 w-5 animate-spin mr-2" /> Carregando...
+            <Loader2 className="inline h-5 w-5 animate-spin mr-2" />{" "}
+            Carregando...
           </div>
         ) : error ? (
           <div className="p-10 text-center text-destructive">
             Erro ao carregar clientes.
-            <button type="button" onClick={() => refetch()} className="ml-2 text-primary">
+            <button
+              type="button"
+              onClick={() => refetch()}
+              className="ml-2 text-primary"
+            >
               Tentar novamente
             </button>
           </div>
         ) : customers.length === 0 ? (
-          <div className="p-10 text-center text-muted-foreground">Nenhum cliente cadastrado.</div>
+          <div className="p-10 text-center text-muted-foreground">
+            Nenhum cliente cadastrado.
+          </div>
         ) : (
           <Table>
             <TableHeader>

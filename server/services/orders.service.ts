@@ -97,14 +97,17 @@ export class OrdersService {
   async listLookup() {
     const rows = await this.ordersRepository.listLookupRows();
 
-    return rows.map((row: any) => ({
-      id: row.id,
-      orderNumber: row.orderNumber,
-      customerName: row.customerName,
-      deliveryDate: row.deliveryDate,
-      status: row.status,
-      paymentStatus: row.paymentStatus,
-    } satisfies OrderLookupItem));
+    return rows.map(
+      (row: any) =>
+        ({
+          id: row.id,
+          orderNumber: row.orderNumber,
+          customerName: row.customerName,
+          deliveryDate: row.deliveryDate,
+          status: row.status,
+          paymentStatus: row.paymentStatus,
+        }) satisfies OrderLookupItem,
+    );
   }
 
   async getById(id: string) {
@@ -115,9 +118,10 @@ export class OrdersService {
     }
 
     const items = await this.orderItemsRepository.listByOrderId(row.id);
-    const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
-      items.map((item: any) => item.id),
-    );
+    const additionals =
+      await this.orderItemAdditionalsRepository.listByOrderItemIds(
+        items.map((item: any) => item.id),
+      );
     return this.mapOrderDetail(row, items, additionals);
   }
 
@@ -189,15 +193,17 @@ export class OrdersService {
 
       await this.orderItemAdditionalsRepository.insertMany(
         createdItems.flatMap((createdItem: any, index: number) =>
-          normalized.items[index].additionals.map((additional, additionalIndex) => ({
-            orderItemId: createdItem.id,
-            groupId: additional.groupId,
-            optionId: additional.optionId,
-            groupName: additional.groupName,
-            optionName: additional.optionName,
-            priceDeltaCents: additional.priceDeltaCents,
-            position: additional.position ?? additionalIndex,
-          })),
+          normalized.items[index].additionals.map(
+            (additional, additionalIndex) => ({
+              orderItemId: createdItem.id,
+              groupId: additional.groupId,
+              optionId: additional.optionId,
+              groupName: additional.groupName,
+              optionName: additional.optionName,
+              priceDeltaCents: additional.priceDeltaCents,
+              position: additional.position ?? additionalIndex,
+            }),
+          ),
         ),
         tx,
       );
@@ -231,10 +237,11 @@ export class OrdersService {
         tx,
       );
 
-      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
-        createdItems.map((item: any) => item.id),
-        tx,
-      );
+      const additionals =
+        await this.orderItemAdditionalsRepository.listByOrderItemIds(
+          createdItems.map((item: any) => item.id),
+          tx,
+        );
 
       return this.mapOrderDetail(
         {
@@ -310,7 +317,10 @@ export class OrdersService {
         throw new HttpError(404, "Order not found.");
       }
 
-      const existingItems = await this.orderItemsRepository.listByOrderId(id, tx);
+      const existingItems = await this.orderItemsRepository.listByOrderId(
+        id,
+        tx,
+      );
       await this.orderItemAdditionalsRepository.deleteByOrderItemIds(
         existingItems.map((item: any) => item.id),
         tx,
@@ -335,15 +345,17 @@ export class OrdersService {
 
       await this.orderItemAdditionalsRepository.insertMany(
         updatedItems.flatMap((updatedItem: any, index: number) =>
-          normalized.items[index].additionals.map((additional, additionalIndex) => ({
-            orderItemId: updatedItem.id,
-            groupId: additional.groupId,
-            optionId: additional.optionId,
-            groupName: additional.groupName,
-            optionName: additional.optionName,
-            priceDeltaCents: additional.priceDeltaCents,
-            position: additional.position ?? additionalIndex,
-          })),
+          normalized.items[index].additionals.map(
+            (additional, additionalIndex) => ({
+              orderItemId: updatedItem.id,
+              groupId: additional.groupId,
+              optionId: additional.optionId,
+              groupName: additional.groupName,
+              optionName: additional.optionName,
+              priceDeltaCents: additional.priceDeltaCents,
+              position: additional.position ?? additionalIndex,
+            }),
+          ),
         ),
         tx,
       );
@@ -377,10 +389,11 @@ export class OrdersService {
         tx,
       );
 
-      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
-        updatedItems.map((item: any) => item.id),
-        tx,
-      );
+      const additionals =
+        await this.orderItemAdditionalsRepository.listByOrderItemIds(
+          updatedItems.map((item: any) => item.id),
+          tx,
+        );
       return this.mapOrderDetail(updatedOrder, updatedItems, additionals);
     });
   }
@@ -401,7 +414,10 @@ export class OrdersService {
       }
 
       if (existing.status !== "Novo") {
-        const currentItems = await this.orderItemsRepository.listByOrderId(id, tx);
+        const currentItems = await this.orderItemsRepository.listByOrderId(
+          id,
+          tx,
+        );
         const additionals =
           await this.orderItemAdditionalsRepository.listByOrderItemIds(
             currentItems.map((item: any) => item.id),
@@ -447,10 +463,11 @@ export class OrdersService {
         );
       }
 
-      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
-        items.map((item: any) => item.id),
-        tx,
-      );
+      const additionals =
+        await this.orderItemAdditionalsRepository.listByOrderItemIds(
+          items.map((item: any) => item.id),
+          tx,
+        );
       return this.mapOrderDetail(updatedOrder, items, additionals);
     });
   }
@@ -468,7 +485,10 @@ export class OrdersService {
       }
 
       if (existing.status === "Entregue" && nextStatus !== "Confirmado") {
-        throw new HttpError(400, "Delivered orders can only be reopened to Confirmado.");
+        throw new HttpError(
+          400,
+          "Delivered orders can only be reopened to Confirmado.",
+        );
       }
 
       const allowedTransitions: Record<string, UpdateOrderInput["status"][]> = {
@@ -526,10 +546,11 @@ export class OrdersService {
         tx,
       );
 
-      const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
-        items.map((item: any) => item.id),
-        tx,
-      );
+      const additionals =
+        await this.orderItemAdditionalsRepository.listByOrderItemIds(
+          items.map((item: any) => item.id),
+          tx,
+        );
       return this.mapOrderDetail(updatedOrder, items, additionals);
     });
   }
@@ -537,7 +558,11 @@ export class OrdersService {
   async remove(id: string) {
     return withTransaction(async (tx) => {
       const deletedAt = new Date();
-      const deleted = await this.ordersRepository.markDeleted(id, deletedAt, tx);
+      const deleted = await this.ordersRepository.markDeleted(
+        id,
+        deletedAt,
+        tx,
+      );
 
       if (!deleted) {
         throw new HttpError(404, "Order not found.");
@@ -572,7 +597,9 @@ export class OrdersService {
     });
   }
 
-  private async normalizeOrderInput(input: CreateOrderInput | UpdateOrderInput) {
+  private async normalizeOrderInput(
+    input: CreateOrderInput | UpdateOrderInput,
+  ) {
     const customerName = input.customerName.trim();
     const customerPhone = input.customerPhone?.trim() || null;
     const deliveryTime = input.deliveryTime?.trim() || null;
@@ -583,48 +610,56 @@ export class OrdersService {
     const notes = input.notes?.trim() || null;
     const paidAmountCents = Math.max(0, input.paidAmountCents);
 
-    const items = await Promise.all(input.items.map(async (item, index) => {
-      const productName = item.productName.trim();
-      const quantity = item.quantity;
-      const unitPriceCents = item.unitPriceCents;
+    const items = await Promise.all(
+      input.items.map(async (item, index) => {
+        const productName = item.productName.trim();
+        const quantity = item.quantity;
+        const unitPriceCents = item.unitPriceCents;
 
-      if (!productName) {
-        throw new HttpError(400, "Order item productName is required.");
-      }
+        if (!productName) {
+          throw new HttpError(400, "Order item productName is required.");
+        }
 
-      if (!Number.isFinite(quantity) || quantity <= 0) {
-        throw new HttpError(400, "Order item quantity must be greater than zero.");
-      }
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          throw new HttpError(
+            400,
+            "Order item quantity must be greater than zero.",
+          );
+        }
 
-      if (!Number.isInteger(unitPriceCents) || unitPriceCents < 0) {
-        throw new HttpError(400, "Order item unitPriceCents must be a non-negative integer.");
-      }
+        if (!Number.isInteger(unitPriceCents) || unitPriceCents < 0) {
+          throw new HttpError(
+            400,
+            "Order item unitPriceCents must be a non-negative integer.",
+          );
+        }
 
-      const additionals =
-        await this.productAdditionalsService.resolveOrderItemAdditionals(
-          item.recipeId ?? null,
-          item.additionals,
-        );
+        const additionals =
+          await this.productAdditionalsService.resolveOrderItemAdditionals(
+            item.recipeId ?? null,
+            item.additionals,
+          );
 
-      return {
-        recipeId: item.recipeId ?? null,
-        fillingRecipeId: item.fillingRecipeId ?? null,
-        secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-        additionals,
-        productName,
-        quantity,
-        unitPriceCents,
-        lineTotalCents:
-          quantity *
-          (unitPriceCents +
-            additionals.reduce(
-              (sum, additional) => sum + additional.priceDeltaCents,
-              0,
-            )),
-        position: item.position ?? index,
-      };
-    }));
+        return {
+          recipeId: item.recipeId ?? null,
+          fillingRecipeId: item.fillingRecipeId ?? null,
+          secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+          tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+          additionals,
+          productName,
+          quantity,
+          unitPriceCents,
+          lineTotalCents:
+            quantity *
+            (unitPriceCents +
+              additionals.reduce(
+                (sum, additional) => sum + additional.priceDeltaCents,
+                0,
+              )),
+          position: item.position ?? index,
+        };
+      }),
+    );
 
     if (items.length === 0) {
       throw new HttpError(400, "Order must contain at least one item.");
@@ -636,8 +671,14 @@ export class OrdersService {
     );
     const subtotalAmountCents = itemsSubtotalAmountCents + deliveryFeeCents;
 
-    const remainingAmountCents = Math.max(0, subtotalAmountCents - paidAmountCents);
-    const paymentStatus = calculatePaymentStatus(subtotalAmountCents, paidAmountCents);
+    const remainingAmountCents = Math.max(
+      0,
+      subtotalAmountCents - paidAmountCents,
+    );
+    const paymentStatus = calculatePaymentStatus(
+      subtotalAmountCents,
+      paidAmountCents,
+    );
 
     return {
       customerId: input.customerId ?? null,
@@ -647,9 +688,12 @@ export class OrdersService {
       deliveryDate: input.deliveryDate,
       deliveryTime,
       deliveryMode: input.deliveryMode,
-      deliveryAddress: input.deliveryMode === "Entrega" ? deliveryAddress : null,
-      deliveryReference: input.deliveryMode === "Entrega" ? deliveryReference : null,
-      deliveryDistrict: input.deliveryMode === "Entrega" ? deliveryDistrict : null,
+      deliveryAddress:
+        input.deliveryMode === "Entrega" ? deliveryAddress : null,
+      deliveryReference:
+        input.deliveryMode === "Entrega" ? deliveryReference : null,
+      deliveryDistrict:
+        input.deliveryMode === "Entrega" ? deliveryDistrict : null,
       deliveryFeeCents: input.deliveryMode === "Entrega" ? deliveryFeeCents : 0,
       status: input.status,
       paymentMethod: input.paymentMethod,
@@ -692,7 +736,11 @@ export class OrdersService {
     };
   }
 
-  private mapOrderDetail(row: any, items: any[], additionals: any[]): OrderDetail {
+  private mapOrderDetail(
+    row: any,
+    items: any[],
+    additionals: any[],
+  ): OrderDetail {
     return {
       ...this.mapOrderListItem(row),
       items: items.map<OrderItem>((item) => ({

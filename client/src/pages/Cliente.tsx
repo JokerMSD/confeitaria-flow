@@ -34,13 +34,17 @@ export default function Cliente() {
           <Loader2 className="inline h-5 w-5 animate-spin mr-2" /> Carregando...
         </div>
       ) : isError || !data ? (
-        <div className="p-10 text-center text-destructive">Cliente não encontrado.</div>
+        <div className="p-10 text-center text-destructive">
+          Cliente não encontrado.
+        </div>
       ) : (
         <Card className="space-y-4 p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <h3 className="font-semibold text-sm">Nome</h3>
-              <p>{data.data.firstName} {data.data.lastName}</p>
+              <p>
+                {data.data.firstName} {data.data.lastName}
+              </p>
             </div>
             <div>
               <h3 className="font-semibold text-sm">E-mail</h3>
@@ -68,7 +72,11 @@ export default function Cliente() {
             </div>
             <div>
               <h3 className="font-semibold text-sm">Último Pedido</h3>
-              <p>{data.data.lastOrderDate ? formatDate(data.data.lastOrderDate) : "-"}</p>
+              <p>
+                {data.data.lastOrderDate
+                  ? formatDate(data.data.lastOrderDate)
+                  : "-"}
+              </p>
             </div>
             <div>
               <h3 className="font-semibold text-sm">Pedidos</h3>

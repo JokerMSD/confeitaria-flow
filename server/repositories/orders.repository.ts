@@ -11,7 +11,12 @@ import {
 } from "drizzle-orm";
 import { getDb } from "../db";
 import { orderItems, orders } from "@shared/schema";
-import type { ListOrdersFilters, OrderStatus, PaymentMethod, PaymentStatus } from "@shared/types";
+import type {
+  ListOrdersFilters,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from "@shared/types";
 
 type Executor = ReturnType<typeof getDb> | any;
 
@@ -213,28 +218,24 @@ export class OrdersRepository {
 
     const [summary] = await executor
       .select({
-        soldAmountCents:
-          sql<number>`coalesce(sum(${orders.subtotalAmountCents}), 0)`,
-        receivedAmountCents:
-          sql<number>`coalesce(sum(${orders.paidAmountCents}), 0)`,
-        receivableAmountCents:
-          sql<number>`coalesce(sum(${orders.remainingAmountCents}), 0)`,
+        soldAmountCents: sql<number>`coalesce(sum(${orders.subtotalAmountCents}), 0)`,
+        receivedAmountCents: sql<number>`coalesce(sum(${orders.paidAmountCents}), 0)`,
+        receivableAmountCents: sql<number>`coalesce(sum(${orders.remainingAmountCents}), 0)`,
       })
       .from(orders)
       .where(and(...conditions));
 
-    return summary ?? {
-      soldAmountCents: 0,
-      receivedAmountCents: 0,
-      receivableAmountCents: 0,
-    };
+    return (
+      summary ?? {
+        soldAmountCents: 0,
+        receivedAmountCents: 0,
+        receivableAmountCents: 0,
+      }
+    );
   }
 
   async create(data: OrderRowInsert, executor: Executor = getDb()) {
-    const [order] = await executor
-      .insert(orders)
-      .values(data)
-      .returning();
+    const [order] = await executor.insert(orders).values(data).returning();
 
     return order;
   }

@@ -14,9 +14,30 @@ export function registerCustomersRoutes(app: Express) {
   const updateBodySchema = z.object({ data: updateCustomerInputSchema });
 
   app.get("/api/customers", controller.list.bind(controller));
-  app.post("/api/customers", validateRequest(createBodySchema, "body"), controller.create.bind(controller));
-  app.get("/api/customers/:id", validateRequest(customerIdParamsSchema, "params"), controller.detail.bind(controller));
-  app.put("/api/customers/:id", validateRequest(customerIdParamsSchema, "params"), validateRequest(updateBodySchema, "body"), controller.update.bind(controller));
-  app.post("/api/customers/:id/deactivate", validateRequest(customerIdParamsSchema, "params"), controller.deactivate.bind(controller));
-  app.delete("/api/customers/:id", validateRequest(customerIdParamsSchema, "params"), controller.remove.bind(controller));
+  app.post(
+    "/api/customers",
+    validateRequest(createBodySchema, "body"),
+    controller.create.bind(controller),
+  );
+  app.get(
+    "/api/customers/:id",
+    validateRequest(customerIdParamsSchema, "params"),
+    controller.detail.bind(controller),
+  );
+  app.put(
+    "/api/customers/:id",
+    validateRequest(customerIdParamsSchema, "params"),
+    validateRequest(updateBodySchema, "body"),
+    controller.update.bind(controller),
+  );
+  app.post(
+    "/api/customers/:id/deactivate",
+    validateRequest(customerIdParamsSchema, "params"),
+    controller.deactivate.bind(controller),
+  );
+  app.delete(
+    "/api/customers/:id",
+    validateRequest(customerIdParamsSchema, "params"),
+    controller.remove.bind(controller),
+  );
 }

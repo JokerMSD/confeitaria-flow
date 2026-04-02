@@ -39,7 +39,9 @@ function parseAuthUsers(): ConfiguredAuthUser[] {
   }
 
   if (process.env.NODE_ENV === "production") {
-    throw new Error("AUTH_USERS_JSON or AUTH_EMAIL/AUTH_PASSWORD must be configured.");
+    throw new Error(
+      "AUTH_USERS_JSON or AUTH_EMAIL/AUTH_PASSWORD must be configured.",
+    );
   }
 
   return [
@@ -71,7 +73,8 @@ export class AuthService {
     }
 
     const user = this.users.find(
-      (candidate) => candidate.email === email && candidate.password === password,
+      (candidate) =>
+        candidate.email === email && candidate.password === password,
     );
 
     if (!user) {
@@ -84,4 +87,3 @@ export class AuthService {
     };
   }
 }
-

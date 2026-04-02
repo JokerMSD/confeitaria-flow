@@ -75,19 +75,8 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "option_name",
       "price_delta_cents",
     ],
-    customers: [
-      "first_name",
-      "last_name",
-      "email",
-      "is_active",
-    ],
-    users: [
-      "username",
-      "email",
-      "password",
-      "role",
-      "is_active",
-    ],
+    customers: ["first_name", "last_name", "email", "is_active"],
+    users: ["username", "email", "password", "role", "is_active"],
   },
 };
 
@@ -117,8 +106,7 @@ const migrationHints: Record<string, string> = {
   "order_item_additionals.group_id": "0015_phase15_product_additionals.sql",
   "order_item_additionals.option_id": "0015_phase15_product_additionals.sql",
   "order_item_additionals.group_name": "0015_phase15_product_additionals.sql",
-  "order_item_additionals.option_name":
-    "0015_phase15_product_additionals.sql",
+  "order_item_additionals.option_name": "0015_phase15_product_additionals.sql",
   "order_item_additionals.price_delta_cents":
     "0015_phase15_product_additionals.sql",
   customers: "0016_phase16_customers_and_users.sql",
@@ -141,7 +129,8 @@ export function validateSchemaSnapshot(
   for (const [table, columns] of Object.entries(
     requiredRuntimeSchema.columnsByTable,
   )) {
-    const existingColumns = snapshot.columnsByTable.get(table) ?? new Set<string>();
+    const existingColumns =
+      snapshot.columnsByTable.get(table) ?? new Set<string>();
 
     for (const column of columns) {
       if (!existingColumns.has(column)) {
@@ -156,9 +145,7 @@ export function validateSchemaSnapshot(
   };
 }
 
-export function formatSchemaMismatchMessage(
-  result: SchemaValidationResult,
-) {
+export function formatSchemaMismatchMessage(result: SchemaValidationResult) {
   const parts: string[] = [];
 
   if (result.missingTables.length > 0) {

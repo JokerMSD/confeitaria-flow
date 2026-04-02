@@ -43,7 +43,12 @@ function AuthGate() {
     ) {
       setLocation("/login");
     }
-  }, [authSessionQuery.data?.data, authSessionQuery.isLoading, location, setLocation]);
+  }, [
+    authSessionQuery.data?.data,
+    authSessionQuery.isLoading,
+    location,
+    setLocation,
+  ]);
 
   if (location === "/login" && !authSessionQuery.data?.data) {
     return (

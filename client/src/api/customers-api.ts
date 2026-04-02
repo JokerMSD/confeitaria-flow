@@ -1,4 +1,9 @@
-import type { CustomerDetail, CustomerListItem, CreateCustomerInput, UpdateCustomerInput } from "@shared/types";
+import type {
+  CustomerDetail,
+  CustomerListItem,
+  CreateCustomerInput,
+  UpdateCustomerInput,
+} from "@shared/types";
 import { httpClient } from "./http-client";
 
 export function listCustomers() {
@@ -24,10 +29,13 @@ export function updateCustomer(id: string, data: UpdateCustomerInput) {
 }
 
 export function deactivateCustomer(id: string) {
-  return httpClient<{ data: CustomerDetail }>(`/api/customers/${id}/deactivate`, {
-    method: "POST",
-    body: {},
-  });
+  return httpClient<{ data: CustomerDetail }>(
+    `/api/customers/${id}/deactivate`,
+    {
+      method: "POST",
+      body: {},
+    },
+  );
 }
 
 export function deleteCustomer(id: string) {

@@ -30,7 +30,9 @@ export function Sidebar() {
 
     try {
       await logoutMutation.mutateAsync();
-      await queryClient.invalidateQueries({ queryKey: authQueryKeys.session() });
+      await queryClient.invalidateQueries({
+        queryKey: authQueryKeys.session(),
+      });
       setLocation("/login");
     } catch {
       toast({
@@ -199,7 +201,9 @@ export function MobileHeader({ title }: { title: string }) {
 
   return (
     <header className="sticky left-0 right-0 top-0 z-40 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 pt-safe backdrop-blur-md md:hidden">
-      <h1 className="font-display text-xl font-bold text-foreground">{title}</h1>
+      <h1 className="font-display text-xl font-bold text-foreground">
+        {title}
+      </h1>
       <Avatar className="h-8 w-8 border border-border">
         <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
         <AvatarFallback>

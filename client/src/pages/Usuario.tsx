@@ -58,7 +58,11 @@ export default function Usuario() {
       }
       setLocation("/usuarios");
     } catch (error) {
-      toast.toast({ title: "Erro", description: "Falha ao salvar usuário.", variant: "destructive" });
+      toast.toast({
+        title: "Erro",
+        description: "Falha ao salvar usuário.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -72,7 +76,9 @@ export default function Usuario() {
             </Button>
           </a>
         </Link>
-        <h2 className="text-2xl font-display font-bold">{id ? "Editar Usuário" : "Novo Usuário"}</h2>
+        <h2 className="text-2xl font-display font-bold">
+          {id ? "Editar Usuário" : "Novo Usuário"}
+        </h2>
       </div>
 
       {isLoading ? (
@@ -83,30 +89,49 @@ export default function Usuario() {
         <Card className="p-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-foreground">Nome de usuário</label>
+              <label className="block text-sm font-medium text-foreground">
+                Nome de usuário
+              </label>
               <Input {...register("username", { required: true })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">E-mail</label>
+              <label className="block text-sm font-medium text-foreground">
+                E-mail
+              </label>
               <Input type="email" {...register("email", { required: true })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">Nome completo</label>
+              <label className="block text-sm font-medium text-foreground">
+                Nome completo
+              </label>
               <Input {...register("fullName", { required: true })} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">Senha</label>
-              <Input type="password" {...register("password", { required: !id })} placeholder={id ? "Deixe em branco para manter" : "Senha"} />
+              <label className="block text-sm font-medium text-foreground">
+                Senha
+              </label>
+              <Input
+                type="password"
+                {...register("password", { required: !id })}
+                placeholder={id ? "Deixe em branco para manter" : "Senha"}
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-foreground">Perfil</label>
-              <select className="w-full border rounded-md p-2" {...register("role")}> 
+              <label className="block text-sm font-medium text-foreground">
+                Perfil
+              </label>
+              <select
+                className="w-full border rounded-md p-2"
+                {...register("role")}
+              >
                 <option value="operador">Operador</option>
                 <option value="admin">Administrador</option>
               </select>
             </div>
             <div className="pt-4">
-              <Button type="submit" disabled={formState.isSubmitting}>{id ? "Salvar" : "Criar"}</Button>
+              <Button type="submit" disabled={formState.isSubmitting}>
+                {id ? "Salvar" : "Criar"}
+              </Button>
             </div>
           </form>
         </Card>

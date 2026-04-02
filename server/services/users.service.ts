@@ -1,4 +1,9 @@
-import type { CreateUserInput, UpdateUserInput, UserItem, UserRole } from "@shared/types";
+import type {
+  CreateUserInput,
+  UpdateUserInput,
+  UserItem,
+  UserRole,
+} from "@shared/types";
 import { HttpError } from "../utils/http-error";
 import { UsersRepository } from "../repositories/users.repository";
 import { hashPassword, verifyPassword } from "../utils/password";
@@ -47,7 +52,9 @@ export class UsersService {
       throw new HttpError(400, "E-mail já em uso.");
     }
 
-    const existingUsername = await this.usersRepository.findByUsername(input.username);
+    const existingUsername = await this.usersRepository.findByUsername(
+      input.username,
+    );
     if (existingUsername) {
       throw new HttpError(400, "Nome de usuário já em uso.");
     }
@@ -80,7 +87,9 @@ export class UsersService {
     }
 
     if (input.username && input.username !== user.username) {
-      const existingUsername = await this.usersRepository.findByUsername(input.username);
+      const existingUsername = await this.usersRepository.findByUsername(
+        input.username,
+      );
       if (existingUsername) {
         throw new HttpError(400, "Nome de usuário já em uso.");
       }
@@ -113,7 +122,10 @@ export class UsersService {
       : await this.usersRepository.deactivate(id);
 
     if (!updated) {
-      throw new HttpError(404, "Usuário não encontrado ou não pode ser atualizado.");
+      throw new HttpError(
+        404,
+        "Usuário não encontrado ou não pode ser atualizado.",
+      );
     }
 
     return this.getById(id);
@@ -122,7 +134,9 @@ export class UsersService {
   async authenticate(emailOrUsername: string, password: string) {
     const lookup =
       (await this.usersRepository.findByEmail(emailOrUsername.toLowerCase())) ||
-      (await this.usersRepository.findByUsername(emailOrUsername.toLowerCase()));
+      (await this.usersRepository.findByUsername(
+        emailOrUsername.toLowerCase(),
+      ));
 
     if (!lookup || !lookup.isActive) {
       throw new HttpError(401, "Usuário ou senha inválidos.");

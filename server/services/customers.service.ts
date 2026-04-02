@@ -1,4 +1,9 @@
-import type { CreateCustomerInput, CustomerDetail, CustomerListItem, UpdateCustomerInput } from "@shared/types";
+import type {
+  CreateCustomerInput,
+  CustomerDetail,
+  CustomerListItem,
+  UpdateCustomerInput,
+} from "@shared/types";
 import { HttpError } from "../utils/http-error";
 import { CustomersRepository } from "../repositories/customers.repository";
 
@@ -66,7 +71,10 @@ export class CustomersService {
     return this.getById(created.id);
   }
 
-  async update(id: string, input: UpdateCustomerInput): Promise<CustomerDetail> {
+  async update(
+    id: string,
+    input: UpdateCustomerInput,
+  ): Promise<CustomerDetail> {
     const customer = await this.customersRepository.findById(id);
 
     if (!customer) {

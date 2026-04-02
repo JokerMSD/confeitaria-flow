@@ -49,7 +49,11 @@ export class UsersRepository {
     return user;
   }
 
-  async update(id: string, data: Partial<InsertUser>, executor: Executor = getDb()) {
+  async update(
+    id: string,
+    data: Partial<InsertUser>,
+    executor: Executor = getDb(),
+  ) {
     const [user] = await executor
       .update(users)
       .set({ ...data, updatedAt: new Date() })

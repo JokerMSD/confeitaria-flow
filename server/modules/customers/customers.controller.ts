@@ -20,7 +20,10 @@ export class CustomersController {
   }
 
   async update(req: Request, res: Response) {
-    const data = await this.customersService.update(String(req.params.id), req.body.data);
+    const data = await this.customersService.update(
+      String(req.params.id),
+      req.body.data,
+    );
     res.json({ data });
   }
 
