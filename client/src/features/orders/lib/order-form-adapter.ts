@@ -8,8 +8,10 @@ import {
   parseMoneyInputToCents,
 } from "@/features/inventory/lib/inventory-input-helpers";
 import { getTodayLocalDateKey } from "@/lib/utils";
+import { getOrderItemAdditionalsUnitTotal } from "./order-additionals";
 import type {
   OrderFormItem,
+  OrderFormItemAdditional,
   OrderFormState,
   UiOrderStatus,
   UiPaymentMethod,
@@ -61,8 +63,26 @@ function decimalNumberToCents(value: number) {
   return Math.round(value * 100);
 }
 
-function buildPreviewSubtotal(item: Pick<OrderFormItem, "quantity" | "unitPrice">) {
-  return item.quantity * item.unitPrice;
+function buildPreviewSubtotal(
+  item: Pick<OrderFormItem, "quantity" | "unitPrice" | "additionals">,
+) {
+  return (
+    item.quantity *
+    (item.unitPrice + getOrderItemAdditionalsUnitTotal(item.additionals ?? []))
+  );
+}
+
+function mapApiAdditionalToFormItem(
+  additional: OrderDetailResponse["data"]["items"][number]["additionals"][number],
+): OrderFormItemAdditional {
+  return {
+    groupId: additional.groupId,
+    optionId: additional.optionId,
+    groupName: additional.groupName,
+    optionName: additional.optionName,
+    priceDelta: additional.priceDeltaCents / 100,
+    position: additional.position,
+  };
 }
 
 export function createEmptyOrderFormState(): OrderFormState {
@@ -103,18 +123,30 @@ export function adaptOrderDetailToFormState(
     paymentMethod: apiToUiPaymentMethodMap[response.data.paymentMethod],
     paidAmount: centsToDecimalString(response.data.paidAmountCents),
     notes: response.data.notes ?? "",
-    items: response.data.items.map((item) => ({
-      id: item.id,
-      recipeId: item.recipeId ?? null,
-      fillingRecipeId: item.fillingRecipeId ?? null,
-      secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-      tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-      productName: item.productName,
-      quantity: item.quantity,
-      unitPrice: item.unitPriceCents / 100,
-      subtotal: item.lineTotalCents / 100,
-      position: item.position,
-    })),
+    items: response.data.items.map((item) => {
+      const additionals = item.additionals
+        ?.slice()
+        .sort((a, b) => a.position - b.position)
+        .map(mapApiAdditionalToFormItem) ?? [];
+
+      return {
+        id: item.id,
+        recipeId: item.recipeId ?? null,
+        fillingRecipeId: item.fillingRecipeId ?? null,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPriceCents / 100,
+        subtotal: buildPreviewSubtotal({
+          quantity: item.quantity,
+          unitPrice: item.unitPriceCents / 100,
+          additionals,
+        }),
+        position: item.position,
+        additionals,
+      };
+    }),
   };
 }
 
@@ -128,6 +160,14 @@ function adaptFormItemsToPayload(items: OrderFormItem[]) {
     quantity: item.quantity,
     unitPriceCents: decimalNumberToCents(item.unitPrice),
     position: item.position ?? index,
+    additionals: (item.additionals ?? [])
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map((additional, additionalIndex) => ({
+        groupId: additional.groupId,
+        optionId: additional.optionId,
+        position: additional.position ?? additionalIndex,
+      })),
   }));
 }
 
@@ -179,6 +219,7 @@ export function buildOrderFormItem(
   quantity: number,
   unitPrice: number,
   position: number,
+  additionals: OrderFormItemAdditional[] = [],
 ): OrderFormItem {
   return {
     id,
@@ -189,7 +230,8 @@ export function buildOrderFormItem(
     productName,
     quantity,
     unitPrice,
-    subtotal: buildPreviewSubtotal({ quantity, unitPrice }),
+    subtotal: buildPreviewSubtotal({ quantity, unitPrice, additionals }),
     position,
+    additionals,
   };
 }

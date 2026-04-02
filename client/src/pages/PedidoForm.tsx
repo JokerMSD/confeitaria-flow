@@ -17,6 +17,11 @@ import {
 import { useCreateOrder } from "@/features/orders/hooks/use-create-order";
 import { useOrder } from "@/features/orders/hooks/use-order";
 import { useUpdateOrder } from "@/features/orders/hooks/use-update-order";
+import {
+  formatOrderItemAdditionalsSummary,
+  getOrderItemAdditionalsUnitTotal,
+} from "@/features/orders/lib/order-additionals";
+import { useRecipe } from "@/features/recipes/hooks/use-recipe";
 import { useRecipes } from "@/features/recipes/hooks/use-recipes";
 import {
   adaptFillingRecipesToOptions,
@@ -30,7 +35,9 @@ import {
   createEmptyOrderFormState,
 } from "@/features/orders/lib/order-form-adapter";
 import { supportsMultipleFillings } from "@/features/orders/lib/order-item-composer";
+import type { ProductAdditionalGroupDetail } from "@shared/types";
 import type {
+  OrderFormItemAdditional,
   OrderFormState,
   UiOrderStatus,
   UiPaymentMethod,
@@ -65,6 +72,18 @@ function buildPaymentStatusPreview(totalAmount: number, paidAmount: string) {
   return "Parcial";
 }
 
+function buildAdditionalGroupRule(group: ProductAdditionalGroupDetail) {
+  if (group.selectionType === "single") {
+    return group.minSelections > 0 ? "Escolha 1 opcao" : "Opcional";
+  }
+
+  if (group.minSelections > 0) {
+    return `Escolha de ${group.minSelections} ate ${group.maxSelections}`;
+  }
+
+  return `Ate ${group.maxSelections} opcao(oes)`;
+}
+
 export default function PedidoForm() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
@@ -84,11 +103,15 @@ export default function PedidoForm() {
     useState("");
   const [newItemTertiaryFillingRecipeId, setNewItemTertiaryFillingRecipeId] =
     useState("");
+  const [newItemAdditionals, setNewItemAdditionals] = useState<
+    OrderFormItemAdditional[]
+  >([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const orderQuery = useOrder(orderId);
   const productRecipesQuery = useRecipes({ kind: "ProdutoVenda" });
   const fillingRecipesQuery = useRecipes({ kind: "Preparacao" });
+  const selectedProductDetailQuery = useRecipe(newItemRecipeId || undefined);
   const createOrderMutation = useCreateOrder();
   const updateOrderMutation = useUpdateOrder();
 
@@ -153,10 +176,27 @@ export default function PedidoForm() {
       productRecipeOptions.find((recipe) => recipe.id === newItemRecipeId) ?? null,
     [newItemRecipeId, productRecipeOptions],
   );
+  const selectedProductDetail = selectedProductDetailQuery.data?.data ?? null;
+  const selectedProductAdditionalGroups =
+    selectedProductDetail?.additionalGroups ?? [];
   const fillingRecipeOptionsById = useMemo(
     () => new Map(fillingRecipeOptions.map((recipe) => [recipe.id, recipe])),
     [fillingRecipeOptions],
   );
+  const additionalsUnitTotal = useMemo(
+    () => getOrderItemAdditionalsUnitTotal(newItemAdditionals),
+    [newItemAdditionals],
+  );
+  const itemSubtotalPreview = useMemo(() => {
+    const quantity = Number.parseInt(newItemQtd || "0", 10);
+    const unitPrice = parseCurrencyInput(newItemPrice);
+
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      return 0;
+    }
+
+    return quantity * (unitPrice + additionalsUnitTotal);
+  }, [additionalsUnitTotal, newItemPrice, newItemQtd]);
   const allowsMultipleFillings = useMemo(
     () => supportsMultipleFillings(selectedProductRecipe?.name ?? newItemName),
     [newItemName, selectedProductRecipe],
@@ -188,6 +228,109 @@ export default function PedidoForm() {
     }));
   };
 
+  const getSelectedOptionIdsForGroup = (groupId: string) =>
+    newItemAdditionals
+      .filter((additional) => additional.groupId === groupId)
+      .map((additional) => additional.optionId);
+
+  const toggleAdditionalSelection = (
+    group: NonNullable<typeof selectedProductDetail>["additionalGroups"][number],
+    option: NonNullable<typeof selectedProductDetail>["additionalGroups"][number]["options"][number],
+  ) => {
+    setNewItemAdditionals((current) => {
+      const alreadySelected = current.some(
+        (additional) =>
+          additional.groupId === group.id && additional.optionId === option.id,
+      );
+      const groupSelections = current.filter(
+        (additional) => additional.groupId === group.id,
+      );
+      const otherSelections = current.filter(
+        (additional) => additional.groupId !== group.id,
+      );
+
+      if (group.selectionType === "single") {
+        if (alreadySelected) {
+          return group.minSelections === 0 ? otherSelections : current;
+        }
+
+        return [
+          ...otherSelections,
+          {
+            groupId: group.id,
+            optionId: option.id,
+            groupName: group.name,
+            optionName: option.name,
+            priceDelta: option.priceDeltaCents / 100,
+            position: groupSelections.length,
+          },
+        ];
+      }
+
+      if (alreadySelected) {
+        if (groupSelections.length <= group.minSelections) {
+          return current;
+        }
+
+        return current.filter(
+          (additional) =>
+            !(
+              additional.groupId === group.id && additional.optionId === option.id
+            ),
+        );
+      }
+
+      if (groupSelections.length >= group.maxSelections) {
+        toast({
+          title: "Limite de adicionais",
+          description: `O grupo "${group.name}" aceita no maximo ${group.maxSelections} selecao(oes).`,
+          variant: "destructive",
+        });
+        return current;
+      }
+
+      return [
+        ...current,
+        {
+          groupId: group.id,
+          optionId: option.id,
+          groupName: group.name,
+          optionName: option.name,
+          priceDelta: option.priceDeltaCents / 100,
+          position: groupSelections.length,
+        },
+      ];
+    });
+  };
+
+  const validateAdditionalSelections = () => {
+    for (const group of selectedProductAdditionalGroups) {
+      const selectedCount = newItemAdditionals.filter(
+        (additional) => additional.groupId === group.id,
+      ).length;
+
+      if (selectedCount < group.minSelections) {
+        toast({
+          title: "Selecione os adicionais obrigatorios",
+          description: `O grupo "${group.name}" exige pelo menos ${group.minSelections} selecao(oes).`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (selectedCount > group.maxSelections) {
+        toast({
+          title: "Quantidade de adicionais invalida",
+          description: `O grupo "${group.name}" aceita no maximo ${group.maxSelections} selecao(oes).`,
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
+    return true;
+  };
+
   const resetItemComposer = () => {
     setNewItemName("");
     setNewItemQtd("1");
@@ -196,6 +339,7 @@ export default function PedidoForm() {
     setNewItemFillingRecipeId("");
     setNewItemSecondaryFillingRecipeId("");
     setNewItemTertiaryFillingRecipeId("");
+    setNewItemAdditionals([]);
     setEditingItemId(null);
   };
 
@@ -231,6 +375,7 @@ export default function PedidoForm() {
     setNewItemFillingRecipeId(item.fillingRecipeId ?? "");
     setNewItemSecondaryFillingRecipeId(item.secondaryFillingRecipeId ?? "");
     setNewItemTertiaryFillingRecipeId(item.tertiaryFillingRecipeId ?? "");
+    setNewItemAdditionals(item.additionals);
     setNewItemName(item.productName);
     setNewItemQtd(String(item.quantity));
     setNewItemPrice(formatMoneyInput(String(Math.round(item.unitPrice * 100))));
@@ -256,6 +401,24 @@ export default function PedidoForm() {
       return;
     }
 
+    if (selectedProductDetailQuery.isLoading) {
+      toast({
+        title: "Carregando adicionais",
+        description: "Aguarde os detalhes do produto antes de adicionar o item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (selectedProductDetailQuery.isError) {
+      toast({
+        title: "Não foi possível carregar o produto",
+        description: "Tente novamente antes de adicionar o item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const quantity = Number.parseInt(newItemQtd, 10);
     const unitPrice = parseCurrencyInput(newItemPrice);
     const fillingIds = [
@@ -265,6 +428,10 @@ export default function PedidoForm() {
     ].filter((value): value is string => Boolean(value));
 
     if (!Number.isInteger(quantity) || quantity <= 0 || unitPrice <= 0) {
+      return;
+    }
+
+    if (!validateAdditionalSelections()) {
       return;
     }
 
@@ -287,6 +454,10 @@ export default function PedidoForm() {
       quantity,
       unitPrice,
       editingItemId == null ? formState.items.length : 0,
+      newItemAdditionals.map((additional, index) => ({
+        ...additional,
+        position: index,
+      })),
     );
 
     setFormState((current) => {
@@ -628,6 +799,7 @@ export default function PedidoForm() {
                         const selectedId = event.target.value;
                         setNewItemRecipeId(selectedId);
                         setNewItemFillingRecipeId("");
+                        setNewItemAdditionals([]);
 
                         const selectedRecipe = productRecipeOptions.find(
                           (recipe) => recipe.id === selectedId,
@@ -763,6 +935,11 @@ export default function PedidoForm() {
                     <p className="mt-1 font-semibold">
                       {newItemName || "Selecione produto e recheio"}
                     </p>
+                    {newItemAdditionals.length > 0 ? (
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        {formatOrderItemAdditionalsSummary(newItemAdditionals)}
+                      </p>
+                    ) : null}
                   </div>
                   <QuantityStepperField
                     id="newItemQtd"
@@ -785,6 +962,118 @@ export default function PedidoForm() {
                       disabled={Boolean(newItemRecipeId)}
                     />
                   </div>
+                  <div className="rounded-xl border border-border/60 bg-background px-4 py-3 md:col-span-2 xl:col-span-2">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Subtotal do item
+                    </p>
+                    <p className="mt-1 font-semibold">{formatCurrency(itemSubtotalPreview)}</p>
+                    {additionalsUnitTotal > 0 ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Inclui {formatCurrency(additionalsUnitTotal)} em adicionais por unidade.
+                      </p>
+                    ) : null}
+                  </div>
+                  {newItemRecipeId ? (
+                    <div className="space-y-3 rounded-xl border border-border/60 bg-background px-4 py-4 md:col-span-2 xl:col-span-6">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold">Adicionais</p>
+                          <p className="text-xs text-muted-foreground">
+                            Selecione extras configurados para este produto.
+                          </p>
+                        </div>
+                        {selectedProductDetailQuery.isLoading ? (
+                          <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            Carregando...
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {selectedProductDetailQuery.isError ? (
+                        <p className="text-sm text-destructive">
+                          Nao foi possivel carregar os adicionais deste produto.
+                        </p>
+                      ) : selectedProductAdditionalGroups.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Este produto nao possui adicionais configurados.
+                        </p>
+                      ) : (
+                        <div className="space-y-4">
+                          {selectedProductAdditionalGroups.map((group) => {
+                            const selectedOptionIds = new Set(
+                              getSelectedOptionIdsForGroup(group.id),
+                            );
+
+                            return (
+                              <div
+                                key={group.id}
+                                className="rounded-xl border border-border/60 bg-muted/20 p-4"
+                              >
+                                <div className="mb-3">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-semibold">{group.name}</p>
+                                    <span className="rounded-full border border-border bg-background px-2 py-0.5 text-[11px] text-muted-foreground">
+                                      {group.selectionType === "single"
+                                        ? "Escolha unica"
+                                        : `Ate ${group.maxSelections}`}
+                                    </span>
+                                    {group.minSelections > 0 ? (
+                                      <span className="rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                                        Obrigatorio
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {buildAdditionalGroupRule(group)}
+                                  </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                                  {group.options.map((option) => {
+                                    const isSelected = selectedOptionIds.has(option.id);
+
+                                    return (
+                                      <button
+                                        key={option.id}
+                                        type="button"
+                                        onClick={() =>
+                                          toggleAdditionalSelection(group, option)
+                                        }
+                                        className={`rounded-xl border px-4 py-3 text-left transition-colors ${
+                                          isSelected
+                                            ? "border-primary bg-primary/10"
+                                            : "border-border bg-background hover:bg-muted/40"
+                                        }`}
+                                      >
+                                        <div className="flex items-start justify-between gap-3">
+                                          <div>
+                                            <p className="font-medium">{option.name}</p>
+                                            {option.notes ? (
+                                              <p className="mt-1 text-xs text-muted-foreground">
+                                                {option.notes}
+                                              </p>
+                                            ) : null}
+                                          </div>
+                                          <div className="text-sm font-semibold text-primary">
+                                            {option.priceDeltaCents > 0
+                                              ? `+ ${formatCurrency(
+                                                  option.priceDeltaCents / 100,
+                                                )}`
+                                              : "Sem custo"}
+                                          </div>
+                                        </div>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ) : null}
                   <Button
                     type="button"
                     onClick={handleAddItem}
@@ -829,6 +1118,11 @@ export default function PedidoForm() {
                           <p className="text-xs text-muted-foreground">
                             {formatCurrency(item.unitPrice)} un.
                           </p>
+                          {item.additionals.length > 0 && (
+                            <p className="mt-2 text-[11px] text-primary">
+                              {formatOrderItemAdditionalsSummary(item.additionals)}
+                            </p>
+                          )}
                           {item.recipeId && (
                             <p className="text-[11px] text-primary font-medium">
                               Vinculado a receita

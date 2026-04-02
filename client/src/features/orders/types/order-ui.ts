@@ -61,6 +61,16 @@ export interface OrderFormItem {
   unitPrice: number;
   subtotal: number;
   position: number;
+  additionals: OrderFormItemAdditional[];
+}
+
+export interface OrderFormItemAdditional {
+  groupId: string;
+  optionId: string;
+  groupName: string;
+  optionName: string;
+  priceDelta: number;
+  position: number;
 }
 
 export interface OrderFormState {

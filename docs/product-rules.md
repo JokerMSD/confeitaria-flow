@@ -5,6 +5,9 @@
 - Cada item pode ter ate 3 recheios.
 - O nome do item deve ser montado automaticamente com produto + recheios.
 - Observacoes continuam existindo para detalhes do pedido, mas nao devem ser a fonte primaria da estrutura do item novo.
+- Produto pode expor grupos de adicionais estruturados no pedido.
+- O subtotal do item deve considerar `preco base + adicionais selecionados`, multiplicado pela quantidade.
+- Minimo, maximo e escolha unica/multipla de adicionais devem ser respeitados ja no frontend, com o backend mantendo a validacao final.
 
 ## Regras De Estoque
 - Baixa automatica de ingredientes deve usar as receitas vinculadas ao pedido.
@@ -29,6 +32,7 @@
 - `ProdutoVenda` deve ficar em `Catalogo`.
 - Produtos vendaveis podem ter preco praticado.
 - O backend calcula preco ideal, mas o preco praticado pode prevalecer no pedido.
+- Produtos vendaveis podem configurar grupos de adicionais com opcoes precificadas.
 
 ## Precos Comerciais Ja Discutidos
 - Ovo de colher 500g: `49,90`

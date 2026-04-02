@@ -9,6 +9,8 @@ import {
   parseMoneyInputToCents,
 } from "@/features/inventory/lib/inventory-input-helpers";
 import type {
+  RecipeAdditionalGroupFormState,
+  RecipeAdditionalOptionFormState,
   RecipeComponentFormState,
   RecipeFormState,
 } from "../types/recipe-ui";
@@ -45,6 +47,34 @@ export function createEmptyRecipeComponentState(
   };
 }
 
+export function createEmptyRecipeAdditionalOptionState(
+  position = 0,
+): RecipeAdditionalOptionFormState {
+  return {
+    id: createId(),
+    name: "",
+    priceDelta: "",
+    position,
+    notes: "",
+    isActive: true,
+  };
+}
+
+export function createEmptyRecipeAdditionalGroupState(
+  position = 0,
+): RecipeAdditionalGroupFormState {
+  return {
+    id: createId(),
+    name: "",
+    selectionType: "single",
+    minSelections: "0",
+    maxSelections: "1",
+    position,
+    notes: "",
+    options: [createEmptyRecipeAdditionalOptionState()],
+  };
+}
+
 export function createEmptyRecipeFormState(
   kind: RecipeFormState["kind"] = "Preparacao",
 ): RecipeFormState {
@@ -57,6 +87,7 @@ export function createEmptyRecipeFormState(
     salePrice: "",
     notes: "",
     components: [createEmptyRecipeComponentState()],
+    additionalGroups: [],
   };
 }
 
@@ -84,6 +115,26 @@ export function adaptRecipeDetailToFormState(
       position: component.position,
       notes: component.notes ?? "",
     })),
+    additionalGroups: response.data.additionalGroups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      selectionType: group.selectionType,
+      minSelections: numberToString(group.minSelections),
+      maxSelections: numberToString(group.maxSelections),
+      position: group.position,
+      notes: group.notes ?? "",
+      options: group.options.map((option) => ({
+        id: option.id,
+        name: option.name,
+        priceDelta:
+          option.priceDeltaCents === 0
+            ? ""
+            : formatMoneyInput(String(option.priceDeltaCents)),
+        position: option.position,
+        notes: option.notes ?? "",
+        isActive: true,
+      })),
+    })),
   };
 }
 
@@ -105,6 +156,27 @@ function adaptComponents(components: RecipeFormState["components"]) {
   }));
 }
 
+function adaptAdditionalGroups(groups: RecipeFormState["additionalGroups"]) {
+  return groups
+    .map((group, index) => ({
+      name: group.name.trim(),
+      selectionType: group.selectionType,
+      minSelections: Math.max(0, Math.trunc(stringToNumber(group.minSelections))),
+      maxSelections: Math.max(1, Math.trunc(stringToNumber(group.maxSelections))),
+      position: group.position ?? index,
+      notes: group.notes.trim() || null,
+      options: group.options
+        .filter((option) => option.isActive)
+        .map((option, optionIndex) => ({
+          name: option.name.trim(),
+          priceDeltaCents: parseMoneyInputToCents(option.priceDelta) ?? 0,
+          position: option.position ?? optionIndex,
+          notes: option.notes.trim() || null,
+        })),
+    }))
+    .filter((group) => group.name !== "" && group.options.length > 0);
+}
+
 export function adaptRecipeFormToCreatePayload(
   state: RecipeFormState,
 ): CreateRecipeRequest {
@@ -119,6 +191,10 @@ export function adaptRecipeFormToCreatePayload(
         state.salePrice.trim() === "" ? null : parseMoneyInputToCents(state.salePrice),
       notes: state.notes.trim() || null,
       components: adaptComponents(state.components),
+      additionalGroups:
+        state.kind === "ProdutoVenda"
+          ? adaptAdditionalGroups(state.additionalGroups)
+          : [],
     },
   };
 }

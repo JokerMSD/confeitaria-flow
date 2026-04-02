@@ -45,6 +45,15 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
   - `order_item_additionals`
 - `RecipeDetail` agora pode carregar grupos de adicionais para produtos vendaveis.
 - Pedidos ja aceitam adicionais por item no contrato do backend.
+- O frontend agora fecha esse ciclo:
+  - produto do catalogo configura grupos e opcoes de adicionais
+  - item do pedido seleciona adicionais por grupo
+  - subtotal local considera preco base + adicionais por quantidade
+  - edicao do pedido reidrata adicionais salvos
+- O frontend agora fecha esse ciclo:
+  - `Catalogo` configura grupos e opcoes de adicionais dentro do formulario do produto.
+  - `PedidoForm` seleciona adicionais por item, respeita min/max e recalcula subtotal local.
+  - A edicao do pedido reidrata adicionais salvos por item.
 
 ### Estoque
 - Movimentacoes sao ledger real, sem ajuste silencioso de saldo.

@@ -40,6 +40,8 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - Produto vendavel suporta preco praticado.
 - A Fase 1 foi verificada e esta coerente no codigo.
 - A Fase 2 iniciou pelo backend com adicionais estruturados por produto e por item do pedido.
+- O frontend agora permite configurar grupos de adicionais no formulario do produto.
+- O pedido agora seleciona adicionais por item, reidrata na edicao e reflete subtotal local com esses extras.
 
 ### Estoque
 - Estoque usa ledger de movimentacoes.

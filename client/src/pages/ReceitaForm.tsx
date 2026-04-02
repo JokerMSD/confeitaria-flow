@@ -18,6 +18,8 @@ import {
   adaptRecipeDetailToFormState,
   adaptRecipeFormToCreatePayload,
   adaptRecipeFormToUpdatePayload,
+  createEmptyRecipeAdditionalGroupState,
+  createEmptyRecipeAdditionalOptionState,
   createEmptyRecipeComponentState,
   createEmptyRecipeFormState,
 } from "@/features/recipes/lib/recipe-form-adapter";
@@ -138,6 +140,120 @@ export default function ReceitaForm() {
     }));
   };
 
+  const setAdditionalGroupField = (
+    groupId: string,
+    key: keyof RecipeFormState["additionalGroups"][number],
+    value: string | number,
+  ) => {
+    setFormState((current) => ({
+      ...current,
+      additionalGroups: current.additionalGroups.map((group) => {
+        if (group.id !== groupId) {
+          return group;
+        }
+
+        const nextGroup = {
+          ...group,
+          [key]: value,
+        };
+
+        if (key === "selectionType" && value === "single") {
+          return {
+            ...nextGroup,
+            maxSelections: "1",
+            minSelections: Number(nextGroup.minSelections || "0") > 0 ? "1" : "0",
+          };
+        }
+
+        return nextGroup;
+      }),
+    }));
+  };
+
+  const setAdditionalOptionField = (
+    groupId: string,
+    optionId: string,
+    key: keyof RecipeFormState["additionalGroups"][number]["options"][number],
+    value: string | number | boolean,
+  ) => {
+    setFormState((current) => ({
+      ...current,
+      additionalGroups: current.additionalGroups.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              options: group.options.map((option) =>
+                option.id === optionId
+                  ? {
+                      ...option,
+                      [key]: value,
+                    }
+                  : option,
+              ),
+            }
+          : group,
+      ),
+    }));
+  };
+
+  const addAdditionalGroup = () => {
+    setFormState((current) => ({
+      ...current,
+      additionalGroups: [
+        ...current.additionalGroups,
+        createEmptyRecipeAdditionalGroupState(current.additionalGroups.length),
+      ],
+    }));
+  };
+
+  const removeAdditionalGroup = (groupId: string) => {
+    setFormState((current) => ({
+      ...current,
+      additionalGroups: current.additionalGroups
+        .filter((group) => group.id !== groupId)
+        .map((group, index) => ({
+          ...group,
+          position: index,
+        })),
+    }));
+  };
+
+  const addAdditionalOption = (groupId: string) => {
+    setFormState((current) => ({
+      ...current,
+      additionalGroups: current.additionalGroups.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              options: [
+                ...group.options,
+                createEmptyRecipeAdditionalOptionState(group.options.length),
+              ],
+            }
+          : group,
+      ),
+    }));
+  };
+
+  const removeAdditionalOption = (groupId: string, optionId: string) => {
+    setFormState((current) => ({
+      ...current,
+      additionalGroups: current.additionalGroups.map((group) =>
+        group.id === groupId
+          ? {
+              ...group,
+              options: group.options
+                .filter((option) => option.id !== optionId)
+                .map((option, index) => ({
+                  ...option,
+                  position: index,
+                })),
+            }
+          : group,
+      ),
+    }));
+  };
+
   const handleIngredientChange = (componentId: string, inventoryItemId: string) => {
     const nextUnit = ingredientUnitById.get(inventoryItemId) ?? "g";
 
@@ -201,6 +317,51 @@ export default function ReceitaForm() {
         variant: "destructive",
       });
       return;
+    }
+
+    if (formState.kind === "ProdutoVenda") {
+      const invalidGroup = formState.additionalGroups.find((group) => {
+        const activeOptions = group.options.filter((option) => option.isActive);
+        const hasAnyContent =
+          group.name.trim() !== "" ||
+          group.options.some(
+            (option) =>
+              option.name.trim() !== "" ||
+              option.priceDelta.trim() !== "" ||
+              option.notes.trim() !== "",
+          );
+
+        if (!hasAnyContent) {
+          return false;
+        }
+
+        if (!group.name.trim() || activeOptions.length === 0) {
+          return true;
+        }
+
+        const minSelections = Number.parseInt(group.minSelections || "0", 10) || 0;
+        const maxSelections = Number.parseInt(group.maxSelections || "0", 10) || 0;
+
+        if (group.selectionType === "single" && maxSelections !== 1) {
+          return true;
+        }
+
+        if (minSelections > maxSelections) {
+          return true;
+        }
+
+        return activeOptions.some((option) => option.name.trim() === "");
+      });
+
+      if (invalidGroup) {
+        toast({
+          title: "Revise os adicionais",
+          description:
+            "Cada grupo precisa de nome, opcoes ativas validas e regras coerentes de selecao.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     try {
@@ -534,6 +695,282 @@ export default function ReceitaForm() {
                 </div>
               </CardContent>
             </Card>
+
+            {isCatalogRoute ? (
+              <Card className="glass-card">
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center justify-between border-b border-border pb-2">
+                    <div>
+                      <h3 className="font-bold text-lg">Adicionais do produto</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Configure grupos e opcoes que aparecem no pedido para este produto.
+                      </p>
+                    </div>
+                    <Button type="button" variant="secondary" onClick={addAdditionalGroup}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Novo grupo
+                    </Button>
+                  </div>
+
+                  {formState.additionalGroups.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+                      Nenhum adicional configurado ainda. Use grupos para recheio extra, embalagem premium, frase, laco ou extras similares.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {formState.additionalGroups.map((group, groupIndex) => {
+                        const activeOptions = group.options.filter((option) => option.isActive);
+                        const isRequired =
+                          (Number.parseInt(group.minSelections || "0", 10) || 0) > 0;
+
+                        return (
+                          <div
+                            key={group.id}
+                            className="rounded-xl border border-border/60 bg-muted/20 p-4 space-y-4"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div>
+                                <h4 className="font-semibold">Grupo {groupIndex + 1}</h4>
+                                <p className="text-xs text-muted-foreground">
+                                  {activeOptions.length} opcao(oes) ativa(s)
+                                </p>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="text-destructive hover:bg-destructive/10"
+                                onClick={() => removeAdditionalGroup(group.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+                              <div className="space-y-2 xl:col-span-2">
+                                <Label>Nome do grupo</Label>
+                                <Input
+                                  value={group.name}
+                                  onChange={(event) =>
+                                    setAdditionalGroupField(group.id, "name", event.target.value)
+                                  }
+                                  placeholder="Ex: Embalagem premium"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Selecao</Label>
+                                <select
+                                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                  value={group.selectionType}
+                                  onChange={(event) =>
+                                    setAdditionalGroupField(
+                                      group.id,
+                                      "selectionType",
+                                      event.target.value,
+                                    )
+                                  }
+                                >
+                                  <option value="single">Escolha unica</option>
+                                  <option value="multiple">Multipla</option>
+                                </select>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Obrigatoriedade</Label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Button
+                                    type="button"
+                                    variant={isRequired ? "default" : "outline"}
+                                    className="rounded-xl"
+                                    onClick={() =>
+                                      setAdditionalGroupField(group.id, "minSelections", "1")
+                                    }
+                                  >
+                                    Obrigatorio
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant={!isRequired ? "default" : "outline"}
+                                    className="rounded-xl"
+                                    onClick={() =>
+                                      setAdditionalGroupField(group.id, "minSelections", "0")
+                                    }
+                                  >
+                                    Opcional
+                                  </Button>
+                                </div>
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Ordem</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={group.position}
+                                  onChange={(event) =>
+                                    setAdditionalGroupField(
+                                      group.id,
+                                      "position",
+                                      Number.parseInt(event.target.value || "0", 10),
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Minimo</Label>
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  value={group.minSelections}
+                                  onChange={(event) =>
+                                    setAdditionalGroupField(
+                                      group.id,
+                                      "minSelections",
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label>Maximo</Label>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  value={group.maxSelections}
+                                  disabled={group.selectionType === "single"}
+                                  onChange={(event) =>
+                                    setAdditionalGroupField(
+                                      group.id,
+                                      "maxSelections",
+                                      event.target.value,
+                                    )
+                                  }
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-3 rounded-xl border border-border/50 bg-background/70 p-4">
+                              <div className="flex items-center justify-between gap-3">
+                                <div>
+                                  <h5 className="font-semibold">Opcoes</h5>
+                                  <p className="text-xs text-muted-foreground">
+                                    Opcoes inativas deixam de aparecer no pedido quando o produto for salvo.
+                                  </p>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  onClick={() => addAdditionalOption(group.id)}
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Nova opcao
+                                </Button>
+                              </div>
+
+                              <div className="space-y-3">
+                                {group.options.map((option, optionIndex) => (
+                                  <div
+                                    key={option.id}
+                                    className="grid grid-cols-1 gap-3 rounded-xl border border-border/50 p-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.7fr)_160px_120px_150px_44px]"
+                                  >
+                                    <div className="space-y-2">
+                                      <Label>Opcao {optionIndex + 1}</Label>
+                                      <Input
+                                        value={option.name}
+                                        onChange={(event) =>
+                                          setAdditionalOptionField(
+                                            group.id,
+                                            option.id,
+                                            "name",
+                                            event.target.value,
+                                          )
+                                        }
+                                        placeholder="Ex: Laco especial"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label>Preco adicional</Label>
+                                      <Input
+                                        type="text"
+                                        inputMode="numeric"
+                                        value={option.priceDelta}
+                                        onChange={(event) =>
+                                          setAdditionalOptionField(
+                                            group.id,
+                                            option.id,
+                                            "priceDelta",
+                                            formatMoneyInput(event.target.value),
+                                          )
+                                        }
+                                        placeholder="0,00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label>Ordem</Label>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        value={option.position}
+                                        onChange={(event) =>
+                                          setAdditionalOptionField(
+                                            group.id,
+                                            option.id,
+                                            "position",
+                                            Number.parseInt(event.target.value || "0", 10),
+                                          )
+                                        }
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label>Status</Label>
+                                      <Button
+                                        type="button"
+                                        variant={option.isActive ? "default" : "outline"}
+                                        className="w-full rounded-xl"
+                                        onClick={() =>
+                                          setAdditionalOptionField(
+                                            group.id,
+                                            option.id,
+                                            "isActive",
+                                            !option.isActive,
+                                          )
+                                        }
+                                      >
+                                        {option.isActive ? "Ativo" : "Inativo"}
+                                      </Button>
+                                    </div>
+
+                                    <div className="flex items-end">
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-10 w-10 text-destructive hover:bg-destructive/10"
+                                        onClick={() =>
+                                          removeAdditionalOption(group.id, option.id)
+                                        }
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
 
           <div className="space-y-6">

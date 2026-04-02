@@ -28,6 +28,26 @@ export interface RecipeComponentFormState {
   notes: string;
 }
 
+export interface RecipeAdditionalOptionFormState {
+  id: string;
+  name: string;
+  priceDelta: string;
+  position: number;
+  notes: string;
+  isActive: boolean;
+}
+
+export interface RecipeAdditionalGroupFormState {
+  id: string;
+  name: string;
+  selectionType: "single" | "multiple";
+  minSelections: string;
+  maxSelections: string;
+  position: number;
+  notes: string;
+  options: RecipeAdditionalOptionFormState[];
+}
+
 export interface RecipeFormState {
   name: string;
   kind: UiRecipeKind;
@@ -37,6 +57,7 @@ export interface RecipeFormState {
   salePrice: string;
   notes: string;
   components: RecipeComponentFormState[];
+  additionalGroups: RecipeAdditionalGroupFormState[];
 }
 
 export interface ProductRecipeOption {
