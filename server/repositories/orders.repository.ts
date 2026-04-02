@@ -17,6 +17,7 @@ type Executor = ReturnType<typeof getDb> | any;
 
 export interface OrderRowInsert {
   orderNumber: string;
+  customerId?: string | null;
   customerName: string;
   customerPhone: string | null;
   orderDate: string;

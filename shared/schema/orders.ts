@@ -17,6 +17,7 @@ export const orders = pgTable(
     orderNumber: varchar("order_number", { length: 32 }).notNull().unique(),
     customerName: varchar("customer_name", { length: 160 }).notNull(),
     customerPhone: varchar("customer_phone", { length: 40 }),
+    customerId: uuid("customer_id"),
     orderDate: varchar("order_date", { length: 10 }).notNull(),
     deliveryDate: varchar("delivery_date", { length: 10 }).notNull(),
     deliveryTime: varchar("delivery_time", { length: 5 }),

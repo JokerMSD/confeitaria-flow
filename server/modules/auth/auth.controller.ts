@@ -7,7 +7,7 @@ export class AuthController {
   private readonly authService = new AuthService();
 
   async login(req: Request, res: Response) {
-    const user = this.authService.login(req.body.data);
+    const user = await this.authService.login(req.body.data);
 
     await new Promise<void>((resolve, reject) => {
       req.session.regenerate((error) => {

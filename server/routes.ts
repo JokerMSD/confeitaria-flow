@@ -9,6 +9,8 @@ import { registerInventoryRoutes } from "./modules/inventory/inventory.module";
 import { registerOrdersRoutes } from "./modules/orders/orders.module";
 import { registerProductAdditionalsRoutes } from "./modules/product-additionals/product-additionals.module";
 import { registerRecipesRoutes } from "./modules/recipes/recipes.module";
+import { registerCustomersRoutes } from "./modules/customers/customers.module";
+import { registerUsersRoutes } from "./modules/users/users.module";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -20,6 +22,8 @@ export async function registerRoutes(
   registerOrdersRoutes(app);
   registerCashRoutes(app);
   registerInventoryRoutes(app);
+  registerCustomersRoutes(app);
+  registerUsersRoutes(app);
   registerRecipesRoutes(app);
   registerProductAdditionalsRoutes(app);
 

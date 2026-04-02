@@ -14,3 +14,5 @@ export * from "./product-additional-api.types";
 export * from "./product-additional.types";
 export * from "./recipe-api.types";
 export * from "./recipe.types";
+export * from "./customer.types";
+export * from "./users.types";

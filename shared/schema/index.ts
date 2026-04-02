@@ -9,3 +9,4 @@ export * from "./product-additional-options";
 export * from "./recipe-components";
 export * from "./recipes";
 export * from "./users";
+export * from "./customers";

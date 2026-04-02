@@ -6,6 +6,7 @@ import {
   LogOut,
   PackageSearch,
   Store,
+  User,
   Wallet,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -44,6 +45,8 @@ export function Sidebar() {
     { href: "/", label: "Dashboard", icon: Home },
     { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
     { href: "/fila", label: "Fila", icon: ClipboardList },
+    { href: "/clientes", label: "Clientes", icon: User },
+    { href: "/usuarios", label: "Usuários", icon: User },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
     { href: "/catalogo", label: "Catálogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },

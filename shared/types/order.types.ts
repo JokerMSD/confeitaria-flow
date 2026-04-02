@@ -10,6 +10,7 @@ import type {
 export interface OrderListItem {
   id: string;
   orderNumber: string;
+  customerId?: string | null;
   customerName: string;
   customerPhone: string | null;
   orderDate: string;
@@ -39,6 +40,7 @@ export interface OrderDetail extends OrderListItem {
 
 export interface CreateOrderInput {
   customerName: string;
+  customerId?: string | null;
   customerPhone?: string | null;
   orderDate: string;
   deliveryDate: string;

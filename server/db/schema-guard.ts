@@ -20,6 +20,8 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     "orders",
     "order_items",
     "recipes",
+    "customers",
+    "users",
     "recipe_components",
     "cash_transactions",
     "inventory_items",
@@ -35,6 +37,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "delivery_reference",
       "delivery_district",
       "delivery_fee_cents",
+      "customer_id",
     ],
     order_items: [
       "recipe_id",
@@ -72,6 +75,19 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "option_name",
       "price_delta_cents",
     ],
+    customers: [
+      "first_name",
+      "last_name",
+      "email",
+      "is_active",
+    ],
+    users: [
+      "username",
+      "email",
+      "password",
+      "role",
+      "is_active",
+    ],
   },
 };
 
@@ -81,6 +97,7 @@ const migrationHints: Record<string, string> = {
   "orders.delivery_reference": "0014_phase14_order_delivery_mode.sql",
   "orders.delivery_district": "0014_phase14_order_delivery_mode.sql",
   "orders.delivery_fee_cents": "0014_phase14_order_delivery_mode.sql",
+  "orders.customer_id": "0016_phase16_customers_and_users.sql",
   product_additional_groups: "0015_phase15_product_additionals.sql",
   product_additional_options: "0015_phase15_product_additionals.sql",
   order_item_additionals: "0015_phase15_product_additionals.sql",
@@ -104,6 +121,12 @@ const migrationHints: Record<string, string> = {
     "0015_phase15_product_additionals.sql",
   "order_item_additionals.price_delta_cents":
     "0015_phase15_product_additionals.sql",
+  customers: "0016_phase16_customers_and_users.sql",
+  users: "0016_phase16_customers_and_users.sql",
+  "customers.email": "0016_phase16_customers_and_users.sql",
+  "users.username": "0016_phase16_customers_and_users.sql",
+  "users.role": "0016_phase16_customers_and_users.sql",
+  "users.is_active": "0016_phase16_customers_and_users.sql",
 };
 
 export function validateSchemaSnapshot(

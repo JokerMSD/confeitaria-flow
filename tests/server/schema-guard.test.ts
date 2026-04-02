@@ -11,6 +11,8 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       "orders",
       "order_items",
       "recipes",
+      "customers",
+      "users",
       "recipe_components",
       "cash_transactions",
       "inventory_items",
@@ -28,6 +30,7 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "delivery_reference",
           "delivery_district",
           "delivery_fee_cents",
+          "customer_id",
         ]),
       ],
       [
@@ -87,6 +90,25 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "price_delta_cents",
         ]),
       ],
+      [
+        "customers",
+        new Set([
+          "first_name",
+          "last_name",
+          "email",
+          "is_active",
+        ]),
+      ],
+      [
+        "users",
+        new Set([
+          "username",
+          "email",
+          "password",
+          "role",
+          "is_active",
+        ]),
+      ],
     ]),
   });
 
@@ -107,6 +129,8 @@ test("schema guard reports pending migrations for missing recent tables and colu
 
   assert.deepEqual(result.missingTables, [
     "recipes",
+    "customers",
+    "users",
     "recipe_components",
     "cash_transactions",
     "inventory_items",

@@ -148,6 +148,7 @@ export class OrdersService {
       const createdOrder = await this.ordersRepository.create(
         {
           orderNumber: formatOrderNumber(sequence),
+          customerId: normalized.customerId ?? null,
           customerName: normalized.customerName,
           customerPhone: normalized.customerPhone,
           orderDate: normalized.orderDate,
@@ -281,6 +282,7 @@ export class OrdersService {
         id,
         {
           orderNumber: existing.orderNumber,
+          customerId: normalized.customerId ?? existing.customerId ?? null,
           customerName: normalized.customerName,
           customerPhone: normalized.customerPhone,
           orderDate: normalized.orderDate,
@@ -638,6 +640,7 @@ export class OrdersService {
     const paymentStatus = calculatePaymentStatus(subtotalAmountCents, paidAmountCents);
 
     return {
+      customerId: input.customerId ?? null,
       customerName,
       customerPhone,
       orderDate: input.orderDate,
@@ -664,6 +667,7 @@ export class OrdersService {
     return {
       id: row.id,
       orderNumber: row.orderNumber,
+      customerId: row.customerId ?? null,
       customerName: row.customerName,
       customerPhone: row.customerPhone ?? null,
       orderDate: row.orderDate,

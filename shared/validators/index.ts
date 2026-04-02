@@ -5,3 +5,5 @@ export * from "./inventory.validators";
 export * from "./orders.validators";
 export * from "./product-additionals.validators";
 export * from "./recipes.validators";
+export * from "./customer.validators";
+export * from "./users.validators";

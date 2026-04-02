@@ -1,5 +1,6 @@
 import type { AuthUser, LoginInput } from "@shared/types";
 import { HttpError } from "../../utils/http-error";
+import { UsersService } from "../../services/users.service";
 
 interface ConfiguredAuthUser extends AuthUser {
   password: string;
@@ -51,14 +52,22 @@ function parseAuthUsers(): ConfiguredAuthUser[] {
 }
 
 export class AuthService {
+  private readonly usersService = new UsersService();
   private readonly users = parseAuthUsers();
 
-  login(input: LoginInput): AuthUser {
+  async login(input: LoginInput): Promise<AuthUser> {
     const email = input.email.trim().toLowerCase();
     const password = input.password.trim();
 
     if (!email || !password) {
       throw new HttpError(400, "Email and password are required.");
+    }
+
+    try {
+      const user = await this.usersService.authenticate(email, password);
+      return user;
+    } catch (error) {
+      // fallback para auth hardcoded se não existir usuário no banco
     }
 
     const user = this.users.find(
@@ -75,3 +84,4 @@ export class AuthService {
     };
   }
 }
+

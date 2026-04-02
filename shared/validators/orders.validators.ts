@@ -48,6 +48,7 @@ export const createOrderItemInputSchema = z.object({
 export const createOrderInputSchema = z
   .object({
     customerName: z.string().trim().min(1).max(160),
+    customerId: z.string().uuid().optional(),
     customerPhone: z.string().trim().max(40).nullable().optional(),
     orderDate: operationalDateSchema,
     deliveryDate: operationalDateSchema,
