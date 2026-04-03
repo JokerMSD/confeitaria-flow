@@ -15,7 +15,7 @@ Sistema de gestao para confeitaria com frontend React + Vite, backend Express e 
 - `AUTH_USERS_JSON` com os usuarios permitidos
 - `APP_ORIGIN` origin do frontend
 - `CORS_ORIGINS` lista de origins permitidas
-- `VITE_API_URL` opcional para o app, padrao `http://localhost:3001` no modo de desenvolvimento
+- `VITE_API_URL` opcional para o app, padrao `http://localhost:3001` no desenvolvimento
 - `SESSION_COOKIE_SECURE=true` em deploy HTTPS
 
 ## Desenvolvimento
@@ -44,6 +44,6 @@ npm run build
 npm start
 ```
 
-## Deploy simples
+## Runbooks
 
-Veja [DEPLOY.md](./DEPLOY.md).
+- Deploy: [docs/runbooks/deploy.md](./docs/runbooks/deploy.md)

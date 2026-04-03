@@ -1,67 +1,37 @@
 # Product Rules
 
-## Regras De Pedido
+## Pedidos
 - Itens de pedido devem vir do catalogo, nao por digitacao livre.
 - Cada item pode ter ate 3 recheios.
-- O nome do item deve ser montado automaticamente com produto + recheios.
-- Observacoes continuam existindo para detalhes do pedido, mas nao devem ser a fonte primaria da estrutura do item novo.
-- Produto pode expor grupos de adicionais estruturados no pedido.
-- O subtotal do item deve considerar `preco base + adicionais selecionados`, multiplicado pela quantidade.
-- Minimo, maximo e escolha unica/multipla de adicionais devem ser respeitados ja no frontend, com o backend mantendo a validacao final.
+- O nome do item deve ser montado automaticamente com produto e recheios.
+- Observacoes continuam permitidas, mas nao devem ser a fonte primaria da estrutura de item novo.
+- Produto pode expor grupos de adicionais estruturados.
+- O subtotal do item deve considerar preco base mais adicionais selecionados, multiplicado pela quantidade.
+- Minimo, maximo e selecao unica ou multipla de adicionais devem ser respeitados no frontend, com validacao final no backend.
+- `deliveryMode` distingue `Entrega` e `Retirada`; ao escolher `Retirada`, endereco, bairro, referencia e taxa nao devem persistir.
 
-## Regras De Estoque
+## Estoque E Producao
 - Baixa automatica de ingredientes deve usar as receitas vinculadas ao pedido.
 - A baixa ocorre quando o pedido muda para `Pronto` ou `Entregue`.
-- Se o pedido voltar de status ou for cancelado, o consumo automatico deve ser recalculado/revertido.
+- Se o pedido voltar de status ou for cancelado, o consumo automatico deve ser recalculado ou revertido.
 - Receita pode ser cadastrada mesmo com ingrediente zerado em estoque.
+- Ao faltar estoque em transicao operacional, o sistema deve devolver diagnostico util em vez de erro generico.
 
-## Conversao De Unidade
+## Conversao E Custo
 - Um item comprado em `un` ou `caixa` pode ser consumido em outra unidade de receita.
-- Exemplo: manteiga comprada em `1 un = 500 g`.
-- Exemplo: maracuja comprado em `2 un` e rendimento real `0,705 kg`.
-- O sistema deve usar equivalencia media acumulada para custo e consumo quando houver historico de compras reais.
-
-## Custo E Compra
+- O sistema deve usar equivalencia media acumulada quando houver historico de compras reais.
 - Compras de ingredientes podem informar valor pago real.
 - O custo do item deve convergir para media ponderada das compras.
-- O guia de compra deve comparar pedidos pendentes x estoque atual x custo medio.
-- Quando fizer sentido, o gasto estimado deve usar esse custo medio.
+- O guia de compra deve comparar pedidos pendentes, estoque atual e custo medio.
 
-## Receitas E Catalogo
+## Catalogo E Receitas
 - `Preparacao` deve ficar em `Receitas`.
 - `ProdutoVenda` deve ficar em `Catalogo`.
-- Produtos vendaveis podem ter preco praticado.
 - O backend calcula preco ideal, mas o preco praticado pode prevalecer no pedido.
 - Produtos vendaveis podem configurar grupos de adicionais com opcoes precificadas.
 
-## Precos Comerciais Ja Discutidos
-- Ovo de colher 500g: `49,90`
-- Ovo de colher 350g: `39,90`
-- Ovo trufado 350g: `32,90`
-- Ovo trufado 500g: `39,30`
-- Barra recheada 350g: `27,90`
-- Trufa unidade: `3,00`
-- Caixa com 10 trufas: `24,90`
-
-## Regras Comerciais Comentadas Para Tamanhos Maiores
-- Ovo de colher 1kg sem Ninho: `92,00`
-- Ovo de colher 1kg com Ninho: `99,90`
-- Se houver Ninho entre os recheios premium, tende a aplicar faixa maior.
-- Faixa sugerida para 750g discutida como referencia:
-  - sem Ninho: `74,90`
-  - com Ninho: `79,90`
-
-## Sabores Legados Em Observacoes
-- Pedidos antigos podem ter sabores nas observacoes.
-- Heuristicas ja foram aplicadas para inferir quando o caso era:
-  - meio a meio no mesmo ovo
-  - itens separados de sabores diferentes
-- Casos ambiguos devem ser tratados com cautela; nao inventar interpretacao sem sinal suficiente.
-
-## UX De Numerais
-- Campos monetarios devem mascarar automaticamente em pt-BR.
-- Campos de quantidade devem ter incremento contextual:
-  - `un` / `caixa`: passo inteiro
-  - `g` / `ml`: passo maior e atalhos
-  - `kg` / `l`: passo decimal moderado
-- Evitar exigir muitos cliques para chegar em 10g, 50g, 100g ou 5/10 unidades.
+## Legado E UX Funcional
+- Pedidos antigos podem ter sabores apenas em observacoes.
+- Heuristicas de inferencia devem ser conservadoras; casos ambiguos nao devem ser inventados.
+- Campos monetarios devem usar formato amigavel em pt-BR.
+- Campos de quantidade devem respeitar o contexto da unidade e evitar passos universais inadequados.
