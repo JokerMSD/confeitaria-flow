@@ -8,6 +8,7 @@
 ## Scripts
 - `script/backfill-legacy-order-item-recipes.ts`
 - `script/backfill-order-fillings-from-notes.ts`
+- `script/backfill-order-customers.ts`
 - `script/sync-default-recipes.ts`
 - `script/backfill-unit-purchase-totals.ts`
 
@@ -22,3 +23,4 @@
 3. Conferir guia de compra.
 4. Conferir baixa automatica de estoque em pedidos prontos.
 5. Se o backfill tocar compras de estoque, conferir tambem caixa e custo medio do item.
+6. Se o backfill tocar clientes, conferir se pedidos ficaram vinculados ao cadastro correto e revisar emails importados automaticamente.
