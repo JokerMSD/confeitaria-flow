@@ -49,11 +49,11 @@ async function applyMigration(client: PoolClient, filename: string, sqlText: str
   }
 }
 
-export async function applyPendingRuntimeMigrations() {
-  if (!shouldAutoApplyMigrations()) {
-    return;
-  }
-
+async function applyRuntimeMigrations({
+  forceFilenames,
+}: {
+  forceFilenames?: Iterable<string>;
+} = {}) {
   const migrationsDir = path.resolve(process.cwd(), "migrations");
   const migrationEntries = await readdir(migrationsDir);
   const filenames = getRuntimeMigrationFilenames(migrationEntries);
@@ -62,6 +62,7 @@ export async function applyPendingRuntimeMigrations() {
     return;
   }
 
+  const forced = new Set(forceFilenames ?? []);
   const pool = getPool();
   const client = await pool.connect();
 
@@ -72,7 +73,7 @@ export async function applyPendingRuntimeMigrations() {
     const appliedMigrations = await getAppliedMigrations(client);
 
     for (const filename of filenames) {
-      if (appliedMigrations.has(filename)) {
+      if (!forced.has(filename) && appliedMigrations.has(filename)) {
         continue;
       }
 
@@ -86,4 +87,20 @@ export async function applyPendingRuntimeMigrations() {
       client.release();
     }
   }
+}
+
+export async function applyPendingRuntimeMigrations() {
+  if (!shouldAutoApplyMigrations()) {
+    return;
+  }
+
+  await applyRuntimeMigrations();
+}
+
+export async function reapplyRuntimeMigrations(filenames: string[]) {
+  if (filenames.length === 0) {
+    return;
+  }
+
+  await applyRuntimeMigrations({ forceFilenames: filenames });
 }

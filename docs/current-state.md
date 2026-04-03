@@ -87,7 +87,7 @@ Este arquivo resume o estado atual do sistema para retomada rapida em sessoes lo
 - API: Render.
 - Banco: Neon.
 - CORS depende de `CORS_ORIGINS` e redeploy da API ao trocar env.
-- A API autoaplica migrations `.sql` pendentes no startup por padrao e depois valida o schema critico antes de abrir as rotas.
+- A API autoaplica migrations `.sql` pendentes no startup por padrao, tenta reaplicar seletivamente migrations sugeridas pela guarda quando o historico estiver inconsistente e so depois valida o schema critico antes de abrir as rotas.
 
 ## Cobertura De Testes Atual
 - Existe suite unitaria para helpers e dominios puros de estoque, receitas, pedidos e planejamento de compra.

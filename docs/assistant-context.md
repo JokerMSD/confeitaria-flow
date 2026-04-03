@@ -18,6 +18,7 @@ Este arquivo reduz a dependencia do historico do chat. Antes de mexer em fluxos 
 - Frontend usa `VITE_API_URL`.
 - Backend usa `CORS_ORIGINS`, `SESSION_SECRET`, `AUTH_USERS_JSON`, `SERVE_CLIENT=false`.
 - A API agora tenta aplicar automaticamente as migrations `.sql` pendentes no startup, usando tabela de historico e lock no Postgres.
+- Se a tabela de historico ficar inconsistente com o schema real, o bootstrap tenta reaplicar seletivamente as migrations sugeridas pela guarda de schema antes de falhar.
 - `AUTO_APPLY_MIGRATIONS=false` desliga esse comportamento se for necessario.
 
 ## Autenticacao

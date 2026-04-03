@@ -8,8 +8,16 @@ import { corsMiddleware } from "./middlewares/cors";
 import { createSessionMiddleware } from "./auth/session";
 import { loadEnvFile } from "./load-env";
 import { CashTransactionsService } from "./services/cash-transactions.service";
-import { assertRuntimeSchemaIsReady } from "./db/schema-guard";
-import { applyPendingRuntimeMigrations } from "./db/runtime-migrations";
+import {
+  assertRuntimeSchemaIsReady,
+  collectReferencedMigrationFilenames,
+  getRuntimeSchemaValidationResult,
+} from "./db/schema-guard";
+import {
+  applyPendingRuntimeMigrations,
+  reapplyRuntimeMigrations,
+  shouldAutoApplyMigrations,
+} from "./db/runtime-migrations";
 
 const app = express();
 const httpServer = createServer(app);
@@ -93,6 +101,18 @@ app.use((req, res, next) => {
 
 (async () => {
   await applyPendingRuntimeMigrations();
+
+  const initialSchemaResult = await getRuntimeSchemaValidationResult();
+  if (
+    shouldAutoApplyMigrations() &&
+    (initialSchemaResult.missingTables.length > 0 ||
+      initialSchemaResult.missingColumns.length > 0)
+  ) {
+    const hintedMigrations =
+      collectReferencedMigrationFilenames(initialSchemaResult);
+    await reapplyRuntimeMigrations(hintedMigrations);
+  }
+
   await assertRuntimeSchemaIsReady();
   await registerRoutes(httpServer, app);
   await new CashTransactionsService().reconcileOrderReceipts();

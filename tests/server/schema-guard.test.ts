@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  collectReferencedMigrationFilenames,
   formatSchemaMismatchMessage,
   validateSchemaSnapshot,
 } from "../../server/db/schema-guard";
@@ -61,9 +62,8 @@ test("schema guard passes when required runtime tables and columns exist", () =>
         new Set([
           "purchase_amount_cents",
           "purchase_discount_cents",
-          "purchase_payment_method",
-          "purchase_recipe_yield_quantity",
-          "purchase_recipe_yield_unit",
+          "purchase_equivalent_quantity",
+          "purchase_equivalent_unit",
         ]),
       ],
       [
@@ -136,4 +136,25 @@ test("schema guard reports pending migrations for missing recent tables and colu
   assert.match(message, /0014_phase14_order_delivery_mode\.sql/);
   assert.match(message, /0015_phase15_product_additionals\.sql/);
   assert.match(message, /Database schema is behind the runtime code/);
+});
+
+test("schema guard collects unique migration filenames from missing tables and columns", () => {
+  const result = validateSchemaSnapshot({
+    tables: new Set(["orders", "order_items", "inventory_movements"]),
+    columnsByTable: new Map([
+      ["orders", new Set(["delivery_mode"])],
+      ["order_items", new Set(["recipe_id"])],
+      [
+        "inventory_movements",
+        new Set(["purchase_amount_cents", "purchase_discount_cents"]),
+      ],
+    ]),
+  });
+
+  assert.deepEqual(collectReferencedMigrationFilenames(result), [
+    "0012_phase12_inventory_weighted_average_cost.sql",
+    "0014_phase14_order_delivery_mode.sql",
+    "0015_phase15_product_additionals.sql",
+    "0016_phase16_customers_and_users.sql",
+  ]);
 });

@@ -4,13 +4,14 @@
 1. Confirmar codigo no GitHub.
 2. Garantir que `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGINS` e `AUTH_USERS_JSON` estao definidos.
 3. A API aplica migrations `.sql` pendentes automaticamente no startup por padrao.
-4. Se precisar desligar isso explicitamente, definir:
+4. Se o historico `app_runtime_migrations` ficar inconsistente com o schema real, o bootstrap tenta reaplicar seletivamente as migrations sugeridas pela guarda.
+5. Se precisar desligar isso explicitamente, definir:
    - `AUTO_APPLY_MIGRATIONS=false`
-5. Build command:
+6. Build command:
    - `npm install --include=dev && npm run build:api`
-6. Start command:
+7. Start command:
    - `npm run start:api`
-7. Validar:
+8. Validar:
    - `/api/health`
 
 ## Frontend Na Vercel

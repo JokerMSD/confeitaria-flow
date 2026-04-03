@@ -56,9 +56,8 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     inventory_movements: [
       "purchase_amount_cents",
       "purchase_discount_cents",
-      "purchase_payment_method",
-      "purchase_recipe_yield_quantity",
-      "purchase_recipe_yield_unit",
+      "purchase_equivalent_quantity",
+      "purchase_equivalent_unit",
     ],
     product_additional_groups: [
       "product_recipe_id",
@@ -87,6 +86,14 @@ const migrationHints: Record<string, string> = {
   "orders.delivery_district": "0014_phase14_order_delivery_mode.sql",
   "orders.delivery_fee_cents": "0014_phase14_order_delivery_mode.sql",
   "orders.customer_id": "0016_phase16_customers_and_users.sql",
+  "inventory_movements.purchase_amount_cents":
+    "0012_phase12_inventory_weighted_average_cost.sql",
+  "inventory_movements.purchase_equivalent_quantity":
+    "0012_phase12_inventory_weighted_average_cost.sql",
+  "inventory_movements.purchase_equivalent_unit":
+    "0012_phase12_inventory_weighted_average_cost.sql",
+  "inventory_movements.purchase_discount_cents":
+    "0013_phase13_inventory_purchase_discount.sql",
   product_additional_groups: "0015_phase15_product_additionals.sql",
   product_additional_options: "0015_phase15_product_additionals.sql",
   order_item_additionals: "0015_phase15_product_additionals.sql",
@@ -111,8 +118,13 @@ const migrationHints: Record<string, string> = {
     "0015_phase15_product_additionals.sql",
   customers: "0016_phase16_customers_and_users.sql",
   users: "0016_phase16_customers_and_users.sql",
+  "customers.first_name": "0016_phase16_customers_and_users.sql",
+  "customers.last_name": "0016_phase16_customers_and_users.sql",
   "customers.email": "0016_phase16_customers_and_users.sql",
+  "customers.is_active": "0016_phase16_customers_and_users.sql",
   "users.username": "0016_phase16_customers_and_users.sql",
+  "users.email": "0016_phase16_customers_and_users.sql",
+  "users.password": "0016_phase16_customers_and_users.sql",
   "users.role": "0016_phase16_customers_and_users.sql",
   "users.is_active": "0016_phase16_customers_and_users.sql",
 };
@@ -176,6 +188,28 @@ export function formatSchemaMismatchMessage(result: SchemaValidationResult) {
   )}).`;
 }
 
+export function collectReferencedMigrationFilenames(
+  result: SchemaValidationResult,
+) {
+  const filenames = new Set<string>();
+
+  for (const table of result.missingTables) {
+    const hint = migrationHints[table];
+    if (hint) {
+      filenames.add(hint);
+    }
+  }
+
+  for (const { table, column } of result.missingColumns) {
+    const hint = migrationHints[`${table}.${column}`];
+    if (hint) {
+      filenames.add(hint);
+    }
+  }
+
+  return Array.from(filenames).sort((a, b) => a.localeCompare(b));
+}
+
 async function loadCurrentSchemaSnapshot(): Promise<SchemaSnapshot> {
   const pool = getPool();
 
@@ -210,9 +244,13 @@ async function loadCurrentSchemaSnapshot(): Promise<SchemaSnapshot> {
   };
 }
 
-export async function assertRuntimeSchemaIsReady() {
+export async function getRuntimeSchemaValidationResult() {
   const snapshot = await loadCurrentSchemaSnapshot();
-  const result = validateSchemaSnapshot(snapshot);
+  return validateSchemaSnapshot(snapshot);
+}
+
+export async function assertRuntimeSchemaIsReady() {
+  const result = await getRuntimeSchemaValidationResult();
 
   if (result.missingTables.length === 0 && result.missingColumns.length === 0) {
     return;
