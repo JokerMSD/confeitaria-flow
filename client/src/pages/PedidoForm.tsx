@@ -36,6 +36,7 @@ import {
 } from "@/features/orders/lib/order-form-adapter";
 import { supportsMultipleFillings } from "@/features/orders/lib/order-item-composer";
 import { useCustomer } from "@/features/customers/hooks/use-customer";
+import { useCustomers } from "@/features/customers/hooks/use-customers";
 import type { ProductAdditionalGroupDetail } from "@shared/types";
 import type {
   OrderFormItemAdditional,
@@ -121,9 +122,11 @@ export default function PedidoForm() {
     OrderFormItemAdditional[]
   >([]);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const orderQuery = useOrder(orderId);
   const customerPrefillQuery = useCustomer(customerIdFromQuery);
+  const customersQuery = useCustomers(customerSearch || undefined);
   const productRecipesQuery = useRecipes({ kind: "ProdutoVenda" });
   const fillingRecipesQuery = useRecipes({ kind: "Preparacao" });
   const selectedProductDetailQuery = useRecipe(newItemRecipeId || undefined);
@@ -200,6 +203,10 @@ export default function PedidoForm() {
     () => adaptProductRecipesToOptions(productRecipesQuery.data?.data ?? []),
     [productRecipesQuery.data],
   );
+  const customerOptions = useMemo(
+    () => customersQuery.data?.data ?? [],
+    [customersQuery.data],
+  );
   const fillingRecipeOptions = useMemo(
     () => adaptFillingRecipesToOptions(fillingRecipesQuery.data?.data ?? []),
     [fillingRecipesQuery.data],
@@ -259,6 +266,29 @@ export default function PedidoForm() {
     setFormState((current) => ({
       ...current,
       [key]: value,
+    }));
+  };
+
+  const applyCustomerSelection = (customerId: string) => {
+    if (!customerId) {
+      setFormState((current) => ({
+        ...current,
+        customerId: null,
+      }));
+      return;
+    }
+
+    const customer = customerOptions.find((option) => option.id === customerId);
+
+    if (!customer) {
+      return;
+    }
+
+    setFormState((current) => ({
+      ...current,
+      customerId: customer.id,
+      customerName: `${customer.firstName} ${customer.lastName}`,
+      phone: customer.phone ?? current.phone,
     }));
   };
 
@@ -709,15 +739,46 @@ export default function PedidoForm() {
                     <Input
                       id="customerName"
                       value={formState.customerName}
-                      onChange={(event) =>
-                        setField("customerName", event.target.value)
-                      }
+                      onChange={(event) => {
+                        setField("customerName", event.target.value);
+                        setField("customerId", null);
+                        setCustomerSearch(event.target.value);
+                      }}
                       placeholder="Ex: Maria Silva"
                     />
+                    <div className="space-y-2">
+                      <Label htmlFor="customerLookup">Vincular cliente cadastrado</Label>
+                      <select
+                        id="customerLookup"
+                        className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={formState.customerId ?? ""}
+                        onChange={(event) => applyCustomerSelection(event.target.value)}
+                      >
+                        <option value="">Sem vínculo explícito</option>
+                        {customerOptions.map((customer) => (
+                          <option key={customer.id} value={customer.id}>
+                            {customer.firstName} {customer.lastName}
+                            {customer.phone ? ` • ${customer.phone}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     {formState.customerId ? (
-                      <p className="text-xs text-muted-foreground">
-                        Pedido vinculado ao cadastro do cliente.
-                      </p>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-xs text-muted-foreground">
+                          Pedido vinculado ao cadastro do cliente.
+                        </p>
+                        <button
+                          type="button"
+                          className="text-xs text-primary hover:underline"
+                          onClick={() => {
+                            setField("customerId", null);
+                            setCustomerSearch("");
+                          }}
+                        >
+                          Desvincular
+                        </button>
+                      </div>
                     ) : null}
                   </div>
                   <div className="space-y-2">

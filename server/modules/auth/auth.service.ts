@@ -65,11 +65,15 @@ export class AuthService {
       throw new HttpError(400, "Email and password are required.");
     }
 
+    const hasPersistedUsers = await this.resolvePersistedUsersAvailability();
+
     try {
       const user = await this.usersService.authenticate(email, password);
       return user;
     } catch (error) {
-      // fallback para auth hardcoded se não existir usuário no banco
+      if (hasPersistedUsers) {
+        throw error;
+      }
     }
 
     const user = this.users.find(
@@ -85,5 +89,13 @@ export class AuthService {
       email: user.email,
       name: user.name,
     };
+  }
+
+  private async resolvePersistedUsersAvailability() {
+    try {
+      return await this.usersService.hasPersistedActiveUsers();
+    } catch {
+      return false;
+    }
   }
 }

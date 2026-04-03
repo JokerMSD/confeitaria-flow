@@ -153,4 +153,8 @@ export class UsersService {
       role: lookup.role as UserRole,
     };
   }
+
+  async hasPersistedActiveUsers() {
+    return (await this.usersRepository.countActive()) > 0;
+  }
 }

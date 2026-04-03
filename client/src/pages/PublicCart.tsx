@@ -11,13 +11,16 @@ export default function PublicCart() {
   return (
     <PublicStoreLayout
       title="Carrinho"
-      subtitle="Revise os itens antes de seguir para o checkout público."
+      subtitle="Revise quantidades, adicionais e total antes de seguir para o checkout."
     >
       {cart.items.length === 0 ? (
         <Card className="border-rose-100 bg-white/90">
           <CardContent className="space-y-4 p-8 text-center">
             <p className="text-lg font-semibold text-rose-950">
               Seu carrinho está vazio.
+            </p>
+            <p className="text-sm leading-6 text-rose-700">
+              Escolha produtos no catálogo para montar o pedido.
             </p>
             <Link href="/loja/catalogo">
               <a>
@@ -29,66 +32,80 @@ export default function PublicCart() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-4">
-            {cart.items.map((item) => (
-              <Card key={item.lineId} className="border-rose-100 bg-white/90">
-                <CardContent className="space-y-4 p-6">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h2 className="font-semibold text-rose-950">{item.name}</h2>
-                      {item.additionals.length > 0 ? (
-                        <p className="mt-1 text-sm text-rose-700">
-                          {item.additionals
-                            .map((additional) => additional.optionName)
-                            .join(", ")}
-                        </p>
-                      ) : null}
-                    </div>
-                    <span className="font-semibold text-rose-700">
-                      {formatCurrency(
-                        (item.unitPriceCents +
-                          item.additionals.reduce(
-                            (sum, additional) => sum + additional.priceDeltaCents,
-                            0,
-                          )) /
-                          100,
-                      )}
-                    </span>
-                  </div>
+            {cart.items.map((item) => {
+              const unitTotalCents =
+                item.unitPriceCents +
+                item.additionals.reduce(
+                  (sum, additional) => sum + additional.priceDeltaCents,
+                  0,
+                );
 
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          cart.updateQuantity(item.lineId, item.quantity - 1)
-                        }
-                      >
-                        -
-                      </Button>
-                      <span className="min-w-8 text-center font-semibold">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        onClick={() =>
-                          cart.updateQuantity(item.lineId, item.quantity + 1)
-                        }
-                      >
-                        +
-                      </Button>
+              return (
+                <Card key={item.lineId} className="border-rose-100 bg-white/90">
+                  <CardContent className="space-y-4 p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="font-semibold text-rose-950">{item.name}</h2>
+                        {item.additionals.length > 0 ? (
+                          <p className="mt-1 text-sm leading-6 text-rose-700">
+                            {item.additionals
+                              .map((additional) => additional.optionName)
+                              .join(", ")}
+                          </p>
+                        ) : (
+                          <p className="mt-1 text-sm text-rose-700">
+                            Sem adicionais.
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-rose-700">Preço unitário</p>
+                        <span className="font-semibold text-rose-950">
+                          {formatCurrency(unitTotalCents / 100)}
+                        </span>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      onClick={() => cart.removeItem(item.lineId)}
-                    >
-                      Remover
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            cart.updateQuantity(item.lineId, item.quantity - 1)
+                          }
+                        >
+                          -
+                        </Button>
+                        <span className="min-w-10 text-center font-semibold text-rose-950">
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          onClick={() =>
+                            cart.updateQuantity(item.lineId, item.quantity + 1)
+                          }
+                        >
+                          +
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="font-display text-2xl font-bold text-rose-950">
+                          {formatCurrency((item.quantity * unitTotalCents) / 100)}
+                        </span>
+                        <Button
+                          variant="ghost"
+                          onClick={() => cart.removeItem(item.lineId)}
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
 
           <Card className="border-rose-100 bg-white/90">
@@ -97,14 +114,20 @@ export default function PublicCart() {
                 Resumo
               </p>
               <div className="flex items-center justify-between">
-                <span>Itens</span>
-                <span className="font-semibold">{cart.itemCount}</span>
+                <span className="text-rose-700">Itens</span>
+                <span className="font-semibold text-rose-950">
+                  {cart.itemCount}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span>Total</span>
+                <span className="text-rose-700">Subtotal</span>
                 <span className="font-display text-2xl font-bold text-rose-950">
                   {formatCurrency(cart.totalCents / 100)}
                 </span>
+              </div>
+              <div className="rounded-2xl border border-dashed border-rose-200 px-4 py-3 text-sm leading-6 text-rose-700">
+                A taxa de entrega é definida no checkout. Para retirada, o total
+                final permanece igual ao subtotal.
               </div>
               <Link href="/loja/checkout">
                 <a>

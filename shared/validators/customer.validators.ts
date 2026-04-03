@@ -15,3 +15,7 @@ export const updateCustomerInputSchema = createCustomerInputSchema.extend({
 export const customerIdParamsSchema = z.object({
   id: z.string().uuid(),
 });
+
+export const listCustomersFiltersSchema = z.object({
+  search: z.string().trim().max(160).optional(),
+});

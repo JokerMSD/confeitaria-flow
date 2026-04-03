@@ -1,4 +1,10 @@
 export const productionQueryKeys = {
-  forecast: (deliveryDate?: string) =>
-    ["production", "forecast", deliveryDate ?? "all"] as const,
+  forecast: (filters: { deliveryDate?: string; dateFrom?: string; dateTo?: string }) =>
+    [
+      "production",
+      "forecast",
+      filters.deliveryDate ?? "all",
+      filters.dateFrom ?? "from-all",
+      filters.dateTo ?? "to-all",
+    ] as const,
 };

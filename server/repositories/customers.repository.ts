@@ -1,16 +1,32 @@
-import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
 import { customers, orders } from "@shared/schema";
 import type { InsertCustomer, Customer } from "@shared/schema";
+import type { ListCustomersFilters } from "@shared/types";
 
 type Executor = ReturnType<typeof getDb> | any;
 
 export class CustomersRepository {
-  async list(executor: Executor = getDb()) {
+  async list(filters: ListCustomersFilters = {}, executor: Executor = getDb()) {
+    const conditions = [isNull(customers.deletedAt)];
+
+    if (filters.search) {
+      const search = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(customers.firstName, search),
+          ilike(customers.lastName, search),
+          ilike(customers.email, search),
+          ilike(customers.phone, search),
+          sql`concat(${customers.firstName}, ' ', ${customers.lastName}) ilike ${search}`,
+        )!,
+      );
+    }
+
     return executor
       .select()
       .from(customers)
-      .where(isNull(customers.deletedAt))
+      .where(and(...conditions))
       .orderBy(asc(customers.lastName), asc(customers.firstName));
   }
 
@@ -82,11 +98,19 @@ export class CustomersRepository {
         totalSpentCents: sql<number>`coalesce(sum(${orders.subtotalAmountCents}), 0)`,
         lastOrderDate: sql<string | null>`max(${orders.orderDate})`,
         orderCount: sql<number>`coalesce(count(${orders.id}), 0)`,
+        openOrderCount: sql<number>`coalesce(sum(case when ${orders.status} not in ('Entregue', 'Cancelado') then 1 else 0 end), 0)`,
       })
       .from(orders)
       .where(eq(orders.customerId, id));
 
-    return stats ?? { totalSpentCents: 0, lastOrderDate: null, orderCount: 0 };
+    return (
+      stats ?? {
+        totalSpentCents: 0,
+        lastOrderDate: null,
+        orderCount: 0,
+        openOrderCount: 0,
+      }
+    );
   }
 
   async listOrders(id: string, executor: Executor = getDb()) {

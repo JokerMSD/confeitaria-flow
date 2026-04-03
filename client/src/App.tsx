@@ -21,6 +21,7 @@ import ReceitaForm from "@/pages/ReceitaForm";
 import Catalogo from "@/pages/Catalogo";
 import Clientes from "@/pages/Clientes";
 import Cliente from "@/pages/Cliente";
+import ClienteForm from "@/pages/ClienteForm";
 import Usuarios from "@/pages/Usuarios";
 import Usuario from "@/pages/Usuario";
 import PrevisaoProducao from "@/pages/PrevisaoProducao";
@@ -124,10 +125,12 @@ function AuthGate() {
       <Route path="/receitas" component={Receitas} />
       <Route path="/catalogo" component={Catalogo} />
       <Route path="/clientes" component={Clientes} />
+      <Route path="/clientes/novo" component={ClienteForm} />
+      <Route path="/clientes/:id/editar" component={ClienteForm} />
       <Route path="/clientes/:id" component={Cliente} />
       <Route path="/usuarios" component={Usuarios} />
-      <Route path="/usuarios/:id" component={Usuario} />
       <Route path="/usuarios/novo" component={Usuario} />
+      <Route path="/usuarios/:id" component={Usuario} />
       <Route path="/receitas/:id" component={ReceitaForm} />
       <Route path="/catalogo/:id" component={ReceitaForm} />
       <Route path="/login" component={Login} />

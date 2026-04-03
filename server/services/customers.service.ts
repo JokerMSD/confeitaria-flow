@@ -2,6 +2,7 @@ import type {
   CreateCustomerInput,
   CustomerDetail,
   CustomerListItem,
+  ListCustomersFilters,
   UpdateCustomerInput,
 } from "@shared/types";
 import { HttpError } from "../utils/http-error";
@@ -12,9 +13,9 @@ export class CustomersService {
   private readonly customersRepository = new CustomersRepository();
   private readonly customerOrderSyncService = new CustomerOrderSyncService();
 
-  async list(): Promise<CustomerListItem[]> {
+  async list(filters: ListCustomersFilters = {}): Promise<CustomerListItem[]> {
     await this.customerOrderSyncService.syncMissingCustomersFromOrders();
-    const customers = await this.customersRepository.list();
+    const customers = await this.customersRepository.list(filters);
 
     return Promise.all(
       customers.map(async (customer: any) => {
@@ -31,6 +32,7 @@ export class CustomersService {
           totalSpentCents: stats.totalSpentCents,
           lastOrderDate: stats.lastOrderDate,
           orderCount: stats.orderCount,
+          openOrderCount: stats.openOrderCount,
           createdAt: customer.createdAt,
           updatedAt: customer.updatedAt,
           deletedAt: customer.deletedAt ?? null,
@@ -64,11 +66,16 @@ export class CustomersService {
       totalSpentCents: stats.totalSpentCents,
       lastOrderDate: stats.lastOrderDate,
       orderCount: stats.orderCount,
+      openOrderCount: stats.openOrderCount,
       orders: orders.map((order: any) => ({
         id: order.id,
         orderNumber: order.orderNumber,
         orderDate: order.orderDate,
         deliveryDate: order.deliveryDate,
+        deliveryTime: order.deliveryTime ?? null,
+        deliveryMode: order.deliveryMode,
+        deliveryAddress: order.deliveryAddress ?? null,
+        deliveryDistrict: order.deliveryDistrict ?? null,
         status: order.status,
         subtotalAmountCents: order.subtotalAmountCents,
         paidAmountCents: order.paidAmountCents,

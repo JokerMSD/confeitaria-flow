@@ -6,8 +6,12 @@ import type {
 } from "@shared/types";
 import { httpClient } from "./http-client";
 
-export function listCustomers() {
-  return httpClient<{ data: CustomerListItem[] }>("/api/customers");
+export function listCustomers(search?: string) {
+  const query = search
+    ? `?${new URLSearchParams({ search }).toString()}`
+    : "";
+
+  return httpClient<{ data: CustomerListItem[] }>(`/api/customers${query}`);
 }
 
 export function getCustomer(id: string) {

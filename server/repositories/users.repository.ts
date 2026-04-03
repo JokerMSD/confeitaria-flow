@@ -44,6 +44,15 @@ export class UsersRepository {
     return user ?? null;
   }
 
+  async countActive(executor: Executor = getDb()) {
+    const rows = await executor
+      .select()
+      .from(users)
+      .where(and(isNull(users.deletedAt), eq(users.isActive, true)));
+
+    return rows.length;
+  }
+
   async create(data: InsertUser, executor: Executor = getDb()) {
     const [user] = await executor.insert(users).values(data).returning();
     return user;

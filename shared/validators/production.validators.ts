@@ -9,6 +9,8 @@ import { createOrderItemAdditionalInputSchema, deliveryModeSchema } from "./orde
 
 export const productionForecastFiltersSchema = z.object({
   deliveryDate: operationalDateSchema.optional(),
+  dateFrom: operationalDateSchema.optional(),
+  dateTo: operationalDateSchema.optional(),
 });
 
 export const publicCheckoutItemInputSchema = z.object({

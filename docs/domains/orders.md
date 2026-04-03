@@ -7,17 +7,14 @@ Contratos principais:
 - leitura operacional da fila em `/api/orders/queue`
 - transicao rapida de status em `/api/orders/:id/status`
 - vinculo opcional com `customerId` para conectar pedido ao cadastro de cliente
+- selecao explicita de cliente no formulario principal sem perder compatibilidade com nome/telefone legados
 
 Invariantes importantes:
 - itens novos nao devem voltar para texto livre
 - `deliveryMode` distingue `Entrega` e `Retirada`
 - ao marcar `Retirada`, endereco, bairro, referencia e taxa nao devem persistir
 - labels e adaptacoes de status/pagamento no frontend precisam continuar legiveis em pt-BR
-
-Dependencias de dominio:
-- catalogo e receitas definem produto, composicao e custo
-- estoque e caixa reagem a transicoes de status e pagamentos
-- clientes devem se conectar a pedidos sem forcar redesign da tela atual
+- fila, detalhe do cliente, checkout publico e formulario interno devem exibir o mesmo significado de entrega/retirada
 
 Riscos ativos:
 - pedidos legados ainda podem depender de observacoes e backfills
@@ -25,6 +22,6 @@ Riscos ativos:
 - qualquer alteracao de contrato deve preservar a edicao de pedido e a reidratacao de adicionais
 
 Proximos passos naturais:
-- consolidar relacao real com `customers` tambem na entrada principal do pedido
+- manter a selecao de cliente e a sincronizacao legada coerentes no mesmo fluxo
 - manter os contratos de fila e detalhe consistentes
 - evitar abrir novas variacoes comerciais sem primeiro fechar o dominio atual de pedidos

@@ -5,6 +5,7 @@ import { validateRequest } from "../../middlewares/validate-request";
 import {
   createCustomerInputSchema,
   customerIdParamsSchema,
+  listCustomersFiltersSchema,
   updateCustomerInputSchema,
 } from "@shared/validators";
 
@@ -13,7 +14,11 @@ export function registerCustomersRoutes(app: Express) {
   const createBodySchema = z.object({ data: createCustomerInputSchema });
   const updateBodySchema = z.object({ data: updateCustomerInputSchema });
 
-  app.get("/api/customers", controller.list.bind(controller));
+  app.get(
+    "/api/customers",
+    validateRequest(listCustomersFiltersSchema, "query"),
+    controller.list.bind(controller),
+  );
   app.post(
     "/api/customers",
     validateRequest(createBodySchema, "body"),

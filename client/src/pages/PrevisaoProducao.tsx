@@ -14,8 +14,12 @@ function formatQuantity(quantity: number, unit: string) {
 }
 
 export default function PrevisaoProducao() {
-  const [deliveryDate, setDeliveryDate] = useState("");
-  const forecastQuery = useProductionForecast(deliveryDate || undefined);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const forecastQuery = useProductionForecast({
+    dateFrom: dateFrom || undefined,
+    dateTo: dateTo || undefined,
+  });
   const forecast = forecastQuery.data?.data;
 
   const highlights = useMemo(
@@ -47,26 +51,57 @@ export default function PrevisaoProducao() {
   return (
     <AppLayout title="Previsão de Produção">
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm md:flex-row md:items-end md:justify-between">
-          <div>
-            <h2 className="font-display text-2xl font-bold text-foreground">
-              Previsão por pedidos confirmados
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              O módulo explode receitas, adicionais e preparações dos pedidos em confirmação ou produção para antecipar chocolate, recheios e totais por receita.
+        <div className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h2 className="font-display text-2xl font-bold text-foreground">
+                Previsão operacional
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+                A previsão considera pedidos em confirmação ou produção, separa o período e soma receitas, ingredientes e adicionais selecionados.
+              </p>
+            </div>
+            <div className="grid gap-2 md:grid-cols-3">
+              <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+              <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDateFrom("");
+                  setDateTo("");
+                }}
+              >
+                Limpar
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <Card className="glass-card p-5">
+            <p className="text-sm text-muted-foreground">Pedidos no período</p>
+            <p className="mt-2 text-3xl font-display font-bold">
+              {forecast?.orderCount ?? 0}
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Input
-              type="date"
-              value={deliveryDate}
-              onChange={(event) => setDeliveryDate(event.target.value)}
-              className="w-full md:w-[180px]"
-            />
-            <Button variant="outline" onClick={() => setDeliveryDate("")}>
-              Limpar
-            </Button>
-          </div>
+          </Card>
+          <Card className="glass-card p-5">
+            <p className="text-sm text-muted-foreground">Itens considerados</p>
+            <p className="mt-2 text-3xl font-display font-bold">
+              {forecast?.itemCount ?? 0}
+            </p>
+          </Card>
+          <Card className="glass-card p-5">
+            <p className="text-sm text-muted-foreground">Receitas acionadas</p>
+            <p className="mt-2 text-3xl font-display font-bold">
+              {forecast?.totalsByRecipe.length ?? 0}
+            </p>
+          </Card>
+          <Card className="glass-card p-5">
+            <p className="text-sm text-muted-foreground">Adicionais ativos</p>
+            <p className="mt-2 text-3xl font-display font-bold">
+              {forecast?.totalsByAdditional.length ?? 0}
+            </p>
+          </Card>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -90,7 +125,7 @@ export default function PrevisaoProducao() {
           ))}
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.3fr_1fr]">
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr_0.9fr]">
           <Card className="glass-card">
             <CardHeader>
               <CardTitle>Totais por receita</CardTitle>
@@ -98,13 +133,11 @@ export default function PrevisaoProducao() {
             <CardContent className="space-y-3">
               {forecastQuery.isLoading ? <p>Carregando previsão...</p> : null}
               {forecastQuery.isError ? (
-                <p className="text-destructive">
-                  Não foi possível carregar a previsão.
-                </p>
+                <p className="text-destructive">Não foi possível carregar a previsão.</p>
               ) : null}
               {forecast && forecast.totalsByRecipe.length === 0 ? (
                 <p className="text-muted-foreground">
-                  Nenhum pedido confirmado encontrado para o filtro atual.
+                  Nenhum pedido encontrado para o período informado.
                 </p>
               ) : null}
               {forecast?.totalsByRecipe.map((item) => (
@@ -121,47 +154,72 @@ export default function PrevisaoProducao() {
             </CardContent>
           </Card>
 
-          <div className="space-y-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Ingredientes previstos</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {forecast?.totalsByIngredient.slice(0, 12).map((item) => (
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle>Ingredientes e adicionais</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-3">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  Ingredientes previstos
+                </p>
+                {forecast?.totalsByIngredient.slice(0, 10).map((item) => (
                   <div key={item.id} className="flex items-center justify-between text-sm">
-                    <span className="text-foreground">{item.name}</span>
-                    <span className="font-semibold text-foreground">
+                    <span>{item.name}</span>
+                    <span className="font-semibold">
                       {formatQuantity(item.quantity, item.unit)}
                     </span>
                   </div>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
 
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Pedidos considerados</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {forecast?.orders.map((order) => (
-                  <div
-                    key={order.orderId}
-                    className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <span className="font-semibold">{order.orderNumber}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(order.deliveryDate)}
+              <div className="space-y-3 border-t border-border pt-4">
+                <p className="text-sm font-semibold text-muted-foreground">
+                  Adicionais selecionados
+                </p>
+                {forecast?.totalsByAdditional.length ? (
+                  forecast.totalsByAdditional.map((item) => (
+                    <div key={item.id} className="flex items-start justify-between gap-3 text-sm">
+                      <div>
+                        <p>{item.name}</p>
+                        <p className="text-xs text-muted-foreground">{item.groupName}</p>
+                      </div>
+                      <span className="font-semibold">
+                        {formatQuantity(item.quantity, item.unit)}
                       </span>
                     </div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {order.customerName}
-                    </p>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum adicional selecionado no período.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle>Pedidos considerados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {forecast?.orders.map((order) => (
+                <div
+                  key={order.orderId}
+                  className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="font-semibold">{order.orderNumber}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {formatDate(order.deliveryDate)}
+                    </span>
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{order.customerName}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{order.status}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </AppLayout>

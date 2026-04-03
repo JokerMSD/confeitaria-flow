@@ -10,6 +10,7 @@ import {
   normalizeRecipeName,
 } from "../domain/recipes/recipe-domain";
 import { InventoryItemsRepository } from "../repositories/inventory-items.repository";
+import { OrderItemAdditionalsRepository } from "../repositories/order-item-additionals.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
 import { RecipesService } from "./recipes.service";
 
@@ -41,17 +42,38 @@ function addAggregate(
 
 export class ProductionForecastService {
   private readonly ordersRepository = new OrdersRepository();
+  private readonly orderItemAdditionalsRepository =
+    new OrderItemAdditionalsRepository();
   private readonly recipesService = new RecipesService();
   private readonly inventoryItemsRepository = new InventoryItemsRepository();
   private readonly recipeCache = new Map<string, RecipeDetail>();
   private readonly inventoryCache = new Map<string, InventoryItem>();
 
-  async getForecast(filters: { deliveryDate?: string }): Promise<ProductionForecast> {
+  async getForecast(filters: {
+    deliveryDate?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<ProductionForecast> {
     const rows = await this.ordersRepository.listPendingProductionRows();
     const recipeTotals = new Map<string, ProductionForecastAggregate>();
     const ingredientTotals = new Map<string, ProductionForecastAggregate>();
     const fillingTotals = new Map<string, ProductionForecastAggregate>();
+    const additionalTotals = new Map<
+      string,
+      ProductionForecastAggregate & { groupName: string }
+    >();
     const orders = new Map<string, ProductionForecast["orders"][number]>();
+    const additionals = await this.orderItemAdditionalsRepository.listByOrderItemIds(
+      rows.map((row: any) => row.itemId),
+    );
+    const additionalsByOrderItemId = new Map<string, typeof additionals>();
+
+    for (const additional of additionals as any[]) {
+      const current = additionalsByOrderItemId.get(additional.orderItemId) ?? [];
+      current.push(additional);
+      additionalsByOrderItemId.set(additional.orderItemId, current);
+    }
+
     let itemCount = 0;
 
     for (const row of rows) {
@@ -60,6 +82,14 @@ export class ProductionForecastService {
       }
 
       if (filters.deliveryDate && row.deliveryDate !== filters.deliveryDate) {
+        continue;
+      }
+
+      if (filters.dateFrom && row.deliveryDate < filters.dateFrom) {
+        continue;
+      }
+
+      if (filters.dateTo && row.deliveryDate > filters.dateTo) {
         continue;
       }
 
@@ -98,6 +128,22 @@ export class ProductionForecastService {
         resolvedRecipe.fillingRecipeIds,
         true,
       );
+
+      const itemAdditionals = additionalsByOrderItemId.get(row.itemId) ?? [];
+
+      for (const additional of itemAdditionals as any[]) {
+        const aggregateId = `${additional.groupId}:${additional.optionId}`;
+        const current = additionalTotals.get(aggregateId);
+        const nextQuantity = roundQuantity((current?.quantity ?? 0) + row.quantity);
+
+        additionalTotals.set(aggregateId, {
+          id: aggregateId,
+          groupName: additional.groupName,
+          name: additional.optionName,
+          quantity: nextQuantity,
+          unit: "un",
+        });
+      }
     }
 
     const totalsByRecipe = Array.from(recipeTotals.values()).sort((a, b) =>
@@ -114,18 +160,29 @@ export class ProductionForecastService {
       itemCount,
       totalsByRecipe,
       totalsByIngredient,
+      totalsByAdditional: Array.from(additionalTotals.values()).sort((a, b) =>
+        a.groupName === b.groupName
+          ? a.name.localeCompare(b.name, "pt-BR")
+          : a.groupName.localeCompare(b.groupName, "pt-BR"),
+      ),
       highlightedTotals: {
-        chocolate: totalsByIngredient.filter((item) =>
-          normalizeLabel(item.name).includes("chocolate"),
+        chocolate: this.mergeHighlightGroups(
+          ingredientTotals,
+          additionalTotals,
+          ["chocolate", "cacau"],
         ),
         filling: Array.from(fillingTotals.values()).sort((a, b) =>
           a.name.localeCompare(b.name, "pt-BR"),
         ),
-        leiteCondensado: totalsByIngredient.filter((item) =>
-          normalizeLabel(item.name).includes("leite condensado"),
+        leiteCondensado: this.mergeHighlightGroups(
+          ingredientTotals,
+          additionalTotals,
+          ["leite condensado"],
         ),
-        cremeDeLeite: totalsByIngredient.filter((item) =>
-          normalizeLabel(item.name).includes("creme de leite"),
+        cremeDeLeite: this.mergeHighlightGroups(
+          ingredientTotals,
+          additionalTotals,
+          ["creme de leite"],
         ),
       },
       orders: Array.from(orders.values()).sort((a, b) =>
@@ -283,5 +340,23 @@ export class ProductionForecastService {
     }
 
     return this.inventoryCache.get(itemId)!;
+  }
+
+  private mergeHighlightGroups(
+    ingredientTotals: Map<string, ProductionForecastAggregate>,
+    additionalTotals: Map<string, ProductionForecastAggregate & { groupName: string }>,
+    keywords: string[],
+  ) {
+    const matchesKeywords = (value: string) =>
+      keywords.some((keyword) => normalizeLabel(value).includes(keyword));
+
+    return [
+      ...Array.from(ingredientTotals.values()).filter((item) =>
+        matchesKeywords(item.name),
+      ),
+      ...Array.from(additionalTotals.values()).filter((item) =>
+        matchesKeywords(`${item.groupName} ${item.name}`),
+      ),
+    ].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
   }
 }

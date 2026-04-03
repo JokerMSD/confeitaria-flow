@@ -9,6 +9,7 @@ export interface CustomerListItem {
   totalSpentCents: number;
   lastOrderDate: string | null;
   orderCount: number;
+  openOrderCount: number;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -20,11 +21,19 @@ export interface CustomerDetail extends CustomerListItem {
     orderNumber: string;
     orderDate: string;
     deliveryDate: string;
+    deliveryTime?: string | null;
+    deliveryMode: "Entrega" | "Retirada";
+    deliveryAddress?: string | null;
+    deliveryDistrict?: string | null;
     status: string;
     subtotalAmountCents: number;
     paidAmountCents: number;
     remainingAmountCents: number;
   }>;
+}
+
+export interface ListCustomersFilters {
+  search?: string;
 }
 
 export interface CreateCustomerInput {

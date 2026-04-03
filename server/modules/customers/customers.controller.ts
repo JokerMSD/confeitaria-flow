@@ -4,8 +4,8 @@ import { CustomersService } from "../../services/customers.service";
 export class CustomersController {
   private readonly customersService = new CustomersService();
 
-  async list(_req: Request, res: Response) {
-    const data = await this.customersService.list();
+  async list(req: Request, res: Response) {
+    const data = await this.customersService.list(req.query as any);
     res.json({ data });
   }
 

@@ -21,11 +21,18 @@ export interface ProductionForecast {
   generatedAt: string;
   filters: {
     deliveryDate?: string;
+    dateFrom?: string;
+    dateTo?: string;
   };
   orderCount: number;
   itemCount: number;
   totalsByRecipe: ProductionForecastAggregate[];
   totalsByIngredient: ProductionForecastAggregate[];
+  totalsByAdditional: Array<
+    ProductionForecastAggregate & {
+      groupName: string;
+    }
+  >;
   highlightedTotals: {
     chocolate: ProductionForecastAggregate[];
     filling: ProductionForecastAggregate[];
