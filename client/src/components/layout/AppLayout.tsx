@@ -16,6 +16,8 @@ import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 import { useLogout } from "@/features/auth/hooks/use-logout";
 import { authQueryKeys } from "@/features/auth/lib/auth-query-keys";
 import { queryClient } from "@/lib/queryClient";
+import { BrandLogo } from "@/components/brand/BrandLogo";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
@@ -58,16 +60,13 @@ export function Sidebar() {
   const user = authSessionQuery.data?.data;
 
   return (
-    <aside className="sticky left-0 top-0 hidden min-h-screen w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex">
-      <div className="flex items-center gap-3 p-6">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary font-display text-xl font-bold text-primary-foreground">
-          D
-        </div>
-        <div>
-          <h1 className="font-display text-lg font-bold leading-tight text-sidebar-foreground">
-            Doce Gestao
-          </h1>
-          <p className="text-xs text-sidebar-foreground/60">Confeitaria</p>
+    <aside className="sticky left-0 top-0 hidden min-h-screen w-72 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+      <div className="space-y-4 p-6">
+        <BrandLogo className="gap-4" imageClassName="h-16 w-16" />
+        <div className="rounded-[1.75rem] border border-sidebar-border bg-sidebar-accent/50 p-3">
+          <ThemeToggle
+            className="w-full justify-center rounded-full border-sidebar-border bg-sidebar px-4 text-sidebar-foreground"
+          />
         </div>
       </div>
 
@@ -201,16 +200,26 @@ export function MobileHeader({ title }: { title: string }) {
   const user = authSessionQuery.data?.data;
 
   return (
-    <header className="sticky left-0 right-0 top-0 z-40 flex items-center justify-between border-b border-border bg-background/80 px-6 py-4 pt-safe backdrop-blur-md md:hidden">
-      <h1 className="font-display text-xl font-bold text-foreground">
-        {title}
-      </h1>
-      <Avatar className="h-8 w-8 border border-border">
-        <AvatarImage src={user?.photoUrl ?? undefined} />
-        <AvatarFallback>
-          {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
+    <header className="sticky left-0 right-0 top-0 z-40 border-b border-border bg-background/84 px-4 py-4 pt-safe backdrop-blur-xl md:hidden">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="truncate font-display text-xl font-bold text-foreground">
+            {title}
+          </p>
+          <p className="truncate text-xs uppercase tracking-[0.25em] text-muted-foreground">
+            Universo Doce
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <ThemeToggle compact className="rounded-full border-border bg-card px-3" />
+          <Avatar className="h-8 w-8 border border-border">
+            <AvatarImage src={user?.photoUrl ?? undefined} />
+            <AvatarFallback>
+              {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+      </div>
     </header>
   );
 }

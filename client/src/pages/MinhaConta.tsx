@@ -86,8 +86,8 @@ export default function MinhaConta() {
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
-        title: "Confirmação inválida",
-        description: "A confirmação da nova senha não confere.",
+        title: "Confirmacao invalida",
+        description: "A confirmacao da nova senha nao confere.",
         variant: "destructive",
       });
       return;
@@ -123,76 +123,77 @@ export default function MinhaConta() {
   return (
     <PublicStoreLayout
       title="Minha conta"
-      subtitle="Atualize seus dados e acompanhe seus pedidos feitos pela loja."
+      subtitle="Atualize seus dados, altere a senha e acompanhe seus pedidos feitos pela loja."
     >
       {profileQuery.isLoading ? (
-        <div className="flex min-h-[240px] items-center justify-center gap-3 rounded-3xl border border-rose-100 bg-white/90 p-8 text-rose-700">
+        <div className="brand-shell flex min-h-[240px] items-center justify-center gap-3 p-8 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin" />
           <span>Carregando sua conta...</span>
         </div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
           <div className="space-y-6">
-            <Card className="border-rose-100 bg-white/90">
+            <Card className="brand-shell">
               <CardContent className="space-y-5 p-6">
                 <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20 border border-rose-100">
+                  <Avatar className="h-20 w-20 border border-border">
                     <AvatarImage src={profileForm.photoUrl || undefined} />
                     <AvatarFallback>
                       {(profile?.fullName?.slice(0, 2) ?? "DC").toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm uppercase tracking-wide text-rose-700">
+                    <p className="text-sm uppercase tracking-[0.24em] text-primary">
                       Conta
                     </p>
-                    <h2 className="font-display text-2xl font-bold text-rose-950">
+                    <h2 className="font-display text-2xl font-bold text-foreground">
                       {profile?.fullName ?? "Cliente"}
                     </h2>
-                    <p className="text-sm text-rose-700">{profile?.email}</p>
+                    <p className="text-sm text-muted-foreground">{profile?.email}</p>
                   </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
-                    <p className="text-sm text-rose-700">Pedidos</p>
-                    <p className="mt-1 font-display text-3xl font-bold text-rose-950">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
+                    <p className="text-sm text-muted-foreground">Pedidos</p>
+                    <p className="mt-1 font-display text-3xl font-bold text-foreground">
                       {profile?.orderCount ?? 0}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
-                    <p className="text-sm text-rose-700">Em aberto</p>
-                    <p className="mt-1 font-display text-3xl font-bold text-rose-950">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
+                    <p className="text-sm text-muted-foreground">Em aberto</p>
+                    <p className="mt-1 font-display text-3xl font-bold text-foreground">
                       {profile?.openOrderCount ?? 0}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
-                    <p className="text-sm text-rose-700">Total gasto</p>
-                    <p className="mt-1 font-semibold text-rose-950">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
+                    <p className="text-sm text-muted-foreground">Total gasto</p>
+                    <p className="mt-1 font-semibold text-foreground">
                       {formatCurrency((profile?.totalSpentCents ?? 0) / 100)}
                     </p>
                   </div>
-                  <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-4">
-                    <p className="text-sm text-rose-700">Último pedido</p>
-                    <p className="mt-1 font-semibold text-rose-950">
+                  <div className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
+                    <p className="text-sm text-muted-foreground">Ultimo pedido</p>
+                    <p className="mt-1 font-semibold text-foreground">
                       {profile?.lastOrderDate
                         ? formatDate(profile.lastOrderDate)
-                        : "Sem histórico"}
+                        : "Sem historico"}
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-rose-100 bg-white/90">
+            <Card className="brand-shell">
               <CardContent className="space-y-4 p-6">
                 <div className="flex items-center gap-2">
-                  <UserCircle2 className="h-5 w-5 text-rose-500" />
-                  <h3 className="font-semibold text-rose-950">Perfil</h3>
+                  <UserCircle2 className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Perfil</h3>
                 </div>
                 <div className="space-y-2">
                   <Label>Nome</Label>
                   <Input
+                    className="rounded-2xl"
                     value={profileForm.fullName}
                     onChange={(event) =>
                       setProfileForm((current) => ({
@@ -205,6 +206,7 @@ export default function MinhaConta() {
                 <div className="space-y-2">
                   <Label>E-mail</Label>
                   <Input
+                    className="rounded-2xl"
                     type="email"
                     value={profileForm.email}
                     onChange={(event) =>
@@ -218,6 +220,7 @@ export default function MinhaConta() {
                 <div className="space-y-2">
                   <Label>Telefone</Label>
                   <Input
+                    className="rounded-2xl"
                     value={profileForm.phone}
                     onChange={(event) =>
                       setProfileForm((current) => ({
@@ -230,6 +233,7 @@ export default function MinhaConta() {
                 <div className="space-y-2">
                   <Label>Foto (URL)</Label>
                   <Input
+                    className="rounded-2xl"
                     value={profileForm.photoUrl}
                     onChange={(event) =>
                       setProfileForm((current) => ({
@@ -243,7 +247,7 @@ export default function MinhaConta() {
                 <Button
                   onClick={handleSaveProfile}
                   disabled={updateProfileMutation.isPending}
-                  className="w-full bg-rose-500 hover:bg-rose-600"
+                  className="brand-button w-full rounded-full"
                 >
                   {updateProfileMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -255,13 +259,14 @@ export default function MinhaConta() {
               </CardContent>
             </Card>
 
-            <Card className="border-rose-100 bg-white/90">
+            <Card className="brand-shell">
               <CardContent className="space-y-4 p-6">
                 <div className="flex items-center gap-2">
-                  <LockKeyhole className="h-5 w-5 text-rose-500" />
-                  <h3 className="font-semibold text-rose-950">Senha</h3>
+                  <LockKeyhole className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Senha</h3>
                 </div>
                 <Input
+                  className="rounded-2xl"
                   type="password"
                   placeholder="Senha atual"
                   value={passwordForm.currentPassword}
@@ -273,6 +278,7 @@ export default function MinhaConta() {
                   }
                 />
                 <Input
+                  className="rounded-2xl"
                   type="password"
                   placeholder="Nova senha"
                   value={passwordForm.newPassword}
@@ -284,6 +290,7 @@ export default function MinhaConta() {
                   }
                 />
                 <Input
+                  className="rounded-2xl"
                   type="password"
                   placeholder="Confirmar nova senha"
                   value={passwordForm.confirmPassword}
@@ -298,7 +305,7 @@ export default function MinhaConta() {
                   onClick={handleChangePassword}
                   disabled={changePasswordMutation.isPending}
                   variant="outline"
-                  className="w-full"
+                  className="w-full rounded-full"
                 >
                   {changePasswordMutation.isPending ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -309,24 +316,24 @@ export default function MinhaConta() {
             </Card>
           </div>
 
-          <Card className="border-rose-100 bg-white/90">
+          <Card className="brand-shell">
             <CardContent className="space-y-4 p-6">
               <div>
-                <p className="text-sm uppercase tracking-wide text-rose-700">
-                  Histórico de pedidos
+                <p className="text-sm uppercase tracking-[0.28em] text-primary">
+                  Historico de pedidos
                 </p>
-                <h2 className="mt-1 font-display text-2xl font-bold text-rose-950">
+                <h2 className="mt-1 font-display text-2xl font-bold text-foreground">
                   Seus pedidos
                 </h2>
               </div>
 
               {ordersQuery.isLoading ? (
-                <div className="flex min-h-[180px] items-center justify-center gap-3 text-rose-700">
+                <div className="flex min-h-[180px] items-center justify-center gap-3 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
                   <span>Carregando pedidos...</span>
                 </div>
               ) : orders.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-rose-200 p-6 text-center text-rose-700">
+                <div className="rounded-[1.6rem] border border-dashed border-border p-6 text-center text-muted-foreground">
                   Nenhum pedido encontrado para esta conta.
                 </div>
               ) : (
@@ -334,20 +341,20 @@ export default function MinhaConta() {
                   {orders.map((order) => (
                     <div
                       key={order.id}
-                      className="rounded-2xl border border-rose-100 bg-rose-50/40 p-4"
+                      className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="font-semibold text-rose-950">
+                          <p className="font-semibold text-foreground">
                             {order.orderNumber}
                           </p>
-                          <p className="mt-1 text-sm text-rose-700">
+                          <p className="mt-1 text-sm text-muted-foreground">
                             {order.deliveryMode} em {formatDate(order.deliveryDate)}
-                            {order.deliveryTime ? ` às ${order.deliveryTime}` : ""}
+                            {order.deliveryTime ? ` as ${order.deliveryTime}` : ""}
                           </p>
                           {order.deliveryMode === "Entrega" ? (
-                            <p className="mt-1 text-sm text-rose-700">
-                              {order.deliveryAddress || "Endereço não informado"}
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              {order.deliveryAddress || "Endereco nao informado"}
                               {order.deliveryDistrict
                                 ? ` • ${order.deliveryDistrict}`
                                 : ""}
@@ -355,10 +362,10 @@ export default function MinhaConta() {
                           ) : null}
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-rose-950">
+                          <p className="text-sm font-semibold text-foreground">
                             {formatCurrency(order.subtotalAmountCents / 100)}
                           </p>
-                          <p className="text-sm text-rose-700">{order.status}</p>
+                          <p className="text-sm text-muted-foreground">{order.status}</p>
                         </div>
                       </div>
                     </div>

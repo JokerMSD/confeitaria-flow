@@ -140,7 +140,7 @@ export default function Dashboard() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h2 className="text-2xl font-display font-bold text-foreground">
-              Olá, Doce Gestão
+              Ola, Universo Doce
             </h2>
             <p className="text-muted-foreground">
               Aqui está o resumo da sua confeitaria hoje.

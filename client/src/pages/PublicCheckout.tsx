@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
+import { CheckCircle2, Truck } from "lucide-react";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,8 @@ type DeliveryMode = "Entrega" | "Retirada";
 
 function checkoutFieldClass(active: boolean) {
   return active
-    ? "border-rose-500 bg-rose-50"
-    : "border-rose-100 bg-white hover:border-rose-300";
+    ? "border-primary bg-secondary shadow-sm"
+    : "border-border bg-card/70 hover:border-primary/35";
 }
 
 export default function PublicCheckout() {
@@ -77,7 +78,7 @@ export default function PublicCheckout() {
 
     if (!form.customerName.trim()) {
       toast({
-        title: "Nome obrigatório",
+        title: "Nome obrigatorio",
         description: "Informe o nome para identificar o pedido.",
         variant: "destructive",
       });
@@ -86,7 +87,7 @@ export default function PublicCheckout() {
 
     if (!form.customerPhone.trim()) {
       toast({
-        title: "Telefone obrigatório",
+        title: "Telefone obrigatorio",
         description: "Informe um telefone para contato da confeitaria.",
         variant: "destructive",
       });
@@ -95,7 +96,7 @@ export default function PublicCheckout() {
 
     if (!form.deliveryDate) {
       toast({
-        title: "Data obrigatória",
+        title: "Data obrigatoria",
         description: "Escolha a data desejada para entrega ou retirada.",
         variant: "destructive",
       });
@@ -104,8 +105,8 @@ export default function PublicCheckout() {
 
     if (!form.deliveryTime.trim()) {
       toast({
-        title: "Horário obrigatório",
-        description: "Informe o horário desejado.",
+        title: "Horario obrigatorio",
+        description: "Informe o horario desejado.",
         variant: "destructive",
       });
       return;
@@ -113,8 +114,8 @@ export default function PublicCheckout() {
 
     if (form.deliveryMode === "Entrega" && !form.deliveryAddress.trim()) {
       toast({
-        title: "Endereço obrigatório",
-        description: "Pedidos com entrega precisam de endereço completo.",
+        title: "Endereco obrigatorio",
+        description: "Pedidos com entrega precisam de endereco completo.",
         variant: "destructive",
       });
       return;
@@ -122,7 +123,7 @@ export default function PublicCheckout() {
 
     if (form.deliveryMode === "Entrega" && !form.deliveryDistrict.trim()) {
       toast({
-        title: "Bairro obrigatório",
+        title: "Bairro obrigatorio",
         description: "Informe o bairro para organizar a entrega.",
         variant: "destructive",
       });
@@ -175,7 +176,7 @@ export default function PublicCheckout() {
         description:
           error instanceof Error
             ? error.message
-            : "Não foi possível concluir o pedido.",
+            : "Nao foi possivel concluir o pedido.",
         variant: "destructive",
       });
     }
@@ -184,42 +185,49 @@ export default function PublicCheckout() {
   return (
     <PublicStoreLayout
       title="Checkout"
-      subtitle="Feche seu pedido com dados de contato, entrega ou retirada e confirmação por Pix manual."
+      subtitle="Feche seu pedido com dados de contato, retirada ou entrega e confirmacao por Pix manual."
     >
       {success ? (
-        <Card className="border-rose-100 bg-white/90">
-          <CardContent className="space-y-4 p-8">
-            <p className="text-sm uppercase tracking-wide text-rose-700">
-              Pedido enviado
-            </p>
-            <h2 className="font-display text-3xl font-bold text-rose-950">
+        <Card className="brand-shell">
+          <CardContent className="space-y-5 p-8">
+            <div className="flex items-center gap-3 text-primary">
+              <CheckCircle2 className="h-5 w-5" />
+              <p className="text-xs font-semibold uppercase tracking-[0.28em]">
+                pedido enviado
+              </p>
+            </div>
+            <h2 className="font-display text-3xl font-bold text-foreground">
               {success.orderNumber}
             </h2>
-            <p className="text-rose-800">
+            <p className="text-muted-foreground">
               Total do pedido:{" "}
-              <strong>{formatCurrency(success.subtotalAmountCents / 100)}</strong>
+              <strong className="text-foreground">
+                {formatCurrency(success.subtotalAmountCents / 100)}
+              </strong>
             </p>
-            <p className="text-rose-800">{success.pixInstructions}</p>
+            <div className="rounded-[1.75rem] border border-border/70 bg-background/60 p-4 text-sm leading-6 text-muted-foreground">
+              {success.pixInstructions}
+            </div>
             <Link href="/loja/catalogo">
               <a>
-                <Button className="bg-rose-500 hover:bg-rose-600">
-                  Voltar ao catálogo
+                <Button className="brand-button rounded-full px-6">
+                  Voltar ao catalogo
                 </Button>
               </a>
             </Link>
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          <Card className="border-rose-100 bg-white/90">
+        <div className="grid gap-6 lg:grid-cols-[1.12fr_0.88fr]">
+          <Card className="brand-shell">
             <CardContent className="space-y-6 p-6">
               <div className="space-y-2">
-                <h2 className="font-display text-2xl font-bold text-rose-950">
+                <div className="brand-pill">dados do pedido</div>
+                <h2 className="font-display text-2xl font-bold text-foreground">
                   Seus dados
                 </h2>
-                <p className="text-sm leading-6 text-rose-700">
-                  Preencha as informações para a confeitaria separar produção,
-                  atendimento e entrega corretamente.
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Preencha as informacoes para a confeitaria separar producao, atendimento e entrega corretamente.
                 </p>
               </div>
 
@@ -233,6 +241,7 @@ export default function PublicCheckout() {
                       customerName: event.target.value,
                     }))
                   }
+                  className="h-12 rounded-2xl"
                 />
                 <Input
                   placeholder="Telefone"
@@ -243,12 +252,13 @@ export default function PublicCheckout() {
                       customerPhone: event.target.value,
                     }))
                   }
+                  className="h-12 rounded-2xl"
                 />
               </div>
 
               <div className="space-y-3">
-                <p className="text-sm font-medium text-rose-900">
-                  Como você vai receber?
+                <p className="text-sm font-medium text-foreground">
+                  Como voce vai receber?
                 </p>
                 <div className="grid gap-3 md:grid-cols-2">
                   {(["Entrega", "Retirada"] as const).map((mode) => (
@@ -261,15 +271,15 @@ export default function PublicCheckout() {
                           deliveryMode: mode,
                         }))
                       }
-                      className={`rounded-2xl border px-4 py-4 text-left transition-colors ${checkoutFieldClass(
+                      className={`rounded-[1.6rem] border px-4 py-4 text-left transition-colors ${checkoutFieldClass(
                         form.deliveryMode === mode,
                       )}`}
                     >
-                      <p className="font-semibold text-rose-950">{mode}</p>
-                      <p className="mt-1 text-sm leading-6 text-rose-700">
+                      <p className="font-semibold text-foreground">{mode}</p>
+                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
                         {mode === "Entrega"
-                          ? "Informe endereço, bairro e taxa combinada."
-                          : "O pedido ficará separado para retirada no local."}
+                          ? "Informe endereco, bairro e taxa combinada."
+                          : "O pedido ficara separado para retirada no local."}
                       </p>
                     </button>
                   ))}
@@ -286,6 +296,7 @@ export default function PublicCheckout() {
                       deliveryDate: event.target.value,
                     }))
                   }
+                  className="h-12 rounded-2xl"
                 />
                 <Input
                   type="time"
@@ -296,13 +307,14 @@ export default function PublicCheckout() {
                       deliveryTime: event.target.value,
                     }))
                   }
+                  className="h-12 rounded-2xl"
                 />
               </div>
 
               {form.deliveryMode === "Entrega" ? (
-                <div className="space-y-4 rounded-3xl border border-rose-100 bg-rose-50/60 p-4">
+                <div className="space-y-4 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
                   <Input
-                    placeholder="Endereço"
+                    placeholder="Endereco"
                     value={form.deliveryAddress}
                     onChange={(event) =>
                       setForm((current) => ({
@@ -310,6 +322,7 @@ export default function PublicCheckout() {
                         deliveryAddress: event.target.value,
                       }))
                     }
+                    className="h-12 rounded-2xl"
                   />
                   <div className="grid gap-4 md:grid-cols-2">
                     <Input
@@ -321,6 +334,7 @@ export default function PublicCheckout() {
                           deliveryDistrict: event.target.value,
                         }))
                       }
+                      className="h-12 rounded-2xl"
                     />
                     <Input
                       placeholder="Taxa de entrega"
@@ -332,10 +346,11 @@ export default function PublicCheckout() {
                           deliveryFee: formatMoneyInput(event.target.value),
                         }))
                       }
+                      className="h-12 rounded-2xl"
                     />
                   </div>
                   <Input
-                    placeholder="Referência"
+                    placeholder="Referencia"
                     value={form.deliveryReference}
                     onChange={(event) =>
                       setForm((current) => ({
@@ -343,32 +358,36 @@ export default function PublicCheckout() {
                         deliveryReference: event.target.value,
                       }))
                     }
+                    className="h-12 rounded-2xl"
                   />
                 </div>
               ) : (
-                <div className="rounded-3xl border border-rose-100 bg-rose-50/50 p-4 text-sm leading-6 text-rose-700">
-                  Pedido configurado para retirada. Endereço e taxa não serão
-                  enviados.
+                <div className="rounded-[1.8rem] border border-border/70 bg-background/55 p-4 text-sm leading-6 text-muted-foreground">
+                  Pedido configurado para retirada. Endereco e taxa nao serao enviados.
                 </div>
               )}
 
               <Input
-                placeholder="Observações do pedido"
+                placeholder="Observacoes do pedido"
                 value={form.notes}
                 onChange={(event) =>
                   setForm((current) => ({ ...current, notes: event.target.value }))
                 }
+                className="h-12 rounded-2xl"
               />
             </CardContent>
           </Card>
 
-          <Card className="border-rose-100 bg-white/90">
+          <Card className="brand-shell">
             <CardContent className="space-y-5 p-6">
-              <div>
-                <p className="text-sm uppercase tracking-wide text-rose-700">
-                  Resumo do pedido
-                </p>
-                <h2 className="mt-1 font-display text-2xl font-bold text-rose-950">
+              <div className="brand-hero rounded-[1.9rem] border border-border/70 p-5">
+                <div className="flex items-center gap-2 text-primary">
+                  <Truck className="h-4 w-4" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em]">
+                    resumo do pedido
+                  </p>
+                </div>
+                <h2 className="mt-3 font-display text-2xl font-bold text-foreground">
                   {cart.itemCount} item(ns) no carrinho
                 </h2>
               </div>
@@ -377,22 +396,22 @@ export default function PublicCheckout() {
                 {cart.items.map((item) => (
                   <div
                     key={item.lineId}
-                    className="rounded-2xl border border-rose-100 bg-rose-50/40 p-4"
+                    className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-semibold text-rose-950">
+                        <p className="font-semibold text-foreground">
                           {item.quantity}x {item.name}
                         </p>
                         {item.additionals.length > 0 ? (
-                          <p className="mt-1 text-sm text-rose-700">
+                          <p className="mt-1 text-sm text-muted-foreground">
                             {item.additionals
                               .map((additional) => additional.optionName)
                               .join(", ")}
                           </p>
                         ) : null}
                       </div>
-                      <span className="font-semibold text-rose-800">
+                      <span className="font-semibold text-foreground">
                         {formatCurrency(
                           (item.quantity *
                             (item.unitPriceCents +
@@ -409,36 +428,35 @@ export default function PublicCheckout() {
                 ))}
               </div>
 
-              <div className="space-y-3 rounded-3xl border border-rose-100 bg-rose-50/60 p-4">
+              <div className="space-y-3 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-rose-700">Subtotal dos itens</span>
-                  <span className="font-semibold text-rose-950">
+                  <span className="text-muted-foreground">Subtotal dos itens</span>
+                  <span className="font-semibold text-foreground">
                     {formatCurrency(cart.totalCents / 100)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-rose-700">Entrega</span>
-                  <span className="font-semibold text-rose-950">
+                  <span className="text-muted-foreground">Entrega</span>
+                  <span className="font-semibold text-foreground">
                     {form.deliveryMode === "Entrega"
                       ? formatCurrency(deliveryFeeCents / 100)
                       : "Retirada no local"}
                   </span>
                 </div>
-                <div className="flex items-center justify-between border-t border-rose-100 pt-3">
-                  <span className="font-semibold text-rose-900">Total</span>
-                  <span className="font-display text-3xl font-bold text-rose-950">
+                <div className="flex items-center justify-between border-t border-border pt-3">
+                  <span className="font-semibold text-foreground">Total</span>
+                  <span className="font-display text-3xl font-bold text-foreground">
                     {formatCurrency(finalTotalCents / 100)}
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-dashed border-rose-200 px-4 py-3 text-sm leading-6 text-rose-700">
-                O pagamento continua manual em Pix. O pedido entra como
-                confirmado e a confeitaria valida o comprovante depois.
+              <div className="rounded-[1.5rem] border border-dashed border-border px-4 py-3 text-sm leading-6 text-muted-foreground">
+                O pagamento continua manual em Pix. O pedido entra como confirmado e a confeitaria valida o comprovante depois.
               </div>
 
               <Button
-                className="w-full bg-rose-500 hover:bg-rose-600"
+                className="brand-button h-12 w-full rounded-full"
                 onClick={handleSubmit}
                 disabled={checkoutMutation.isPending}
               >

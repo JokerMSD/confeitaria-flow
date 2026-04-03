@@ -91,7 +91,6 @@
   }
 }
 
-/* LIGHT MODE - Soft, sweet, and modern colors for a bakery */
 :root {
   --button-outline: rgba(0,0,0, .10);
   --badge-outline: rgba(0,0,0, .05);
@@ -99,35 +98,29 @@
   --elevate-1: rgba(0,0,0, .03);
   --elevate-2: rgba(0,0,0, .08);
 
-  /* Backgrounds: Warm white/cream */
-  --background: 30 50% 98%;
-  --foreground: 20 20% 20%;
+  --background: 28 45% 97%;
+  --foreground: 350 18% 22%;
 
   --card: 0 0% 100%;
-  --card-foreground: 20 20% 20%;
-  --card-border: 30 20% 90%;
+  --card-foreground: 350 18% 22%;
+  --card-border: 350 24% 86%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 20 20% 20%;
-  --popover-border: 30 20% 90%;
+  --popover-foreground: 350 18% 22%;
+  --popover-border: 350 24% 86%;
 
-  /* Primary: Sweet strawberry pink / soft red */
-  --primary: 345 80% 60%;
+  --primary: 349 43% 45%;
   --primary-foreground: 0 0% 100%;
 
-  /* Secondary: Soft caramel / biscuit */
-  --secondary: 30 40% 90%;
-  --secondary-foreground: 20 40% 30%;
+  --secondary: 342 68% 92%;
+  --secondary-foreground: 349 34% 32%;
 
-  /* Muted: Light gray with warm tint */
-  --muted: 30 20% 95%;
-  --muted-foreground: 20 10% 50%;
+  --muted: 24 25% 94%;
+  --muted-foreground: 350 11% 47%;
 
-  /* Accent: Mint / Matcha green for fresh accents */
-  --accent: 150 40% 90%;
-  --accent-foreground: 150 50% 30%;
+  --accent: 18 37% 89%;
+  --accent-foreground: 24 46% 28%;
 
-  /* Status Colors */
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
@@ -137,18 +130,18 @@
   --warning: 38 92% 50%;
   --warning-foreground: 0 0% 100%;
 
-  --border: 30 20% 90%;
-  --input: 30 20% 90%;
-  --ring: 345 80% 60%;
+  --border: 350 22% 87%;
+  --input: 350 22% 87%;
+  --ring: 349 43% 45%;
 
-  --sidebar: 0 0% 100%;
-  --sidebar-foreground: 20 20% 20%;
-  --sidebar-border: 30 20% 90%;
-  --sidebar-primary: 345 80% 60%;
+  --sidebar: 30 40% 98%;
+  --sidebar-foreground: 350 18% 22%;
+  --sidebar-border: 350 24% 88%;
+  --sidebar-primary: 349 43% 45%;
   --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 30 40% 90%;
-  --sidebar-accent-foreground: 20 40% 30%;
-  --sidebar-ring: 345 80% 60%;
+  --sidebar-accent: 342 68% 93%;
+  --sidebar-accent-foreground: 349 34% 32%;
+  --sidebar-ring: 349 43% 45%;
 
   --radius: 1rem;
   
@@ -173,29 +166,28 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Backgrounds: Dark warm gray / Chocolate */
-  --background: 20 15% 10%;
-  --foreground: 30 20% 90%;
+  --background: 350 21% 11%;
+  --foreground: 28 40% 93%;
 
-  --card: 20 15% 15%;
-  --card-foreground: 30 20% 90%;
-  --card-border: 20 15% 20%;
+  --card: 347 20% 15%;
+  --card-foreground: 28 40% 93%;
+  --card-border: 348 18% 24%;
 
-  --popover: 20 15% 15%;
-  --popover-foreground: 30 20% 90%;
-  --popover-border: 20 15% 20%;
+  --popover: 347 20% 15%;
+  --popover-foreground: 28 40% 93%;
+  --popover-border: 348 18% 24%;
 
-  --primary: 345 70% 50%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 342 69% 76%;
+  --primary-foreground: 350 22% 15%;
 
-  --secondary: 20 20% 25%;
-  --secondary-foreground: 30 20% 90%;
+  --secondary: 23 26% 23%;
+  --secondary-foreground: 28 38% 92%;
 
-  --muted: 20 15% 20%;
-  --muted-foreground: 30 10% 60%;
+  --muted: 349 16% 19%;
+  --muted-foreground: 26 18% 72%;
 
-  --accent: 20 20% 25%;
-  --accent-foreground: 30 20% 90%;
+  --accent: 20 32% 27%;
+  --accent-foreground: 30 34% 92%;
 
   --destructive: 0 70% 50%;
   --destructive-foreground: 0 0% 100%;
@@ -206,18 +198,18 @@
   --warning: 38 80% 40%;
   --warning-foreground: 0 0% 100%;
 
-  --border: 20 15% 25%;
-  --input: 20 15% 25%;
-  --ring: 345 70% 50%;
+  --border: 348 18% 25%;
+  --input: 348 18% 25%;
+  --ring: 342 69% 76%;
 
-  --sidebar: 20 15% 12%;
-  --sidebar-foreground: 30 20% 90%;
-  --sidebar-border: 20 15% 20%;
-  --sidebar-primary: 345 70% 50%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 20 20% 25%;
-  --sidebar-accent-foreground: 30 20% 90%;
-  --sidebar-ring: 345 70% 50%;
+  --sidebar: 350 20% 13%;
+  --sidebar-foreground: 28 40% 93%;
+  --sidebar-border: 348 18% 22%;
+  --sidebar-primary: 342 69% 76%;
+  --sidebar-primary-foreground: 350 22% 15%;
+  --sidebar-accent: 23 26% 22%;
+  --sidebar-accent-foreground: 28 38% 92%;
+  --sidebar-ring: 342 69% 76%;
 }
 
 @layer base {
@@ -232,6 +224,11 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
     overscroll-behavior-y: none;
+    background-image:
+      radial-gradient(circle at top left, color-mix(in oklab, hsl(var(--secondary)) 78%, transparent) 0, transparent 34%),
+      radial-gradient(circle at top right, color-mix(in oklab, hsl(var(--accent)) 68%, transparent) 0, transparent 28%),
+      linear-gradient(180deg, hsl(var(--background)) 0%, color-mix(in oklab, hsl(var(--background)) 94%, white) 100%);
+    background-attachment: fixed;
   }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight font-bold;
@@ -244,11 +241,11 @@
   }
   
   .glass-card {
-    @apply bg-white/80 dark:bg-black/50 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-sm;
+    @apply bg-white/75 dark:bg-card/80 backdrop-blur-md border border-white/35 dark:border-white/8 shadow-sm;
   }
 
   .bottom-nav-glass {
-    @apply bg-white/90 dark:bg-black/80 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)];
+    @apply bg-white/90 dark:bg-background/86 backdrop-blur-lg border-t border-border shadow-[0_-4px_20px_-10px_rgba(60,20,28,0.2)];
   }
 
   .pb-safe {
@@ -261,6 +258,33 @@
 
   .status-badge {
     @apply font-semibold tracking-wide uppercase text-[10px] px-2 py-1 rounded-full;
+  }
+
+  .brand-shell {
+    @apply rounded-[2rem] border border-border/70 bg-card/82 shadow-xl shadow-black/5 backdrop-blur-xl;
+  }
+
+  .brand-hero {
+    background:
+      radial-gradient(circle at top left, color-mix(in oklab, hsl(var(--secondary)) 85%, transparent) 0, transparent 36%),
+      radial-gradient(circle at bottom right, color-mix(in oklab, hsl(var(--primary)) 18%, transparent) 0, transparent 30%),
+      linear-gradient(135deg, color-mix(in oklab, hsl(var(--card)) 92%, hsl(var(--secondary)) 8%) 0%, hsl(var(--card)) 100%);
+  }
+
+  .brand-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, hsl(var(--border)) 75%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, hsl(var(--border)) 75%, transparent) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: center;
+  }
+
+  .brand-pill {
+    @apply inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary;
+  }
+
+  .brand-button {
+    @apply bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90;
   }
 
   /* Custom Scrollbar for sleek look */

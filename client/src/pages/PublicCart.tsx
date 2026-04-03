@@ -14,18 +14,18 @@ export default function PublicCart() {
       subtitle="Revise quantidades, adicionais e total antes de seguir para o checkout."
     >
       {cart.items.length === 0 ? (
-        <Card className="border-rose-100 bg-white/90">
+        <Card className="brand-shell">
           <CardContent className="space-y-4 p-8 text-center">
-            <p className="text-lg font-semibold text-rose-950">
-              Seu carrinho está vazio.
+            <p className="text-lg font-semibold text-foreground">
+              Seu carrinho esta vazio.
             </p>
-            <p className="text-sm leading-6 text-rose-700">
-              Escolha produtos no catálogo para montar o pedido.
+            <p className="text-sm leading-6 text-muted-foreground">
+              Escolha produtos no catalogo para montar o pedido.
             </p>
             <Link href="/loja/catalogo">
               <a>
-                <Button className="bg-rose-500 hover:bg-rose-600">
-                  Voltar ao catálogo
+                <Button className="brand-button rounded-full px-6">
+                  Voltar ao catalogo
                 </Button>
               </a>
             </Link>
@@ -43,26 +43,26 @@ export default function PublicCart() {
                 );
 
               return (
-                <Card key={item.lineId} className="border-rose-100 bg-white/90">
+                <Card key={item.lineId} className="brand-shell">
                   <CardContent className="space-y-4 p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="font-semibold text-rose-950">{item.name}</h2>
+                        <h2 className="font-semibold text-foreground">{item.name}</h2>
                         {item.additionals.length > 0 ? (
-                          <p className="mt-1 text-sm leading-6 text-rose-700">
+                          <p className="mt-1 text-sm leading-6 text-muted-foreground">
                             {item.additionals
                               .map((additional) => additional.optionName)
                               .join(", ")}
                           </p>
                         ) : (
-                          <p className="mt-1 text-sm text-rose-700">
+                          <p className="mt-1 text-sm text-muted-foreground">
                             Sem adicionais.
                           </p>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-rose-700">Preço unitário</p>
-                        <span className="font-semibold text-rose-950">
+                        <p className="text-sm text-muted-foreground">Preco unitario</p>
+                        <span className="font-semibold text-foreground">
                           {formatCurrency(unitTotalCents / 100)}
                         </span>
                       </div>
@@ -72,17 +72,19 @@ export default function PublicCart() {
                       <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
+                          className="rounded-full"
                           onClick={() =>
                             cart.updateQuantity(item.lineId, item.quantity - 1)
                           }
                         >
                           -
                         </Button>
-                        <span className="min-w-10 text-center font-semibold text-rose-950">
+                        <span className="min-w-10 text-center font-semibold text-foreground">
                           {item.quantity}
                         </span>
                         <Button
                           variant="outline"
+                          className="rounded-full"
                           onClick={() =>
                             cart.updateQuantity(item.lineId, item.quantity + 1)
                           }
@@ -91,7 +93,7 @@ export default function PublicCart() {
                         </Button>
                       </div>
                       <div className="flex items-center gap-4">
-                        <span className="font-display text-2xl font-bold text-rose-950">
+                        <span className="font-display text-2xl font-bold text-foreground">
                           {formatCurrency((item.quantity * unitTotalCents) / 100)}
                         </span>
                         <Button
@@ -108,30 +110,28 @@ export default function PublicCart() {
             })}
           </div>
 
-          <Card className="border-rose-100 bg-white/90">
+          <Card className="brand-shell">
             <CardContent className="space-y-4 p-6">
-              <p className="text-sm uppercase tracking-wide text-rose-700">
+              <p className="text-sm uppercase tracking-[0.28em] text-primary">
                 Resumo
               </p>
               <div className="flex items-center justify-between">
-                <span className="text-rose-700">Itens</span>
-                <span className="font-semibold text-rose-950">
-                  {cart.itemCount}
-                </span>
+                <span className="text-muted-foreground">Itens</span>
+                <span className="font-semibold text-foreground">{cart.itemCount}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-rose-700">Subtotal</span>
-                <span className="font-display text-2xl font-bold text-rose-950">
+                <span className="text-muted-foreground">Subtotal</span>
+                <span className="font-display text-2xl font-bold text-foreground">
                   {formatCurrency(cart.totalCents / 100)}
                 </span>
               </div>
-              <div className="rounded-2xl border border-dashed border-rose-200 px-4 py-3 text-sm leading-6 text-rose-700">
-                A taxa de entrega é definida no checkout. Para retirada, o total
+              <div className="rounded-[1.5rem] border border-dashed border-border px-4 py-3 text-sm leading-6 text-muted-foreground">
+                A taxa de entrega e definida no checkout. Para retirada, o total
                 final permanece igual ao subtotal.
               </div>
               <Link href="/loja/checkout">
                 <a>
-                  <Button className="w-full bg-rose-500 hover:bg-rose-600">
+                  <Button className="brand-button w-full rounded-full">
                     Ir para checkout
                   </Button>
                 </a>

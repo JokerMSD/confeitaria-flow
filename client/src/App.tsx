@@ -32,6 +32,7 @@ import PublicCart from "@/pages/PublicCart";
 import PublicCheckout from "@/pages/PublicCheckout";
 import MinhaConta from "@/pages/MinhaConta";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 
 function isStaffRole(role?: string) {
   return role === "admin" || role === "operador";
@@ -156,12 +157,14 @@ function AuthGate() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <AuthGate />
-      </TooltipProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <AuthGate />
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
 
