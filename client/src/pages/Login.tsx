@@ -28,7 +28,7 @@ export default function Login() {
     }
 
     try {
-      await loginMutation.mutateAsync({
+      const response = await loginMutation.mutateAsync({
         data: {
           email: email.trim(),
           password,
@@ -39,7 +39,11 @@ export default function Login() {
         title: "Login realizado",
         description: "Voce foi autenticado com sucesso.",
       });
-      setLocation("/");
+      setLocation(
+        response.data.role === "admin" || response.data.role === "operador"
+          ? "/"
+          : "/conta",
+      );
     } catch (error) {
       const message =
         error instanceof ApiError

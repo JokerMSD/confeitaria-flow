@@ -22,6 +22,7 @@ function parseAuthUsers(): ConfiguredAuthUser[] {
         email: entry.email.trim().toLowerCase(),
         password: entry.password,
         name: entry.name?.trim() || entry.email.trim(),
+        role: "admin" as const,
       }));
   }
 
@@ -34,6 +35,7 @@ function parseAuthUsers(): ConfiguredAuthUser[] {
         email: email.toLowerCase(),
         password,
         name: process.env.AUTH_NAME?.trim() || email,
+        role: "admin" as const,
       },
     ];
   }
@@ -45,12 +47,13 @@ function parseAuthUsers(): ConfiguredAuthUser[] {
   }
 
   return [
-    {
-      email: "admin@docegestao.com",
-      password: "admin123",
-      name: "Admin",
-    },
-  ];
+      {
+        email: "admin@docegestao.com",
+        password: "admin123",
+        name: "Admin",
+        role: "admin",
+      },
+    ];
 }
 
 export class AuthService {
@@ -86,8 +89,12 @@ export class AuthService {
     }
 
     return {
+      id: user.id,
       email: user.email,
       name: user.name,
+      role: user.role,
+      customerId: user.customerId ?? null,
+      photoUrl: user.photoUrl ?? null,
     };
   }
 

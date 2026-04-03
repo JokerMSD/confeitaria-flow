@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { UserRole } from "@shared/types";
 
-const userRoleSchema = z.enum(["admin", "operador"] as const);
+const userRoleSchema = z.enum(["admin", "operador", "user"] as const);
 
 export const createUserInputSchema = z.object({
   username: z.string().trim().min(3).max(80),
@@ -9,6 +9,8 @@ export const createUserInputSchema = z.object({
   fullName: z.string().trim().min(1).max(160),
   password: z.string().min(8).max(128),
   role: userRoleSchema,
+  customerId: z.string().uuid().nullable().optional(),
+  photoUrl: z.string().trim().url().nullable().optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -18,6 +20,8 @@ export const updateUserInputSchema = z.object({
   fullName: z.string().trim().min(1).max(160).optional(),
   password: z.string().min(8).max(128).optional(),
   role: userRoleSchema.optional(),
+  customerId: z.string().uuid().nullable().optional(),
+  photoUrl: z.string().trim().url().nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

@@ -105,7 +105,7 @@ export function Sidebar() {
       <div className="mt-auto border-t border-sidebar-border p-4">
         <div className="mb-4 flex items-center gap-3 px-2">
           <Avatar className="h-9 w-9 border border-border">
-            <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
+            <AvatarImage src={user?.photoUrl ?? undefined} />
             <AvatarFallback>
               {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
             </AvatarFallback>
@@ -206,7 +206,7 @@ export function MobileHeader({ title }: { title: string }) {
         {title}
       </h1>
       <Avatar className="h-8 w-8 border border-border">
-        <AvatarImage src="https://i.pravatar.cc/150?u=admin" />
+        <AvatarImage src={user?.photoUrl ?? undefined} />
         <AvatarFallback>
           {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
         </AvatarFallback>

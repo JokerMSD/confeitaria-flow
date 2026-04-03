@@ -75,7 +75,15 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "price_delta_cents",
     ],
     customers: ["first_name", "last_name", "email", "is_active"],
-    users: ["username", "email", "password", "role", "is_active"],
+    users: [
+      "username",
+      "email",
+      "password",
+      "role",
+      "customer_id",
+      "photo_url",
+      "is_active",
+    ],
   },
 };
 
@@ -127,6 +135,8 @@ const migrationHints: Record<string, string> = {
   "users.password": "0016_phase16_customers_and_users.sql",
   "users.role": "0016_phase16_customers_and_users.sql",
   "users.is_active": "0016_phase16_customers_and_users.sql",
+  "users.customer_id": "0017_phase17_user_accounts.sql",
+  "users.photo_url": "0017_phase17_user_accounts.sql",
 };
 
 export function validateSchemaSnapshot(

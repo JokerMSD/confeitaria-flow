@@ -17,3 +17,4 @@ export * from "./recipe.types";
 export * from "./customer.types";
 export * from "./users.types";
 export * from "./production.types";
+export * from "./account.types";

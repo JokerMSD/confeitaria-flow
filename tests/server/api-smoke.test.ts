@@ -151,6 +151,9 @@ test("POST /api/auth/login accepts valid credentials", async () => {
       data: {
         email: "admin@docegestao.com",
         name: "Admin",
+        role: "admin",
+        customerId: null,
+        photoUrl: null,
       },
     });
   });

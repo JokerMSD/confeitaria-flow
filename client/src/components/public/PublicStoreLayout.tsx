@@ -1,6 +1,11 @@
-import { ShoppingCart, Store } from "lucide-react";
+import { LogIn, LogOut, ShoppingCart, Store } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { usePublicCart } from "@/features/public-store/lib/public-cart";
+import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
+import { useLogout } from "@/features/auth/hooks/use-logout";
+import { authQueryKeys } from "@/features/auth/lib/auth-query-keys";
+import { queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 
 export function PublicStoreLayout({
@@ -14,14 +19,34 @@ export function PublicStoreLayout({
 }) {
   const [location] = useLocation();
   const { itemCount } = usePublicCart();
+  const { toast } = useToast();
+  const authSessionQuery = useAuthSession();
+  const logoutMutation = useLogout();
+  const user = authSessionQuery.data?.data ?? null;
   const navItems = [
     { href: "/loja", label: "Loja" },
-    { href: "/loja/catalogo", label: "Catálogo" },
+    { href: "/loja/catalogo", label: "Catalogo" },
     { href: "/loja/carrinho", label: "Carrinho" },
+    ...(user ? [{ href: "/conta", label: "Minha conta" }] : []),
   ];
 
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync();
+      await queryClient.invalidateQueries({
+        queryKey: authQueryKeys.session(),
+      });
+    } catch {
+      toast({
+        title: "Nao foi possivel sair",
+        description: "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff1f2,transparent_35%),linear-gradient(180deg,#fffaf5_0%,#fff 55%,#fef2f2_100%)] text-foreground">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#fff1f2,transparent_35%),linear-gradient(180deg,#fffaf5_0%,#fff_55%,#fef2f2_100%)] text-foreground">
       <header className="sticky top-0 z-40 border-b border-rose-100 bg-white/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 md:px-6">
           <Link href="/loja">
@@ -31,7 +56,7 @@ export function PublicStoreLayout({
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-rose-950">
-                  Doce Gestão
+                  Doce Gestao
                 </p>
                 <p className="text-xs text-rose-700">Loja da confeitaria</p>
               </div>
@@ -69,6 +94,33 @@ export function PublicStoreLayout({
                 ) : null}
               </a>
             </Link>
+
+            {user ? (
+              <>
+                {user.role === "admin" || user.role === "operador" ? (
+                  <Link href="/">
+                    <a className="rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-900 shadow-sm">
+                      Painel
+                    </a>
+                  </Link>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-900 shadow-sm"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
+              </>
+            ) : (
+              <Link href="/login">
+                <a className="inline-flex items-center gap-2 rounded-full border border-rose-200 bg-white px-4 py-2 text-sm font-medium text-rose-900 shadow-sm">
+                  <LogIn className="h-4 w-4" />
+                  Entrar
+                </a>
+              </Link>
+            )}
           </nav>
         </div>
       </header>

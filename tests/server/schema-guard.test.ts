@@ -93,7 +93,15 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       ["customers", new Set(["first_name", "last_name", "email", "is_active"])],
       [
         "users",
-        new Set(["username", "email", "password", "role", "is_active"]),
+        new Set([
+          "username",
+          "email",
+          "password",
+          "role",
+          "customer_id",
+          "photo_url",
+          "is_active",
+        ]),
       ],
     ]),
   });
@@ -156,5 +164,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0014_phase14_order_delivery_mode.sql",
     "0015_phase15_product_additionals.sql",
     "0016_phase16_customers_and_users.sql",
+    "0017_phase17_user_accounts.sql",
   ]);
 });

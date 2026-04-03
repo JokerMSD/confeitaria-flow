@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "operador";
+export type UserRole = "admin" | "operador" | "user";
 
 export interface UserItem {
   id: string;
@@ -6,6 +6,8 @@ export interface UserItem {
   email: string;
   fullName: string;
   role: UserRole;
+  customerId?: string | null;
+  photoUrl?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -18,6 +20,8 @@ export interface CreateUserInput {
   fullName: string;
   password: string;
   role: UserRole;
+  customerId?: string | null;
+  photoUrl?: string | null;
   isActive?: boolean;
 }
 
@@ -27,5 +31,7 @@ export interface UpdateUserInput {
   fullName?: string;
   password?: string;
   role?: UserRole;
+  customerId?: string | null;
+  photoUrl?: string | null;
   isActive?: boolean;
 }

@@ -2,6 +2,8 @@ import type { Express } from "express";
 import { type Server } from "http";
 import { storage } from "./storage";
 import { requireAuth } from "./middlewares/require-auth";
+import { requireStaff } from "./middlewares/require-staff";
+import { registerAccountRoutes } from "./modules/account/account.module";
 import { registerAuthRoutes } from "./modules/auth/auth.module";
 import { registerCashRoutes } from "./modules/cash/cash.module";
 import { registerHealthRoutes } from "./modules/health/health.routes";
@@ -22,6 +24,8 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerPublicStoreRoutes(app);
   app.use("/api", requireAuth);
+  registerAccountRoutes(app);
+  app.use("/api", requireStaff);
   registerOrdersRoutes(app);
   registerCashRoutes(app);
   registerInventoryRoutes(app);

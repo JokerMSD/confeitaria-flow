@@ -1,4 +1,5 @@
 import type {
+  AuthUser,
   CreateUserInput,
   UpdateUserInput,
   UserItem,
@@ -6,24 +7,43 @@ import type {
 } from "@shared/types";
 import { HttpError } from "../utils/http-error";
 import { UsersRepository } from "../repositories/users.repository";
+import { CustomersRepository } from "../repositories/customers.repository";
 import { hashPassword, verifyPassword } from "../utils/password";
+
+function splitFullName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const firstName = parts[0] ?? "Cliente";
+  const lastName = parts.slice(1).join(" ") || firstName;
+
+  return {
+    firstName,
+    lastName,
+  };
+}
 
 export class UsersService {
   private readonly usersRepository = new UsersRepository();
+  private readonly customersRepository = new CustomersRepository();
 
-  async list(): Promise<UserItem[]> {
-    const rows = await this.usersRepository.list();
-    return rows.map((row: any) => ({
+  private mapUserItem(row: any): UserItem {
+    return {
       id: row.id,
       username: row.username,
       email: row.email,
       fullName: row.fullName,
       role: row.role as UserRole,
+      customerId: row.customerId ?? null,
+      photoUrl: row.photoUrl ?? null,
       isActive: row.isActive,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       deletedAt: row.deletedAt ?? null,
-    }));
+    };
+  }
+
+  async list(): Promise<UserItem[]> {
+    const rows = await this.usersRepository.list();
+    return rows.map((row: any) => this.mapUserItem(row));
   }
 
   async getById(id: string): Promise<UserItem> {
@@ -33,40 +53,42 @@ export class UsersService {
       throw new HttpError(404, "Usuário não encontrado.");
     }
 
-    return {
-      id: user.id,
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role as UserRole,
-      isActive: user.isActive,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      deletedAt: user.deletedAt ?? null,
-    };
+    return this.mapUserItem(user);
   }
 
   async create(input: CreateUserInput): Promise<UserItem> {
-    const existingEmail = await this.usersRepository.findByEmail(input.email);
+    const normalizedEmail = input.email.trim().toLowerCase();
+    const normalizedUsername = input.username.trim().toLowerCase();
+    const normalizedFullName = input.fullName.trim();
+
+    const existingEmail = await this.usersRepository.findByEmail(normalizedEmail);
     if (existingEmail) {
       throw new HttpError(400, "E-mail já em uso.");
     }
 
     const existingUsername = await this.usersRepository.findByUsername(
-      input.username,
+      normalizedUsername,
     );
     if (existingUsername) {
       throw new HttpError(400, "Nome de usuário já em uso.");
     }
 
     const hashed = await hashPassword(input.password);
+    const linkedCustomerId = await this.resolveLinkedCustomerId({
+      role: input.role,
+      customerId: input.customerId ?? null,
+      fullName: normalizedFullName,
+      email: normalizedEmail,
+    });
 
     const row = await this.usersRepository.create({
-      username: input.username.toLowerCase(),
-      email: input.email.toLowerCase(),
-      fullName: input.fullName.trim(),
+      username: normalizedUsername,
+      email: normalizedEmail,
+      fullName: normalizedFullName,
       password: hashed,
       role: input.role,
+      customerId: linkedCustomerId,
+      photoUrl: input.photoUrl?.trim() || null,
       isActive: input.isActive ?? true,
     });
 
@@ -79,27 +101,43 @@ export class UsersService {
       throw new HttpError(404, "Usuário não encontrado.");
     }
 
-    if (input.email && input.email !== user.email) {
-      const existingEmail = await this.usersRepository.findByEmail(input.email);
-      if (existingEmail) {
+    const nextEmail = input.email?.trim().toLowerCase() ?? user.email;
+    const nextUsername = input.username?.trim().toLowerCase() ?? user.username;
+    const nextFullName = input.fullName?.trim() ?? user.fullName;
+    const nextRole = input.role ?? (user.role as UserRole);
+
+    if (nextEmail !== user.email) {
+      const existingEmail = await this.usersRepository.findByEmail(nextEmail);
+      if (existingEmail && existingEmail.id !== id) {
         throw new HttpError(400, "E-mail já em uso.");
       }
     }
 
-    if (input.username && input.username !== user.username) {
+    if (nextUsername !== user.username) {
       const existingUsername = await this.usersRepository.findByUsername(
-        input.username,
+        nextUsername,
       );
-      if (existingUsername) {
+      if (existingUsername && existingUsername.id !== id) {
         throw new HttpError(400, "Nome de usuário já em uso.");
       }
     }
 
     const updateData: any = {
-      username: input.username?.toLowerCase() ?? user.username,
-      email: input.email?.toLowerCase() ?? user.email,
-      fullName: input.fullName?.trim() ?? user.fullName,
-      role: input.role ?? user.role,
+      username: nextUsername,
+      email: nextEmail,
+      fullName: nextFullName,
+      role: nextRole,
+      customerId: await this.resolveLinkedCustomerId({
+        role: nextRole,
+        customerId:
+          input.customerId !== undefined
+            ? input.customerId
+            : (user.customerId ?? null),
+        fullName: nextFullName,
+        email: nextEmail,
+      }),
+      photoUrl:
+        input.photoUrl !== undefined ? input.photoUrl?.trim() || null : user.photoUrl,
       isActive: input.isActive ?? user.isActive,
     };
 
@@ -131,12 +169,8 @@ export class UsersService {
     return this.getById(id);
   }
 
-  async authenticate(emailOrUsername: string, password: string) {
-    const lookup =
-      (await this.usersRepository.findByEmail(emailOrUsername.toLowerCase())) ||
-      (await this.usersRepository.findByUsername(
-        emailOrUsername.toLowerCase(),
-      ));
+  async authenticate(emailOrUsername: string, password: string): Promise<AuthUser> {
+    const lookup = await this.usersRepository.findByEmailOrUsername(emailOrUsername);
 
     if (!lookup || !lookup.isActive) {
       throw new HttpError(401, "Usuário ou senha inválidos.");
@@ -148,13 +182,66 @@ export class UsersService {
     }
 
     return {
+      id: lookup.id,
       email: lookup.email,
       name: lookup.fullName,
       role: lookup.role as UserRole,
+      customerId: lookup.customerId ?? null,
+      photoUrl: lookup.photoUrl ?? null,
     };
   }
 
   async hasPersistedActiveUsers() {
     return (await this.usersRepository.countActive()) > 0;
+  }
+
+  async getAuthenticatedUserProfile(authUser: AuthUser) {
+    if (authUser.id) {
+      const byId = await this.usersRepository.findById(authUser.id);
+      if (byId) {
+        return byId;
+      }
+    }
+
+    const byEmail = await this.usersRepository.findByEmail(authUser.email);
+    return byEmail;
+  }
+
+  private async resolveLinkedCustomerId(input: {
+    role: UserRole;
+    customerId: string | null;
+    fullName: string;
+    email: string;
+  }) {
+    if (input.role !== "user") {
+      return input.customerId;
+    }
+
+    const names = splitFullName(input.fullName);
+    const existingCustomer =
+      (input.customerId
+        ? await this.customersRepository.findById(input.customerId)
+        : null) ?? (await this.customersRepository.findByEmail(input.email));
+
+    if (existingCustomer) {
+      await this.customersRepository.update(existingCustomer.id, {
+        firstName: names.firstName,
+        lastName: names.lastName,
+        email: input.email,
+        isActive: true,
+      } as any);
+
+      return existingCustomer.id;
+    }
+
+    const createdCustomer = await this.customersRepository.create({
+      firstName: names.firstName,
+      lastName: names.lastName,
+      email: input.email,
+      phone: null,
+      notes: "Cliente vinculado automaticamente a uma conta autenticada.",
+    });
+
+    return createdCustomer.id;
   }
 }

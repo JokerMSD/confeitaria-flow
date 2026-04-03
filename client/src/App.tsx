@@ -1,7 +1,7 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
-import { Switch, Route, useLocation } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -30,85 +30,40 @@ import PublicCatalog from "@/pages/PublicCatalog";
 import PublicProductDetail from "@/pages/PublicProductDetail";
 import PublicCart from "@/pages/PublicCart";
 import PublicCheckout from "@/pages/PublicCheckout";
+import MinhaConta from "@/pages/MinhaConta";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 
-function AuthGate() {
-  const [location, setLocation] = useLocation();
-  const authSessionQuery = useAuthSession();
-  const isPublicRoute =
-    location === "/loja" ||
-    location.startsWith("/loja/") ||
-    location.startsWith("/loja?");
+function isStaffRole(role?: string) {
+  return role === "admin" || role === "operador";
+}
 
-  if (isPublicRoute) {
-    return (
-      <Switch>
-        <Route path="/loja" component={PublicStoreHome} />
-        <Route path="/loja/catalogo" component={PublicCatalog} />
-        <Route path="/loja/produtos/:id" component={PublicProductDetail} />
-        <Route path="/loja/carrinho" component={PublicCart} />
-        <Route path="/loja/checkout" component={PublicCheckout} />
-        <Route component={NotFound} />
-      </Switch>
-    );
-  }
+function isPublicFacingPath(path: string) {
+  return (
+    path === "/" ||
+    path === "/login" ||
+    path === "/conta" ||
+    path.startsWith("/loja") ||
+    path.startsWith("/conta/")
+  );
+}
 
-  useEffect(() => {
-    if (authSessionQuery.data?.data && location === "/login") {
-      setLocation("/");
-    }
-  }, [authSessionQuery.data?.data, location, setLocation]);
+function PublicFacingSwitch({ includeLogin }: { includeLogin: boolean }) {
+  return (
+    <Switch>
+      <Route path="/" component={PublicStoreHome} />
+      <Route path="/loja" component={PublicStoreHome} />
+      <Route path="/loja/catalogo" component={PublicCatalog} />
+      <Route path="/loja/produtos/:id" component={PublicProductDetail} />
+      <Route path="/loja/carrinho" component={PublicCart} />
+      <Route path="/loja/checkout" component={PublicCheckout} />
+      <Route path="/conta" component={MinhaConta} />
+      {includeLogin ? <Route path="/login" component={Login} /> : null}
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
-  useEffect(() => {
-    if (
-      !authSessionQuery.isLoading &&
-      !authSessionQuery.data?.data &&
-      location !== "/login"
-    ) {
-      setLocation("/login");
-    }
-  }, [
-    authSessionQuery.data?.data,
-    authSessionQuery.isLoading,
-    location,
-    setLocation,
-  ]);
-
-  if (location === "/login" && !authSessionQuery.data?.data) {
-    return (
-      <Switch>
-        <Route path="/login" component={Login} />
-        <Route component={NotFound} />
-      </Switch>
-    );
-  }
-
-  if (authSessionQuery.isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Carregando sessao...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (!authSessionQuery.data?.data && location !== "/login") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Redirecionando para o login...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (authSessionQuery.data?.data && location === "/login") {
-    return <Home />;
-  }
-
+function AdminSwitch() {
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -133,10 +88,70 @@ function AuthGate() {
       <Route path="/usuarios/:id" component={Usuario} />
       <Route path="/receitas/:id" component={ReceitaForm} />
       <Route path="/catalogo/:id" component={ReceitaForm} />
-      <Route path="/login" component={Login} />
+      <Route path="/conta" component={MinhaConta} />
+      <Route path="/loja" component={PublicStoreHome} />
+      <Route path="/loja/catalogo" component={PublicCatalog} />
+      <Route path="/loja/produtos/:id" component={PublicProductDetail} />
+      <Route path="/loja/carrinho" component={PublicCart} />
+      <Route path="/loja/checkout" component={PublicCheckout} />
       <Route component={NotFound} />
     </Switch>
   );
+}
+
+function AuthGate() {
+  const [location, setLocation] = useLocation();
+  const authSessionQuery = useAuthSession();
+  const session = authSessionQuery.data?.data ?? null;
+  const isStaff = isStaffRole(session?.role);
+
+  useEffect(() => {
+    if (authSessionQuery.isLoading) {
+      return;
+    }
+
+    if (!session) {
+      if (location === "/conta" || location.startsWith("/conta/")) {
+        setLocation("/login");
+        return;
+      }
+
+      if (!isPublicFacingPath(location)) {
+        setLocation("/");
+      }
+      return;
+    }
+
+    if (location === "/login") {
+      setLocation(isStaff ? "/" : "/conta");
+      return;
+    }
+
+    if (!isStaff && !isPublicFacingPath(location)) {
+      setLocation("/");
+    }
+  }, [authSessionQuery.isLoading, isStaff, location, session, setLocation]);
+
+  if (authSessionQuery.isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Carregando sessao...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <PublicFacingSwitch includeLogin />;
+  }
+
+  if (isStaff) {
+    return <AdminSwitch />;
+  }
+
+  return <PublicFacingSwitch includeLogin={false} />;
 }
 
 function App() {

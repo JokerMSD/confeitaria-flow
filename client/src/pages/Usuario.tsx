@@ -23,6 +23,10 @@ interface UserFormData {
 }
 
 function roleDescription(role: UserRole) {
+  if (role === "user") {
+    return "Conta da loja publica, com perfil proprio e historico de pedidos.";
+  }
+
   return role === "admin"
     ? "Pode configurar usuários e ajustar áreas mais sensíveis."
     : "Perfil operacional para pedidos, produção, caixa e rotina da loja.";
@@ -268,6 +272,11 @@ export default function Usuario() {
                         value: "admin",
                         label: "Administrador",
                         icon: Shield,
+                      },
+                      {
+                        value: "user",
+                        label: "Cliente",
+                        icon: UserCog,
                       },
                     ] as const).map((option) => {
                       const Icon = option.icon;

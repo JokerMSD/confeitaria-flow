@@ -27,7 +27,15 @@ import { useToast } from "@/hooks/use-toast";
 import type { UserItem } from "@shared/types";
 
 function getRoleLabel(role: UserItem["role"]) {
-  return role === "admin" ? "Administrador" : "Operador";
+  if (role === "admin") {
+    return "Administrador";
+  }
+
+  if (role === "user") {
+    return "Cliente";
+  }
+
+  return "Operador";
 }
 
 function UserStatCard({
@@ -83,6 +91,7 @@ export default function Usuarios() {
   const activeCount = filteredUsers.filter((user) => user.isActive).length;
   const inactiveCount = filteredUsers.length - activeCount;
   const adminCount = filteredUsers.filter((user) => user.role === "admin").length;
+  const customerCount = filteredUsers.filter((user) => user.role === "user").length;
 
   const toggleStatus = async (id: string, active: boolean) => {
     try {
@@ -149,7 +158,7 @@ export default function Usuarios() {
           </div>
         </section>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <UserStatCard
             title="Ativos"
             value={activeCount}
@@ -164,6 +173,11 @@ export default function Usuarios() {
             title="Administradores"
             value={adminCount}
             description="Perfis com mais autonomia para ajustes internos."
+          />
+          <UserStatCard
+            title="Contas cliente"
+            value={customerCount}
+            description="Usuários da loja pública com histórico e conta própria."
           />
         </div>
 

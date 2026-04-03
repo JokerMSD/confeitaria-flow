@@ -34,6 +34,8 @@ export class MemStorage implements IStorage {
       ...insertUser,
       id,
       role: insertUser.role ?? "operador",
+      customerId: insertUser.customerId ?? null,
+      photoUrl: insertUser.photoUrl ?? null,
       isActive: insertUser.isActive ?? true,
       createdAt: now,
       updatedAt: now,

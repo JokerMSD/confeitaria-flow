@@ -1,18 +1,20 @@
 # Public Store Domain
 
-Estado atual: a loja publica foi aberta com home, catalogo publico, detalhe de produto, carrinho e checkout. O cliente final consegue montar pedido com adicionais estruturados, revisar carrinho, escolher entrega ou retirada, informar data/horario e concluir em Pix manual sem autenticar no painel interno.
+Estado atual: a loja publica foi aberta com home, catalogo publico, detalhe de produto, carrinho e checkout. O cliente final consegue montar pedido com adicionais estruturados, revisar carrinho, escolher entrega ou retirada, informar data/horario e concluir em Pix manual sem autenticar no painel interno. Quando existe conta com role `user`, a mesma frente publica passa a expor area de conta com perfil, troca de senha e historico de pedidos.
 
 Escopo atual:
 - vitrine publica de produtos vendaveis
 - detalhe publico de produto com adicionais
 - carrinho persistido no navegador
 - checkout com nome, telefone, entrega/retirada, data, horario, endereco, bairro, referencia, taxa e Pix manual
+- area `Minha conta` para usuario autenticado com historico e configuracoes basicas
 
 Invariantes importantes:
 - abrir loja publica nao deve quebrar os fluxos internos existentes
 - autenticacao interna atual nao deve ser deformada para atender cliente final
 - contratos publicos devem nascer no backend com recortes claros, sem expor o dominio administrativo por acidente
 - o significado de entrega/retirada deve ser o mesmo do fluxo interno
+- conta `user` deve permanecer na frente publica; apenas `admin` e `operador` entram no painel interno
 
 Riscos ativos:
 - o checkout ainda nao cobre recheios publicos nem pagamento automatizado

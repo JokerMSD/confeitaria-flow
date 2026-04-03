@@ -1,6 +1,6 @@
 # Customers Domain
 
-Estado atual: o projeto possui entidade `customers`, schema dedicado e ligacao real com pedidos. A experiencia de clientes absorve a listagem operacional que antes ficava em pedidos; o detalhe exibe resumo comercial, historico, pedidos em aberto, total gasto e atalho para abrir novo pedido contextualizado. Pedidos legados sem `customerId` sao sincronizados automaticamente por nome ao consultar o modulo e a listagem aceita busca por nome e telefone.
+Estado atual: o projeto possui entidade `customers`, schema dedicado e ligacao real com pedidos. A experiencia de clientes absorve a listagem operacional que antes ficava em pedidos; o detalhe exibe resumo comercial, historico, pedidos em aberto, total gasto e atalho para abrir novo pedido contextualizado. Pedidos legados sem `customerId` sao sincronizados automaticamente por nome ao consultar o modulo e a listagem aceita busca por nome e telefone. Contas com role `user` podem se vincular a `customers` para reaproveitar historico e dados comerciais.
 
 Contratos principais:
 - entidade de cliente vinculavel a pedidos

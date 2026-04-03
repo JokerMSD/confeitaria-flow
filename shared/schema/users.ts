@@ -5,6 +5,7 @@ import {
   varchar,
   boolean,
   timestamp,
+  uuid,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -18,6 +19,8 @@ export const users = pgTable("users", {
   fullName: text("full_name").notNull(),
   password: text("password").notNull(),
   role: varchar("role", { length: 16 }).notNull().default("operador"),
+  customerId: uuid("customer_id"),
+  photoUrl: text("photo_url"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
@@ -34,6 +37,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   fullName: true,
   password: true,
   role: true,
+  customerId: true,
+  photoUrl: true,
   isActive: true,
 });
 

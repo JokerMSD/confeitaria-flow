@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, or } from "drizzle-orm";
 import { getDb } from "../db";
 import { users } from "@shared/schema";
 import type { InsertUser } from "@shared/schema";
@@ -39,6 +39,25 @@ export class UsersRepository {
       .select()
       .from(users)
       .where(eq(users.email, email.toLowerCase()))
+      .limit(1);
+
+    return user ?? null;
+  }
+
+  async findByEmailOrUsername(
+    emailOrUsername: string,
+    executor: Executor = getDb(),
+  ) {
+    const normalized = emailOrUsername.toLowerCase();
+    const [user] = await executor
+      .select()
+      .from(users)
+      .where(
+        and(
+          isNull(users.deletedAt),
+          or(eq(users.email, normalized), eq(users.username, normalized)),
+        ),
+      )
       .limit(1);
 
     return user ?? null;
