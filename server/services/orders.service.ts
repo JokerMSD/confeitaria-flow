@@ -216,6 +216,7 @@ export class OrdersService {
           paymentMethod: createdOrder.paymentMethod,
           orderDate: createdOrder.orderDate,
           paidAmountCents: createdOrder.paidAmountCents,
+          receivedAt: createdOrder.paidAmountCents > 0 ? now : null,
         },
         tx,
       );
@@ -368,6 +369,11 @@ export class OrdersService {
           paymentMethod: updatedOrder.paymentMethod,
           orderDate: updatedOrder.orderDate,
           paidAmountCents: updatedOrder.paidAmountCents,
+          receivedAt:
+            updatedOrder.paidAmountCents !== existing.paidAmountCents ||
+            updatedOrder.paymentMethod !== existing.paymentMethod
+              ? now
+              : null,
         },
         tx,
       );

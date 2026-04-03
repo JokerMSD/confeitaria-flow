@@ -28,6 +28,12 @@ export class CashTransactionsService {
     const orderSummary = await this.ordersRepository.getFinancialSummaryByDate(
       date,
     );
+    const receiptRows = await this.cashTransactionsRepository.list({
+      type: "Entrada",
+      category: "RecebimentoPedido",
+      dateFrom: date,
+      dateTo: date,
+    });
     const expenseRows = await this.cashTransactionsRepository.list({
       type: "Saida",
       category: "CompraEstoque",
@@ -37,7 +43,10 @@ export class CashTransactionsService {
 
     return {
       soldAmountCents: Number(orderSummary.soldAmountCents ?? 0),
-      receivedAmountCents: Number(orderSummary.receivedAmountCents ?? 0),
+      receivedAmountCents: receiptRows.reduce(
+        (sum: number, row: any) => sum + row.amountCents,
+        0,
+      ),
       receivableAmountCents: Number(orderSummary.receivableAmountCents ?? 0),
       expenseAmountCents: expenseRows.reduce(
         (sum: number, row: any) => sum + row.amountCents,
@@ -147,6 +156,7 @@ export class CashTransactionsService {
       paymentMethod: PaymentMethod;
       orderDate: string;
       paidAmountCents: number;
+      receivedAt?: Date | null;
     },
     executor: any,
   ) {
@@ -175,7 +185,10 @@ export class CashTransactionsService {
       description: `Recebimento ${order.orderNumber} - ${order.customerName}`,
       amountCents: order.paidAmountCents,
       paymentMethod: order.paymentMethod,
-      transactionDate: new Date(`${order.orderDate}T12:00:00.000Z`),
+      transactionDate:
+        order.receivedAt ??
+        existing?.transactionDate ??
+        new Date(`${order.orderDate}T12:00:00.000Z`),
       orderId: order.id,
       sourceType: "PedidoRecebimento",
       sourceId: order.id,
