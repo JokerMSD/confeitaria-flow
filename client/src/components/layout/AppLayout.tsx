@@ -1,7 +1,6 @@
 import { Link, useLocation } from "wouter";
 import {
   BookOpen,
-  ClipboardList,
   Home,
   LogOut,
   PackageSearch,
@@ -45,8 +44,7 @@ export function Sidebar() {
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
-    { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
-    { href: "/fila", label: "Fila", icon: ClipboardList },
+    { href: "/fila", label: "Fila", icon: Home },
     { href: "/clientes", label: "Clientes", icon: User },
     { href: "/usuarios", label: "Usuários", icon: User },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
@@ -138,8 +136,8 @@ export function BottomNav() {
 
   const navItems = [
     { href: "/", label: "Início", icon: Home },
-    { href: "/pedidos", label: "Pedidos", icon: ClipboardList },
-    { href: "/fila", label: "Fila", icon: ClipboardList },
+    { href: "/fila", label: "Fila", icon: Home },
+    { href: "/clientes", label: "Clientes", icon: User },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
     { href: "/catalogo", label: "Catálogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },

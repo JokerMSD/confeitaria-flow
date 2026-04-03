@@ -6,11 +6,14 @@ import type {
 } from "@shared/types";
 import { HttpError } from "../utils/http-error";
 import { CustomersRepository } from "../repositories/customers.repository";
+import { CustomerOrderSyncService } from "./customer-order-sync.service";
 
 export class CustomersService {
   private readonly customersRepository = new CustomersRepository();
+  private readonly customerOrderSyncService = new CustomerOrderSyncService();
 
   async list(): Promise<CustomerListItem[]> {
+    await this.customerOrderSyncService.syncMissingCustomersFromOrders();
     const customers = await this.customersRepository.list();
 
     return Promise.all(
@@ -37,6 +40,7 @@ export class CustomersService {
   }
 
   async getById(id: string): Promise<CustomerDetail> {
+    await this.customerOrderSyncService.syncMissingCustomersFromOrders();
     const customer = await this.customersRepository.findById(id);
 
     if (!customer) {
