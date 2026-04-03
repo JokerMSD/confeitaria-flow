@@ -1,12 +1,12 @@
 # Public Store Domain
 
-Estado atual: a loja publica ainda nao foi aberta como modulo real do produto. O sistema continua orientado para operacao interna, com autenticacao simples e fluxos administrativos.
+Estado atual: a loja publica foi aberta com home, catalogo publico, detalhe de produto, carrinho e checkout. O cliente final consegue montar pedido com adicionais estruturados e concluir em Pix manual sem autenticar no painel interno.
 
-Escopo esperado quando este dominio for iniciado:
-- vitrine publica de produtos
-- checkout do cliente final
-- area do cliente e acompanhamento de pedido
-- integracao controlada com estoque, pedidos, pagamentos e clientes
+Escopo atual:
+- vitrine publica de produtos vendaveis
+- detalhe publico de produto com adicionais
+- carrinho persistido no navegador
+- checkout com nome, telefone, entrega/retirada, data, horario e Pix manual
 
 Invariantes importantes:
 - abrir loja publica nao deve quebrar os fluxos internos existentes
@@ -19,11 +19,11 @@ Dependencias de dominio:
 - pedidos e pagamentos precisam suportar um fluxo externo sem atalhos manuais
 
 Riscos ativos:
-- antecipar checkout sem fechar clientes e usuarios internos aumenta retrabalho
-- misturar painel interno e loja publica no mesmo contrato costuma degradar ambos
-- performance e UX mobile serao relevantes, mas nao devem abrir refactor prematuro do sistema inteiro
+- o checkout ainda nao cobre recheios publicos nem pagamento automatizado
+- misturar painel interno e loja publica no mesmo contrato continua sendo risco; por isso os endpoints publicos sao separados
+- performance e UX mobile sao relevantes, mas nao devem abrir refactor prematuro do sistema inteiro
 
 Proximos passos naturais:
-- tratar este dominio como futuro
-- so iniciar quando clientes, pedidos e catalogo estiverem coerentes para consumo publico
-- manter qualquer preparacao atual apenas como referencia estrategica, nao como contexto automatico
+- endurecer confirmacao de pagamento Pix e comunicacao com o cliente
+- avaliar recheios publicos e acompanhamento de pedido sem expor contratos administrativos
+- manter o dominio publico separado do painel interno

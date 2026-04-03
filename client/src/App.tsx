@@ -23,11 +23,34 @@ import Clientes from "@/pages/Clientes";
 import Cliente from "@/pages/Cliente";
 import Usuarios from "@/pages/Usuarios";
 import Usuario from "@/pages/Usuario";
+import PrevisaoProducao from "@/pages/PrevisaoProducao";
+import PublicStoreHome from "@/pages/PublicStoreHome";
+import PublicCatalog from "@/pages/PublicCatalog";
+import PublicProductDetail from "@/pages/PublicProductDetail";
+import PublicCart from "@/pages/PublicCart";
+import PublicCheckout from "@/pages/PublicCheckout";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 
 function AuthGate() {
   const [location, setLocation] = useLocation();
   const authSessionQuery = useAuthSession();
+  const isPublicRoute =
+    location === "/loja" ||
+    location.startsWith("/loja/") ||
+    location.startsWith("/loja?");
+
+  if (isPublicRoute) {
+    return (
+      <Switch>
+        <Route path="/loja" component={PublicStoreHome} />
+        <Route path="/loja/catalogo" component={PublicCatalog} />
+        <Route path="/loja/produtos/:id" component={PublicProductDetail} />
+        <Route path="/loja/carrinho" component={PublicCart} />
+        <Route path="/loja/checkout" component={PublicCheckout} />
+        <Route component={NotFound} />
+      </Switch>
+    );
+  }
 
   useEffect(() => {
     if (authSessionQuery.data?.data && location === "/login") {
@@ -91,6 +114,7 @@ function AuthGate() {
       <Route path="/pedidos" component={Pedidos} />
       <Route path="/pedidos/:id" component={PedidoForm} />
       <Route path="/fila" component={Fila} />
+      <Route path="/producao/previsao" component={PrevisaoProducao} />
       <Route path="/estoque" component={Estoque} />
       <Route path="/estoque/novo" component={EstoqueForm} />
       <Route path="/estoque/:id/editar" component={EstoqueForm} />

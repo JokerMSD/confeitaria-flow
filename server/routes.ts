@@ -11,6 +11,8 @@ import { registerProductAdditionalsRoutes } from "./modules/product-additionals/
 import { registerRecipesRoutes } from "./modules/recipes/recipes.module";
 import { registerCustomersRoutes } from "./modules/customers/customers.module";
 import { registerUsersRoutes } from "./modules/users/users.module";
+import { registerProductionRoutes } from "./modules/production/production.module";
+import { registerPublicStoreRoutes } from "./modules/public-store/public-store.module";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -18,6 +20,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   registerHealthRoutes(app);
   registerAuthRoutes(app);
+  registerPublicStoreRoutes(app);
   app.use("/api", requireAuth);
   registerOrdersRoutes(app);
   registerCashRoutes(app);
@@ -26,6 +29,7 @@ export async function registerRoutes(
   registerUsersRoutes(app);
   registerRecipesRoutes(app);
   registerProductAdditionalsRoutes(app);
+  registerProductionRoutes(app);
 
   void storage;
 

@@ -1,11 +1,12 @@
 # Production Domain
 
-Estado atual: a operacao de producao vive principalmente na fila e no planejamento de compra. A fila ja funciona como centro operacional com agrupamento por data e horario, e o planejamento calcula necessidades a partir de pedidos ativos e receitas.
+Estado atual: a operacao de producao continua vivendo principalmente na fila e no planejamento de compra, mas agora tambem possui uma tela dedicada de previsao. A previsao le pedidos em `Confirmado` ou `EmProducao`, explode receitas e adicionais e resume totais por receita e ingrediente.
 
 Contratos principais:
 - leitura de fila em `/api/orders/queue`
 - transicoes de status de pedido
 - leitura de `purchase-plan`
+- leitura de previsao em `/api/production/forecast`
 
 Invariantes importantes:
 - `deliveryDate` deve ser tratada como data operacional local
@@ -21,9 +22,10 @@ Dependencias de dominio:
 Riscos ativos:
 - fila, pedidos e estoque formam um acoplamento operacional alto
 - qualquer ajuste de agrupamento ou status pode afetar experiencia diaria da confeitaria
-- previsao por lote e turno ainda nao existe como modulo proprio
+- a previsao ainda nao separa lotes, turnos ou capacidade produtiva
+- destaques como chocolate, leite condensado e creme de leite dependem de nomes consistentes nos itens de estoque
 
 Proximos passos naturais:
 - manter fila e compra estaveis
-- evoluir visao de producao somente depois de consolidar clientes e usuarios
+- consolidar a previsao atual antes de abrir lote, turno ou capacidade
 - abrir previsao mais sofisticada por lote ou turno como modulo novo, nao como remendo da fila atual

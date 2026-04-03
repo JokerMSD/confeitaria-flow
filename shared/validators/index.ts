@@ -7,3 +7,4 @@ export * from "./product-additionals.validators";
 export * from "./recipes.validators";
 export * from "./customer.validators";
 export * from "./users.validators";
+export * from "./production.validators";

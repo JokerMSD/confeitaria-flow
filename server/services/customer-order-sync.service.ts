@@ -52,6 +52,10 @@ function buildImportedCustomerEmail(baseName: string, suffix: number) {
     : `${slug}.${suffix}@imported.local`;
 }
 
+function buildImportedCustomerNote(source: string) {
+  return `Cliente criado automaticamente a partir de ${source}. Revisar cadastro e email.`;
+}
+
 export interface CustomerOrderSyncSummary {
   createdCustomerCount: number;
   updatedCustomerPhoneCount: number;
@@ -60,6 +64,38 @@ export interface CustomerOrderSyncSummary {
 }
 
 export class CustomerOrderSyncService {
+  async ensureCustomerForContact(name: string, phone?: string | null) {
+    const normalizedName = normalizeCustomerName(name);
+
+    if (!normalizedName) {
+      throw new Error("Customer name is required.");
+    }
+
+    const trimmedPhone = phone?.trim() || null;
+    const pool = getPool();
+    const client = await pool.connect();
+
+    try {
+      await client.query("begin");
+
+      const customer = await this.ensureCustomerRecord(
+        client,
+        normalizedName,
+        name.trim(),
+        trimmedPhone,
+        "checkout público",
+      );
+
+      await client.query("commit");
+      return customer;
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   async syncMissingCustomersFromOrders(): Promise<CustomerOrderSyncSummary> {
     const pool = getPool();
     const client = await pool.connect();
@@ -145,40 +181,15 @@ export class CustomerOrderSyncService {
         let customer = customersByNormalizedName.get(normalizedName);
 
         if (!customer) {
-          const { firstName, lastName } = splitCustomerName(originalName);
-          let emailSuffix = 0;
-          let email = buildImportedCustomerEmail(originalName, emailSuffix);
-
-          while (usedEmails.has(email.toLowerCase())) {
-            emailSuffix += 1;
-            email = buildImportedCustomerEmail(originalName, emailSuffix);
-          }
-
-          const insertedCustomerResult = await client.query<ExistingCustomerRow>(
-            `
-              insert into customers (
-                first_name,
-                last_name,
-                email,
-                phone,
-                notes,
-                is_active
-              )
-              values ($1, $2, $3, $4, $5, true)
-              returning id, first_name, last_name, email, phone
-            `,
-            [
-              firstName,
-              lastName,
-              email,
-              importedPhone,
-              "Cliente criado automaticamente a partir de pedidos legados. Revisar cadastro e email.",
-            ],
+          customer = await this.ensureCustomerRecord(
+            client,
+            normalizedName,
+            originalName,
+            importedPhone,
+            "pedidos legados",
+            customersByNormalizedName,
+            usedEmails,
           );
-
-          customer = insertedCustomerResult.rows[0];
-          customersByNormalizedName.set(normalizedName, customer);
-          usedEmails.add(customer.email.toLowerCase());
           createdCustomers.push({
             id: customer.id,
             name: `${customer.first_name} ${customer.last_name}`,
@@ -223,5 +234,108 @@ export class CustomerOrderSyncService {
     } finally {
       client.release();
     }
+  }
+
+  private async ensureCustomerRecord(
+    client: { query: <T = any>(sql: string, values?: any[]) => Promise<{ rows: T[] }> },
+    normalizedName: string,
+    originalName: string,
+    phone: string | null,
+    sourceLabel: string,
+    existingMap?: Map<string, ExistingCustomerRow>,
+    usedEmails?: Set<string>,
+  ) {
+    const customersByNormalizedName =
+      existingMap ?? (await this.loadCustomersByNormalizedName(client));
+    const occupiedEmails = usedEmails ?? (await this.loadUsedEmails(client));
+    let customer = customersByNormalizedName.get(normalizedName);
+
+    if (!customer) {
+      const { firstName, lastName } = splitCustomerName(originalName);
+      let emailSuffix = 0;
+      let email = buildImportedCustomerEmail(originalName, emailSuffix);
+
+      while (occupiedEmails.has(email.toLowerCase())) {
+        emailSuffix += 1;
+        email = buildImportedCustomerEmail(originalName, emailSuffix);
+      }
+
+      const insertedCustomerResult = await client.query<ExistingCustomerRow>(
+        `
+          insert into customers (
+            first_name,
+            last_name,
+            email,
+            phone,
+            notes,
+            is_active
+          )
+          values ($1, $2, $3, $4, $5, true)
+          returning id, first_name, last_name, email, phone
+        `,
+        [
+          firstName,
+          lastName,
+          email,
+          phone,
+          buildImportedCustomerNote(sourceLabel),
+        ],
+      );
+
+      customer = insertedCustomerResult.rows[0];
+      customersByNormalizedName.set(normalizedName, customer);
+      occupiedEmails.add(customer.email.toLowerCase());
+      return customer;
+    }
+
+    if (!customer.phone && phone) {
+      await client.query(
+        `
+          update customers
+          set phone = $2, updated_at = now()
+          where id = $1
+        `,
+        [customer.id, phone],
+      );
+
+      customer.phone = phone;
+    }
+
+    return customer;
+  }
+
+  private async loadCustomersByNormalizedName(
+    client: { query: <T = any>(sql: string, values?: any[]) => Promise<{ rows: T[] }> },
+  ) {
+    const result = await client.query<ExistingCustomerRow>(`
+      select id, first_name, last_name, email, phone
+      from customers
+      where deleted_at is null
+    `);
+    const customersByNormalizedName = new Map<string, ExistingCustomerRow>();
+
+    for (const customer of result.rows) {
+      const normalized = normalizeCustomerName(
+        `${customer.first_name} ${customer.last_name}`,
+      );
+
+      if (!customersByNormalizedName.has(normalized)) {
+        customersByNormalizedName.set(normalized, customer);
+      }
+    }
+
+    return customersByNormalizedName;
+  }
+
+  private async loadUsedEmails(
+    client: { query: <T = any>(sql: string, values?: any[]) => Promise<{ rows: T[] }> },
+  ) {
+    const result = await client.query<{ email: string }>(`
+      select email
+      from customers
+      where deleted_at is null
+    `);
+
+    return new Set(result.rows.map((row) => row.email.toLowerCase()));
   }
 }
