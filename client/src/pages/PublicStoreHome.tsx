@@ -81,8 +81,8 @@ export default function PublicStoreHome() {
           </div>
         </section>
 
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <section className="brand-shell p-6 md:p-8">
+        <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <section className="brand-shell self-start p-6 md:p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">
               Como funciona
             </p>
@@ -114,7 +114,7 @@ export default function PublicStoreHome() {
             </div>
           </section>
 
-          <Card className="brand-shell overflow-hidden">
+          <Card className="brand-shell self-start overflow-hidden">
             <CardContent className="space-y-4 p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">
                 Destaques da loja
