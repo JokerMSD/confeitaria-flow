@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
-import { formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function Clientes() {
   const { data, isLoading, error, refetch } = useCustomers();
@@ -78,8 +78,14 @@ export default function Clientes() {
                   </TableCell>
                   <TableCell>{customer.email}</TableCell>
                   <TableCell>{customer.phone ?? "-"}</TableCell>
-                  <TableCell>-</TableCell>
-                  <TableCell>-</TableCell>
+                  <TableCell>
+                    {formatCurrency(customer.totalSpentCents / 100)}
+                  </TableCell>
+                  <TableCell>
+                    {customer.lastOrderDate
+                      ? formatDate(customer.lastOrderDate)
+                      : "-"}
+                  </TableCell>
                   <TableCell>{customer.isActive ? "Sim" : "Não"}</TableCell>
                   <TableCell>
                     <Link href={`/clientes/${customer.id}`}>

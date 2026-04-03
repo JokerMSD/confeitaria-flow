@@ -1,10 +1,10 @@
 # Customers Domain
 
-Estado atual: o projeto ja possui entidade `customers`, schema dedicado e base para relacao com pedidos. O dominio ainda nao virou centro da experiencia do produto e permanece em consolidacao.
+Estado atual: o projeto ja possui entidade `customers`, schema dedicado e base para relacao com pedidos. A tela de detalhe do cliente agora exibe resumo comercial, historico de pedidos e atalho para abrir novo pedido ja contextualizado no cliente. O dominio ainda permanece em consolidacao.
 
 Contratos principais:
 - entidade de cliente vinculavel a pedidos
-- leitura futura de historico, frequencia e ticket medio
+- leitura de historico comercial do cliente e navegacao para pedidos
 - rotas dedicadas no backend para evolucao incremental do modulo
 
 Invariantes importantes:
@@ -18,11 +18,11 @@ Dependencias de dominio:
 - futuras leituras comerciais dependem de vinculo limpo entre pedido e cliente
 
 Riscos ativos:
-- abrir uma tela de clientes antes de consolidar a relacao com pedidos gera retrabalho
+- manter cadastro de cliente sem fechar a selecao/vinculo no formulario de pedido ainda gera area hibrida
 - tentar resolver CRM, auth e loja publica de uma vez aumenta risco
 - migracoes do dominio exigem cuidado com dados existentes
 
 Proximos passos naturais:
-- fechar o vinculo `orders -> customers`
-- abrir leitura operacional e comercial especifica para a futura tela de clientes
+- consolidar o uso de `customerId` tambem no fluxo principal de criacao e edicao de pedido
+- expandir leituras comerciais especificas sem deformar o dominio de pedidos
 - manter o escopo restrito a cliente interno do negocio antes de qualquer frente publica

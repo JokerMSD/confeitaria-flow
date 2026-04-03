@@ -87,6 +87,7 @@ function mapApiAdditionalToFormItem(
 
 export function createEmptyOrderFormState(): OrderFormState {
   return {
+    customerId: null,
     customerName: "",
     phone: "",
     orderDate: getTodayLocalDateKey(),
@@ -109,6 +110,7 @@ export function adaptOrderDetailToFormState(
   response: OrderDetailResponse,
 ): OrderFormState {
   return {
+    customerId: response.data.customerId ?? null,
     customerName: response.data.customerName,
     phone: response.data.customerPhone ?? "",
     orderDate: response.data.orderDate,
@@ -177,6 +179,7 @@ export function adaptFormStateToCreatePayload(
 ): CreateOrderRequest {
   return {
     data: {
+      customerId: state.customerId,
       customerName: state.customerName.trim(),
       customerPhone: state.phone.trim() || null,
       orderDate: state.orderDate,

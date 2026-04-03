@@ -6,6 +6,7 @@ Contratos principais:
 - leitura e escrita de pedidos completos
 - leitura operacional da fila em `/api/orders/queue`
 - transicao rapida de status em `/api/orders/:id/status`
+- vinculo opcional com `customerId` para conectar pedido ao cadastro de cliente
 
 Invariantes importantes:
 - itens novos nao devem voltar para texto livre
@@ -24,6 +25,6 @@ Riscos ativos:
 - qualquer alteracao de contrato deve preservar a edicao de pedido e a reidratacao de adicionais
 
 Proximos passos naturais:
-- consolidar relacao real com `customers`
+- consolidar relacao real com `customers` tambem na entrada principal do pedido
 - manter os contratos de fila e detalhe consistentes
 - evitar abrir novas variacoes comerciais sem primeiro fechar o dominio atual de pedidos

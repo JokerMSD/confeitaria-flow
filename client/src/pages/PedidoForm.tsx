@@ -35,6 +35,7 @@ import {
   createEmptyOrderFormState,
 } from "@/features/orders/lib/order-form-adapter";
 import { supportsMultipleFillings } from "@/features/orders/lib/order-item-composer";
+import { useCustomer } from "@/features/customers/hooks/use-customer";
 import type { ProductAdditionalGroupDetail } from "@shared/types";
 import type {
   OrderFormItemAdditional,
@@ -88,12 +89,21 @@ function getDeliveryMomentLabel(mode: OrderFormState["deliveryMode"]) {
   return mode === "Entrega" ? "entrega" : "retirada";
 }
 
+function getCustomerIdFromQueryString() {
+  if (typeof window === "undefined") {
+    return "";
+  }
+
+  return new URLSearchParams(window.location.search).get("customerId") ?? "";
+}
+
 export default function PedidoForm() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
   const isEditing = Boolean(params?.id && params.id !== "novo");
   const orderId = isEditing ? params.id : undefined;
   const { toast } = useToast();
+  const customerIdFromQuery = useMemo(() => getCustomerIdFromQueryString(), []);
 
   const [formState, setFormState] = useState<OrderFormState>(
     createEmptyOrderFormState(),
@@ -113,6 +123,7 @@ export default function PedidoForm() {
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
   const orderQuery = useOrder(orderId);
+  const customerPrefillQuery = useCustomer(customerIdFromQuery);
   const productRecipesQuery = useRecipes({ kind: "ProdutoVenda" });
   const fillingRecipesQuery = useRecipes({ kind: "Preparacao" });
   const selectedProductDetailQuery = useRecipe(newItemRecipeId || undefined);
@@ -132,6 +143,25 @@ export default function PedidoForm() {
       setFormState(adaptOrderDetailToFormState(orderQuery.data));
     }
   }, [isEditing, orderQuery.data]);
+
+  useEffect(() => {
+    if (
+      isEditing ||
+      !customerPrefillQuery.data ||
+      formState.customerId === customerPrefillQuery.data.data.id
+    ) {
+      return;
+    }
+
+    setFormState((current) => ({
+      ...current,
+      customerId: customerPrefillQuery.data!.data.id,
+      customerName:
+        current.customerName.trim() ||
+        `${customerPrefillQuery.data!.data.firstName} ${customerPrefillQuery.data!.data.lastName}`,
+      phone: current.phone.trim() || customerPrefillQuery.data!.data.phone || "",
+    }));
+  }, [customerPrefillQuery.data, formState.customerId, isEditing]);
 
   const itemsTotalAmount = useMemo(
     () => formState.items.reduce((sum, item) => sum + item.subtotal, 0),
@@ -559,7 +589,9 @@ export default function PedidoForm() {
         toast({ title: "Pedido criado com sucesso!" });
       }
 
-      setLocation("/pedidos");
+      setLocation(
+        formState.customerId ? `/clientes/${formState.customerId}` : "/pedidos",
+      );
     } catch (error) {
       const message =
         error instanceof ApiError
@@ -631,7 +663,13 @@ export default function PedidoForm() {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setLocation("/pedidos")}
+              onClick={() =>
+                setLocation(
+                  !isEditing && formState.customerId
+                    ? `/clientes/${formState.customerId}`
+                    : "/pedidos",
+                )
+              }
               className="rounded-full"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -676,6 +714,11 @@ export default function PedidoForm() {
                       }
                       placeholder="Ex: Maria Silva"
                     />
+                    {formState.customerId ? (
+                      <p className="text-xs text-muted-foreground">
+                        Pedido vinculado ao cadastro do cliente.
+                      </p>
+                    ) : null}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Telefone</Label>

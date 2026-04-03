@@ -74,6 +74,7 @@ export interface OrderFormItemAdditional {
 }
 
 export interface OrderFormState {
+  customerId: string | null;
   customerName: string;
   phone: string;
   orderDate: string;

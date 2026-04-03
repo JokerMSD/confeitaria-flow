@@ -6,26 +6,24 @@ export interface CustomerListItem {
   phone?: string | null;
   notes?: string | null;
   isActive: boolean;
+  totalSpentCents: number;
+  lastOrderDate: string | null;
+  orderCount: number;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
 }
 
 export interface CustomerDetail extends CustomerListItem {
-  totalSpentCents: number;
-  lastOrderDate: string | null;
-  orderCount: number;
-}
-
-export interface CustomerOrdersResponse {
   orders: Array<{
     id: string;
     orderNumber: string;
     orderDate: string;
+    deliveryDate: string;
+    status: string;
     subtotalAmountCents: number;
     paidAmountCents: number;
     remainingAmountCents: number;
-    status: string;
   }>;
 }
 

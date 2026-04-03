@@ -12,18 +12,28 @@ export class CustomersService {
 
   async list(): Promise<CustomerListItem[]> {
     const customers = await this.customersRepository.list();
-    return customers.map((customer: any) => ({
-      id: customer.id,
-      firstName: customer.firstName,
-      lastName: customer.lastName,
-      email: customer.email,
-      phone: customer.phone ?? null,
-      notes: customer.notes ?? null,
-      isActive: customer.isActive,
-      createdAt: customer.createdAt,
-      updatedAt: customer.updatedAt,
-      deletedAt: customer.deletedAt ?? null,
-    }));
+
+    return Promise.all(
+      customers.map(async (customer: any) => {
+        const stats = await this.customersRepository.getStats(customer.id);
+
+        return {
+          id: customer.id,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+          email: customer.email,
+          phone: customer.phone ?? null,
+          notes: customer.notes ?? null,
+          isActive: customer.isActive,
+          totalSpentCents: stats.totalSpentCents,
+          lastOrderDate: stats.lastOrderDate,
+          orderCount: stats.orderCount,
+          createdAt: customer.createdAt,
+          updatedAt: customer.updatedAt,
+          deletedAt: customer.deletedAt ?? null,
+        };
+      }),
+    );
   }
 
   async getById(id: string): Promise<CustomerDetail> {
@@ -50,6 +60,16 @@ export class CustomersService {
       totalSpentCents: stats.totalSpentCents,
       lastOrderDate: stats.lastOrderDate,
       orderCount: stats.orderCount,
+      orders: orders.map((order: any) => ({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        orderDate: order.orderDate,
+        deliveryDate: order.deliveryDate,
+        status: order.status,
+        subtotalAmountCents: order.subtotalAmountCents,
+        paidAmountCents: order.paidAmountCents,
+        remainingAmountCents: order.remainingAmountCents,
+      })),
     };
   }
 
