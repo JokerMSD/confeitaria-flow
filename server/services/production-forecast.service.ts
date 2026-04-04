@@ -2,6 +2,7 @@ import type {
   InventoryItem,
   ProductionForecast,
   ProductionForecastAggregate,
+  ProductionForecastPurchaseSuggestion,
   RecipeDetail,
 } from "@shared/types";
 import {
@@ -9,6 +10,10 @@ import {
   convertRecipeQuantityToInventoryUnits,
   normalizeRecipeName,
 } from "../domain/recipes/recipe-domain";
+import {
+  getSuggestedPurchaseQuantity,
+  roundToThreeDecimals,
+} from "../domain/inventory/purchase-plan-domain";
 import { InventoryItemsRepository } from "../repositories/inventory-items.repository";
 import { OrderItemAdditionalsRepository } from "../repositories/order-item-additionals.repository";
 import { OrdersRepository } from "../repositories/orders.repository";
@@ -180,6 +185,9 @@ export class ProductionForecastService {
     const totalsByIngredient = Array.from(ingredientTotals.values()).sort((a, b) =>
       a.name.localeCompare(b.name, "pt-BR"),
     );
+    const purchaseSuggestions = await this.buildPurchaseSuggestions(
+      ingredientTotals,
+    );
 
     return {
       generatedAt: new Date().toISOString(),
@@ -213,6 +221,7 @@ export class ProductionForecastService {
           ["creme de leite"],
         ),
       },
+      purchaseSuggestions,
       orders: Array.from(orders.values()).sort((a, b) =>
         a.deliveryDate === b.deliveryDate
           ? a.orderNumber.localeCompare(b.orderNumber)
@@ -368,6 +377,67 @@ export class ProductionForecastService {
     }
 
     return this.inventoryCache.get(itemId)!;
+  }
+
+  private async buildPurchaseSuggestions(
+    ingredientTotals: Map<string, ProductionForecastAggregate>,
+  ) {
+    const items: ProductionForecastPurchaseSuggestion[] = [];
+    let estimatedPurchaseCostCents = 0;
+    let hasItemsWithoutCost = false;
+
+    for (const ingredient of Array.from(ingredientTotals.values())) {
+      const item = await this.getInventoryItem(ingredient.id);
+      const requiredQuantity = roundToThreeDecimals(ingredient.quantity);
+      const deficitQuantity = roundToThreeDecimals(
+        Math.max(0, requiredQuantity - item.currentQuantity),
+      );
+
+      if (deficitQuantity <= 0) {
+        continue;
+      }
+
+      const suggestedPurchaseQuantity = getSuggestedPurchaseQuantity(
+        deficitQuantity,
+        item.unit,
+      );
+      const estimatedItemCostCents =
+        item.purchaseUnitCostCents == null
+          ? null
+          : Math.round(suggestedPurchaseQuantity * item.purchaseUnitCostCents);
+
+      if (estimatedItemCostCents == null) {
+        hasItemsWithoutCost = true;
+      } else {
+        estimatedPurchaseCostCents += estimatedItemCostCents;
+      }
+
+      items.push({
+        itemId: item.id,
+        itemName: item.name,
+        itemUnit: item.unit,
+        currentQuantity: roundToThreeDecimals(item.currentQuantity),
+        requiredQuantity,
+        deficitQuantity,
+        suggestedPurchaseQuantity,
+        estimatedPurchaseCostCents: estimatedItemCostCents,
+      });
+    }
+
+    items.sort((a, b) => {
+      if (b.deficitQuantity !== a.deficitQuantity) {
+        return b.deficitQuantity - a.deficitQuantity;
+      }
+
+      return a.itemName.localeCompare(b.itemName, "pt-BR");
+    });
+
+    return {
+      shortageItemCount: items.length,
+      estimatedPurchaseCostCents,
+      hasItemsWithoutCost,
+      items,
+    };
   }
 
   private mergeHighlightGroups(

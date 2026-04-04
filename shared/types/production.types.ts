@@ -9,6 +9,17 @@ export interface ProductionForecastAggregate {
   unit: InventoryItemUnit;
 }
 
+export interface ProductionForecastPurchaseSuggestion {
+  itemId: string;
+  itemName: string;
+  itemUnit: InventoryItemUnit;
+  currentQuantity: number;
+  requiredQuantity: number;
+  deficitQuantity: number;
+  suggestedPurchaseQuantity: number;
+  estimatedPurchaseCostCents: number | null;
+}
+
 export interface ProductionForecastOrderReference {
   orderId: string;
   orderNumber: string;
@@ -38,6 +49,12 @@ export interface ProductionForecast {
     filling: ProductionForecastAggregate[];
     leiteCondensado: ProductionForecastAggregate[];
     cremeDeLeite: ProductionForecastAggregate[];
+  };
+  purchaseSuggestions: {
+    shortageItemCount: number;
+    estimatedPurchaseCostCents: number;
+    hasItemsWithoutCost: boolean;
+    items: ProductionForecastPurchaseSuggestion[];
   };
   orders: ProductionForecastOrderReference[];
 }

@@ -4,6 +4,7 @@ import {
   ClipboardList,
   CupSoda,
   Layers3,
+  PackageCheck,
   PackageSearch,
   Sparkles,
 } from "lucide-react";
@@ -21,11 +22,41 @@ import { useProductionForecast } from "@/features/production/hooks/use-productio
 import { cn, formatDate, getLocalDateKey } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
 
+function normalizeDisplayQuantity(quantity: number, unit: string) {
+  if (unit === "g" && Math.abs(quantity) >= 1000) {
+    return { quantity: quantity / 1000, unit: "kg" };
+  }
+
+  if (unit === "ml" && Math.abs(quantity) >= 1000) {
+    return { quantity: quantity / 1000, unit: "l" };
+  }
+
+  return { quantity, unit };
+}
+
+function getDisplayPrecision(unit: string, quantity: number) {
+  if (unit === "g" || unit === "ml") {
+    return Math.abs(Math.round(quantity) - quantity) < 0.01 ? 0 : 1;
+  }
+
+  if (unit === "un" || unit === "caixa") {
+    return Math.abs(Math.round(quantity) - quantity) < 0.01 ? 0 : 2;
+  }
+
+  return Math.abs(Math.round(quantity) - quantity) < 0.001 ? 0 : 3;
+}
+
 function formatQuantity(quantity: number, unit: string) {
+  const normalized = normalizeDisplayQuantity(quantity, unit);
+  const fractionDigits = getDisplayPrecision(
+    normalized.unit,
+    normalized.quantity,
+  );
+
   return `${new Intl.NumberFormat("pt-BR", {
     minimumFractionDigits: 0,
-    maximumFractionDigits: 3,
-  }).format(quantity)} ${unit}`;
+    maximumFractionDigits: fractionDigits,
+  }).format(normalized.quantity)} ${normalized.unit}`;
 }
 
 function getStatusTone(status: string) {
@@ -139,6 +170,7 @@ export default function PrevisaoProducao() {
     () => forecast?.totalsByIngredient.slice(0, 12) ?? [],
     [forecast],
   );
+  const purchaseSuggestions = forecast?.purchaseSuggestions;
 
   const rangeLabel = useMemo(
     () =>
@@ -292,7 +324,7 @@ export default function PrevisaoProducao() {
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           {[
             {
               label: "Pedidos em producao",
@@ -317,6 +349,12 @@ export default function PrevisaoProducao() {
               value: forecast?.totalsByAdditional.length ?? 0,
               helper: "Extras que afetam montagem e separacao.",
               icon: PackageSearch,
+            },
+            {
+              label: "Itens para comprar",
+              value: purchaseSuggestions?.shortageItemCount ?? 0,
+              helper: "Ingredientes em falta frente ao estoque atual.",
+              icon: PackageCheck,
             },
           ].map((item) => {
             const Icon = item.icon;
@@ -578,6 +616,127 @@ export default function PrevisaoProducao() {
                     </div>
                   </div>
                 ))
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
+        <section>
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardHeader className="border-b border-border/60 bg-muted/20">
+              <CardTitle className="flex items-center gap-2">
+                <PackageCheck className="h-5 w-5 text-primary" />
+                Compra sugerida pelo estoque
+              </CardTitle>
+              <CardDescription>
+                Itens que faltam para atender a previsao atual, com quantidade
+                sugerida de compra e estimativa de gasto quando houver custo medio.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 p-5">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Itens faltando
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-foreground">
+                    {purchaseSuggestions?.shortageItemCount ?? 0}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Gasto estimado
+                  </p>
+                  <p className="mt-2 text-2xl font-bold text-foreground">
+                    {purchaseSuggestions
+                      ? new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(
+                          purchaseSuggestions.estimatedPurchaseCostCents / 100,
+                        )
+                      : new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(0)}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-border/70 bg-background/80 p-4">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Custos incompletos
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-foreground">
+                    {purchaseSuggestions?.hasItemsWithoutCost
+                      ? "Ha itens sem custo medio suficiente"
+                      : "Todos os itens faltantes tem custo estimado"}
+                  </p>
+                </div>
+              </div>
+
+              {(purchaseSuggestions?.items.length ?? 0) === 0 ? (
+                <div className="rounded-2xl border border-dashed border-border bg-muted/10 p-6 text-sm text-muted-foreground">
+                  Nenhuma compra sugerida. O estoque atual cobre a previsao do
+                  periodo.
+                </div>
+              ) : (
+                <div className="grid gap-3 xl:grid-cols-2">
+                  {purchaseSuggestions?.items.slice(0, 8).map((item) => (
+                    <div
+                      key={item.itemId}
+                      className="rounded-2xl border border-border/70 bg-background/80 p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="font-medium text-foreground">
+                            {item.itemName}
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            Em estoque:{" "}
+                            {formatQuantity(
+                              item.currentQuantity,
+                              item.itemUnit,
+                            )}{" "}
+                            • Necessario:{" "}
+                            {formatQuantity(
+                              item.requiredQuantity,
+                              item.itemUnit,
+                            )}
+                          </p>
+                        </div>
+                        <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                          Falta{" "}
+                          {formatQuantity(item.deficitQuantity, item.itemUnit)}
+                        </span>
+                      </div>
+                      <div className="mt-4 flex items-center justify-between gap-3">
+                        <div>
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Comprar
+                          </p>
+                          <p className="text-lg font-bold text-foreground">
+                            {formatQuantity(
+                              item.suggestedPurchaseQuantity,
+                              item.itemUnit,
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                            Gasto
+                          </p>
+                          <p className="text-lg font-bold text-foreground">
+                            {item.estimatedPurchaseCostCents == null
+                              ? "Sem custo"
+                              : new Intl.NumberFormat("pt-BR", {
+                                  style: "currency",
+                                  currency: "BRL",
+                                }).format(item.estimatedPurchaseCostCents / 100)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </CardContent>
           </Card>
