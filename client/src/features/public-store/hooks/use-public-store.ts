@@ -4,6 +4,7 @@ import {
   getPublicProduct,
   getPublicProducts,
   getPublicStoreHome,
+  previewPublicCheckout,
 } from "@/api/public-store-api";
 import { publicStoreQueryKeys } from "../lib/public-store-query-keys";
 
@@ -38,5 +39,11 @@ export function usePublicProduct(id: string) {
 export function usePublicCheckout() {
   return useMutation({
     mutationFn: createPublicCheckout,
+  });
+}
+
+export function usePublicCheckoutPreview() {
+  return useMutation({
+    mutationFn: previewPublicCheckout,
   });
 }

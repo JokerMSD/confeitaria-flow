@@ -24,6 +24,8 @@ export type UiPaymentMethod =
   | "Transferência";
 
 export type UiDeliveryMode = "Entrega" | "Retirada";
+export type UiOrderDiscountType = "Sem desconto" | "Percentual" | "Valor fixo";
+export type UiOrderDiscountSource = "Manual" | "Cupom" | null;
 
 export interface OrderListCardItem {
   id: string;
@@ -86,6 +88,11 @@ export interface OrderFormState {
   deliveryReference: string;
   deliveryDistrict: string;
   deliveryFee: string;
+  discountSource: UiOrderDiscountSource;
+  discountType: UiOrderDiscountType;
+  discountValue: string;
+  discountLabel: string;
+  couponCode: string;
   status: UiOrderStatus;
   paymentMethod: UiPaymentMethod;
   paidAmount: string;

@@ -1,5 +1,6 @@
 import type {
   CreateOrderInput,
+  OrderDiscount,
   ListOrdersFilters,
   OrderDetail,
   OrderLookupItem,
@@ -10,6 +11,10 @@ import type {
   UpdateOrderInput,
 } from "@shared/types";
 import { shouldConsumeOrderStock } from "../domain/recipes/recipe-domain";
+import {
+  buildManualOrderDiscount,
+  calculateDiscountAmountCents,
+} from "../domain/orders/order-discount-domain";
 import { OrdersRepository } from "../repositories/orders.repository";
 import { OrderItemsRepository } from "../repositories/order-items.repository";
 import { OrderItemAdditionalsRepository } from "../repositories/order-item-additionals.repository";
@@ -49,6 +54,7 @@ function calculatePaymentStatus(
   subtotalAmountCents: number,
   paidAmountCents: number,
 ): PaymentStatus {
+  if (subtotalAmountCents <= 0) return "Pago";
   if (paidAmountCents <= 0) return "Pendente";
   if (paidAmountCents >= subtotalAmountCents) return "Pago";
   return "Parcial";
@@ -60,6 +66,10 @@ function calculateFullyPaidAt(
   previousFullyPaidAt?: Date | null,
   changedAt?: Date,
 ) {
+  if (subtotalAmountCents <= 0) {
+    return previousFullyPaidAt ?? changedAt ?? new Date();
+  }
+
   if (paidAmountCents >= subtotalAmountCents && subtotalAmountCents > 0) {
     return previousFullyPaidAt ?? changedAt ?? new Date();
   }
@@ -208,6 +218,13 @@ export class OrdersService {
           paymentMethod: normalized.paymentMethod,
           paymentStatus: normalized.paymentStatus,
           notes: normalized.notes,
+          itemsSubtotalAmountCents: normalized.itemsSubtotalAmountCents,
+          discountSource: normalized.discount?.source ?? null,
+          discountType: normalized.discount?.type ?? null,
+          discountValue: normalized.discount?.value ?? null,
+          discountAmountCents: normalized.discount?.amountCents ?? 0,
+          discountLabel: normalized.discount?.label ?? null,
+          couponCode: normalized.discount?.couponCode ?? null,
           subtotalAmountCents: normalized.subtotalAmountCents,
           paidAmountCents: normalized.paidAmountCents,
           remainingAmountCents: normalized.remainingAmountCents,
@@ -357,6 +374,13 @@ export class OrdersService {
           paymentMethod: normalized.paymentMethod,
           paymentStatus: normalized.paymentStatus,
           notes: normalized.notes,
+          itemsSubtotalAmountCents: normalized.itemsSubtotalAmountCents,
+          discountSource: normalized.discount?.source ?? null,
+          discountType: normalized.discount?.type ?? null,
+          discountValue: normalized.discount?.value ?? null,
+          discountAmountCents: normalized.discount?.amountCents ?? 0,
+          discountLabel: normalized.discount?.label ?? null,
+          couponCode: normalized.discount?.couponCode ?? null,
           subtotalAmountCents: normalized.subtotalAmountCents,
           paidAmountCents: normalized.paidAmountCents,
           remainingAmountCents: normalized.remainingAmountCents,
@@ -736,7 +760,12 @@ export class OrdersService {
       (sum, item) => sum + item.lineTotalCents,
       0,
     );
-    const subtotalAmountCents = itemsSubtotalAmountCents + deliveryFeeCents;
+    const grossAmountCents = itemsSubtotalAmountCents + deliveryFeeCents;
+    const discount = this.normalizeOrderDiscount(input.discount, grossAmountCents);
+    const subtotalAmountCents = Math.max(
+      0,
+      grossAmountCents - (discount?.amountCents ?? 0),
+    );
 
     const remainingAmountCents = Math.max(
       0,
@@ -766,12 +795,51 @@ export class OrdersService {
       paymentMethod: input.paymentMethod,
       paymentStatus,
       notes,
+      itemsSubtotalAmountCents,
+      discount,
       subtotalAmountCents,
       paidAmountCents,
       remainingAmountCents,
       itemCount: items.length,
       items,
     };
+  }
+
+  private normalizeOrderDiscount(
+    input: CreateOrderInput["discount"] | UpdateOrderInput["discount"],
+    grossAmountCents: number,
+  ): OrderDiscount | null {
+    if (!input) {
+      return null;
+    }
+
+    if (input.source === "Cupom") {
+      const amountCents = calculateDiscountAmountCents({
+        type: input.type,
+        value: input.value,
+        grossAmountCents,
+      });
+
+      if (amountCents <= 0) {
+        return null;
+      }
+
+      return {
+        source: "Cupom",
+        type: input.type,
+        value: input.value,
+        amountCents,
+        label: input.label?.trim() || null,
+        couponCode: input.couponCode?.trim() || null,
+      };
+    }
+
+    return buildManualOrderDiscount({
+      type: input.type,
+      value: input.value,
+      grossAmountCents,
+      label: input.label,
+    });
   }
 
   private mapOrderListItem(row: any): OrderListItem {
@@ -793,6 +861,19 @@ export class OrdersService {
       paymentMethod: row.paymentMethod,
       paymentStatus: row.paymentStatus,
       notes: row.notes ?? null,
+      itemsSubtotalAmountCents: row.itemsSubtotalAmountCents ?? 0,
+      discountAmountCents: row.discountAmountCents ?? 0,
+      discount:
+        row.discountType && row.discountSource && row.discountValue != null
+          ? {
+              source: row.discountSource,
+              type: row.discountType,
+              value: row.discountValue,
+              amountCents: row.discountAmountCents ?? 0,
+              label: row.discountLabel ?? null,
+              couponCode: row.couponCode ?? null,
+            }
+          : null,
       subtotalAmountCents: row.subtotalAmountCents,
       paidAmountCents: row.paidAmountCents,
       remainingAmountCents: row.remainingAmountCents,

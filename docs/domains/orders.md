@@ -8,12 +8,14 @@ Contratos principais:
 - transicao rapida de status em `/api/orders/:id/status`
 - vinculo opcional com `customerId` para conectar pedido ao cadastro de cliente
 - selecao explicita de cliente no formulario principal sem perder compatibilidade com nome/telefone legados
+- desconto manual por percentual ou valor fixo, calculado no backend e persistido no pedido
 - deteccao de escrita obsoleta por `updatedAt` no formulario e na fila
 
 Invariantes importantes:
 - itens novos nao devem voltar para texto livre
 - `deliveryMode` distingue `Entrega` e `Retirada`
 - ao marcar `Retirada`, endereco, bairro, referencia e taxa nao devem persistir
+- `subtotalAmountCents` representa o total final do pedido; `itemsSubtotalAmountCents` guarda a base antes do desconto
 - labels e adaptacoes de status/pagamento no frontend precisam continuar legiveis em pt-BR
 - fila, detalhe do cliente, checkout publico e formulario interno devem exibir o mesmo significado de entrega/retirada
 

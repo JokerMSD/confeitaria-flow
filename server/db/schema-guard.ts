@@ -27,6 +27,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     "inventory_items",
     "inventory_movements",
     "recipe_media",
+    "discount_coupons",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -40,6 +41,13 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "delivery_fee_cents",
       "customer_id",
       "fully_paid_at",
+      "items_subtotal_amount_cents",
+      "discount_source",
+      "discount_type",
+      "discount_value",
+      "discount_amount_cents",
+      "discount_label",
+      "coupon_code",
     ],
     order_items: [
       "recipe_id",
@@ -62,6 +70,14 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "purchase_equivalent_unit",
     ],
     recipe_media: ["recipe_id", "variation_recipe_id", "file_url", "position"],
+    discount_coupons: [
+      "code",
+      "title",
+      "discount_type",
+      "discount_value",
+      "minimum_order_amount_cents",
+      "is_active",
+    ],
     product_additional_groups: [
       "product_recipe_id",
       "selection_type",
@@ -98,6 +114,15 @@ const migrationHints: Record<string, string> = {
   "orders.delivery_fee_cents": "0014_phase14_order_delivery_mode.sql",
   "orders.customer_id": "0016_phase16_customers_and_users.sql",
   "orders.fully_paid_at": "0020_phase20_order_fully_paid_at.sql",
+  "orders.items_subtotal_amount_cents":
+    "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.discount_source": "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.discount_type": "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.discount_value": "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.discount_amount_cents":
+    "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.discount_label": "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.coupon_code": "0023_phase23_order_discounts_and_coupons.sql",
   "inventory_movements.purchase_amount_cents":
     "0012_phase12_inventory_weighted_average_cost.sql",
   "inventory_movements.purchase_equivalent_quantity":
@@ -107,6 +132,16 @@ const migrationHints: Record<string, string> = {
   "inventory_movements.purchase_discount_cents":
     "0013_phase13_inventory_purchase_discount.sql",
   recipe_media: "0021_phase21_recipe_media.sql",
+  discount_coupons: "0023_phase23_order_discounts_and_coupons.sql",
+  "discount_coupons.code": "0023_phase23_order_discounts_and_coupons.sql",
+  "discount_coupons.title": "0023_phase23_order_discounts_and_coupons.sql",
+  "discount_coupons.discount_type":
+    "0023_phase23_order_discounts_and_coupons.sql",
+  "discount_coupons.discount_value":
+    "0023_phase23_order_discounts_and_coupons.sql",
+  "discount_coupons.minimum_order_amount_cents":
+    "0023_phase23_order_discounts_and_coupons.sql",
+  "discount_coupons.is_active": "0023_phase23_order_discounts_and_coupons.sql",
   "recipe_media.recipe_id": "0021_phase21_recipe_media.sql",
   "recipe_media.variation_recipe_id": "0022_phase22_recipe_media_variation.sql",
   "recipe_media.file_url": "0021_phase21_recipe_media.sql",

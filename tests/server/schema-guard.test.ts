@@ -19,6 +19,7 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       "inventory_items",
       "inventory_movements",
       "recipe_media",
+      "discount_coupons",
       "product_additional_groups",
       "product_additional_options",
       "order_item_additionals",
@@ -34,6 +35,13 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "delivery_fee_cents",
           "customer_id",
           "fully_paid_at",
+          "items_subtotal_amount_cents",
+          "discount_source",
+          "discount_type",
+          "discount_value",
+          "discount_amount_cents",
+          "discount_label",
+          "coupon_code",
         ]),
       ],
       [
@@ -71,6 +79,17 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       [
         "recipe_media",
         new Set(["recipe_id", "variation_recipe_id", "file_url", "position"]),
+      ],
+      [
+        "discount_coupons",
+        new Set([
+          "code",
+          "title",
+          "discount_type",
+          "discount_value",
+          "minimum_order_amount_cents",
+          "is_active",
+        ]),
       ],
       [
         "product_additional_groups",
@@ -136,6 +155,7 @@ test("schema guard reports pending migrations for missing recent tables and colu
     "inventory_items",
     "inventory_movements",
     "recipe_media",
+    "discount_coupons",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -175,5 +195,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0020_phase20_order_fully_paid_at.sql",
     "0021_phase21_recipe_media.sql",
     "0022_phase22_recipe_media_variation.sql",
+    "0023_phase23_order_discounts_and_coupons.sql",
   ]);
 });

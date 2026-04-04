@@ -1,5 +1,7 @@
 import type {
+  AppliedDiscountCoupon,
   PublicCheckoutInput,
+  PublicCheckoutPricingPreviewInput,
   PublicCheckoutResponse,
   PublicStoreFillingOption,
   PublicStoreHome,
@@ -9,7 +11,9 @@ import type {
 import { HttpError } from "../utils/http-error";
 import { getTodayOperationalDate } from "../utils/operational-date";
 import { CustomerOrderSyncService } from "./customer-order-sync.service";
+import { DiscountCouponsService } from "./discount-coupons.service";
 import { OrdersService } from "./orders.service";
+import { ProductAdditionalsService } from "./product-additionals.service";
 import { RecipeMediaService } from "./recipe-media.service";
 import { RecipesService } from "./recipes.service";
 import { RecipesRepository } from "../repositories/recipes.repository";
@@ -38,7 +42,9 @@ function buildPublicProductName(productName: string, fillingNames: string[]) {
     : productName;
 }
 
-function toSummary(detail: Awaited<ReturnType<RecipesService["getById"]>>): PublicStoreProductSummary {
+function toSummary(
+  detail: Awaited<ReturnType<RecipesService["getById"]>>,
+): PublicStoreProductSummary {
   return {
     id: detail.id,
     name: detail.name,
@@ -69,7 +75,8 @@ function toSummaryFromRow(
     outputQuantity: fromMilli(Number(row.outputQuantityMilli)),
     outputUnit: row.outputUnit,
     salePriceCents: row.salePriceCents == null ? null : Number(row.salePriceCents),
-    effectiveSalePriceCents: row.salePriceCents == null ? null : Number(row.salePriceCents),
+    effectiveSalePriceCents:
+      row.salePriceCents == null ? null : Number(row.salePriceCents),
     additionalGroupCount,
   };
 }
@@ -78,6 +85,8 @@ export class PublicStoreService {
   private readonly recipesService = new RecipesService();
   private readonly ordersService = new OrdersService();
   private readonly customerOrderSyncService = new CustomerOrderSyncService();
+  private readonly discountCouponsService = new DiscountCouponsService();
+  private readonly productAdditionalsService = new ProductAdditionalsService();
   private readonly recipeMediaService = new RecipeMediaService();
   private readonly recipesRepository = new RecipesRepository();
   private readonly productAdditionalGroupsRepository =
@@ -113,8 +122,9 @@ export class PublicStoreService {
       toSummaryFromRow(
         product,
         additionalGroupCountByProductId.get(product.id) ?? 0,
-        (mediaByRecipeId.get(product.id) ?? []).find((media) => !media.variationRecipeId)
-          ?.fileUrl ?? null,
+        (mediaByRecipeId.get(product.id) ?? []).find(
+          (media) => !media.variationRecipeId,
+        )?.fileUrl ?? null,
       ),
     );
   }
@@ -123,15 +133,16 @@ export class PublicStoreService {
     const product = await this.recipesService.getById(id);
 
     if (product.kind !== "ProdutoVenda") {
-      throw new HttpError(404, "Produto não encontrado.");
+      throw new HttpError(404, "Produto nao encontrado.");
     }
 
     const fillingOptions = await this.listFillingOptions(product.id);
-    const maxFillings = fillingOptions.length === 0
-      ? 0
-      : supportsMultipleFillings(product.name)
-        ? 3
-        : 1;
+    const maxFillings =
+      fillingOptions.length === 0
+        ? 0
+        : supportsMultipleFillings(product.name)
+          ? 3
+          : 1;
 
     return {
       ...toSummary(product),
@@ -143,9 +154,116 @@ export class PublicStoreService {
     };
   }
 
+  async previewCheckout(input: PublicCheckoutPricingPreviewInput) {
+    const preview = await this.buildCheckoutPreview(input);
+
+    return {
+      itemsSubtotalAmountCents: preview.itemsSubtotalAmountCents,
+      deliveryFeeCents: preview.deliveryFeeCents,
+      discountAmountCents: preview.discountAmountCents,
+      subtotalAmountCents: preview.subtotalAmountCents,
+      appliedCoupon: preview.appliedCoupon,
+    };
+  }
+
   async checkout(input: PublicCheckoutInput): Promise<PublicCheckoutResponse["data"]> {
-    const resolvedItems = await Promise.all(
-      input.items.map(async (item, index) => {
+    const pricingPreview = await this.buildCheckoutPreview({
+      deliveryMode: input.deliveryMode,
+      deliveryFeeCents: input.deliveryFeeCents ?? 0,
+      couponCode: input.couponCode ?? null,
+      items: input.items,
+    });
+
+    const customer = await this.customerOrderSyncService.ensureCustomerForContact(
+      input.customerName,
+      input.customerPhone,
+    );
+
+    const order = await this.ordersService.create({
+      customerId: customer.id,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone ?? null,
+      orderDate: getTodayOperationalDate(),
+      deliveryDate: input.deliveryDate,
+      deliveryTime: input.deliveryTime ?? null,
+      deliveryMode: input.deliveryMode,
+      deliveryAddress: input.deliveryAddress ?? null,
+      deliveryReference: input.deliveryReference ?? null,
+      deliveryDistrict: input.deliveryDistrict ?? null,
+      deliveryFeeCents: input.deliveryFeeCents ?? 0,
+      status: "Confirmado",
+      paymentMethod: "Pix",
+      paidAmountCents: 0,
+      discount: pricingPreview.orderDiscount,
+      notes: [input.notes?.trim(), "Checkout publico com Pix manual."]
+        .filter(Boolean)
+        .join("\n"),
+      items: pricingPreview.resolvedItems.map((item) => ({
+        recipeId: item.recipeId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        fillingRecipeId: item.fillingRecipeId,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId,
+        position: item.position,
+        additionals: item.additionals,
+      })),
+    });
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentMethod: "Pix",
+      paymentStatus: order.paymentStatus,
+      itemsSubtotalAmountCents: order.itemsSubtotalAmountCents,
+      discountAmountCents: order.discountAmountCents,
+      appliedCoupon: pricingPreview.appliedCoupon,
+      subtotalAmountCents: order.subtotalAmountCents,
+      pixInstructions:
+        "Pedido recebido. Envie o comprovante do Pix manual para confirmar o pagamento com a confeitaria.",
+    };
+  }
+
+  private async buildCheckoutPreview(input: PublicCheckoutPricingPreviewInput) {
+    const resolvedItems = await this.resolveCheckoutItems(input.items);
+    const itemsSubtotalAmountCents = resolvedItems.reduce(
+      (sum, item) => sum + item.lineTotalCents,
+      0,
+    );
+    const deliveryFeeCents =
+      input.deliveryMode === "Entrega"
+        ? Math.max(0, input.deliveryFeeCents ?? 0)
+        : 0;
+    const grossAmountCents = itemsSubtotalAmountCents + deliveryFeeCents;
+    const appliedCoupon = input.couponCode?.trim()
+      ? await this.resolveCoupon(input.couponCode, grossAmountCents)
+      : null;
+    const discountAmountCents = appliedCoupon?.discountAmountCents ?? 0;
+
+    return {
+      resolvedItems,
+      itemsSubtotalAmountCents,
+      deliveryFeeCents,
+      discountAmountCents,
+      subtotalAmountCents: Math.max(0, grossAmountCents - discountAmountCents),
+      appliedCoupon,
+      orderDiscount: appliedCoupon
+        ? {
+            source: "Cupom" as const,
+            type: appliedCoupon.discountType,
+            value: appliedCoupon.discountValue,
+            label: appliedCoupon.title,
+            couponCode: appliedCoupon.code,
+          }
+        : null,
+    };
+  }
+
+  private async resolveCheckoutItems(inputItems: PublicCheckoutInput["items"]) {
+    return Promise.all(
+      inputItems.map(async (item, index) => {
         const product = await this.getProduct(item.recipeId);
         const unitPriceCents =
           product.effectiveSalePriceCents ?? product.salePriceCents ?? 0;
@@ -186,6 +304,12 @@ export class PublicStoreService {
           return filling.name;
         });
 
+        const resolvedAdditionals =
+          await this.productAdditionalsService.resolveOrderItemAdditionals(
+            product.id,
+            item.additionals,
+          );
+
         return {
           recipeId: product.id,
           productName: buildPublicProductName(product.name, fillingNames),
@@ -195,55 +319,71 @@ export class PublicStoreService {
           secondaryFillingRecipeId: uniqueFillingIds[1] ?? null,
           tertiaryFillingRecipeId: uniqueFillingIds[2] ?? null,
           position: index,
-          additionals: item.additionals ?? [],
+          additionals: (item.additionals ?? []).map((additional, additionalIndex) => ({
+            ...additional,
+            position: additional.position ?? additionalIndex,
+          })),
+          lineTotalCents:
+            item.quantity *
+            (unitPriceCents +
+              resolvedAdditionals.reduce(
+                (sum, additional) => sum + additional.priceDeltaCents,
+                0,
+              )),
         };
       }),
     );
+  }
 
-    const customer = await this.customerOrderSyncService.ensureCustomerForContact(
-      input.customerName,
-      input.customerPhone,
-    );
+  private async resolveCoupon(
+    couponCode: string,
+    grossAmountCents: number,
+  ): Promise<AppliedDiscountCoupon> {
+    const coupon = await this.discountCouponsService.getByCode(couponCode);
 
-    const order = await this.ordersService.create({
-      customerId: customer.id,
-      customerName: input.customerName,
-      customerPhone: input.customerPhone ?? null,
-      orderDate: getTodayOperationalDate(),
-      deliveryDate: input.deliveryDate,
-      deliveryTime: input.deliveryTime ?? null,
-      deliveryMode: input.deliveryMode,
-      deliveryAddress: input.deliveryAddress ?? null,
-      deliveryReference: input.deliveryReference ?? null,
-      deliveryDistrict: input.deliveryDistrict ?? null,
-      deliveryFeeCents: input.deliveryFeeCents ?? 0,
-      status: "Confirmado",
-      paymentMethod: "Pix",
-      paidAmountCents: 0,
-      notes: [input.notes?.trim(), "Checkout público com Pix manual."]
-        .filter(Boolean)
-        .join("\n"),
-      items: resolvedItems,
-    });
+    if (!coupon.isActive) {
+      throw new HttpError(400, "Este cupom nao esta ativo.");
+    }
+
+    if (coupon.minimumOrderAmountCents > grossAmountCents) {
+      throw new HttpError(
+        400,
+        "Este cupom exige um valor minimo maior para ser aplicado.",
+      );
+    }
+
+    const discountAmountCents =
+      coupon.discountType === "Percentual"
+        ? Math.min(
+            grossAmountCents,
+            Math.round((grossAmountCents * coupon.discountValue) / 100),
+          )
+        : Math.min(grossAmountCents, coupon.discountValue);
+
+    if (discountAmountCents <= 0) {
+      throw new HttpError(400, "Este cupom nao gera desconto para esse pedido.");
+    }
 
     return {
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
-      paymentMethod: "Pix",
-      paymentStatus: order.paymentStatus,
-      subtotalAmountCents: order.subtotalAmountCents,
-      pixInstructions:
-        "Pedido recebido. Envie o comprovante do Pix manual para confirmar o pagamento com a confeitaria.",
+      id: coupon.id,
+      code: coupon.code,
+      title: coupon.title,
+      discountType: coupon.discountType,
+      discountValue: coupon.discountValue,
+      discountAmountCents,
     };
   }
 
-  private async listFillingOptions(productId: string): Promise<PublicStoreFillingOption[]> {
+  private async listFillingOptions(
+    productId: string,
+  ): Promise<PublicStoreFillingOption[]> {
     const fillings = await this.recipesService.list({ kind: "Preparacao" });
     const globalMediaByRecipeId = await this.recipeMediaService.listByRecipeIds(
       fillings.map((filling) => filling.id),
     );
-    const productMediaByRecipeId = await this.recipeMediaService.listByRecipeIds([productId]);
+    const productMediaByRecipeId = await this.recipeMediaService.listByRecipeIds([
+      productId,
+    ]);
     const productVariationMedia = new Map(
       (productMediaByRecipeId.get(productId) ?? [])
         .filter((media) => media.variationRecipeId)
@@ -256,8 +396,9 @@ export class PublicStoreService {
         name: filling.name,
         photoUrl:
           productVariationMedia.get(filling.id)?.fileUrl ??
-          globalMediaByRecipeId.get(filling.id)?.find((media) => !media.variationRecipeId)
-            ?.fileUrl ??
+          globalMediaByRecipeId
+            .get(filling.id)
+            ?.find((media) => !media.variationRecipeId)?.fileUrl ??
           null,
         hasProductSpecificPhoto: productVariationMedia.has(filling.id),
       }))

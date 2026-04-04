@@ -63,6 +63,10 @@ function parseCurrencyInput(value: string) {
 function buildPaymentStatusPreview(totalAmount: number, paidAmount: string) {
   const paid = parseCurrencyInput(paidAmount);
 
+  if (totalAmount <= 0) {
+    return "Pago";
+  }
+
   if (paid <= 0) {
     return "Pendente";
   }
@@ -172,6 +176,26 @@ function getCustomerIdFromQueryString() {
   return new URLSearchParams(window.location.search).get("customerId") ?? "";
 }
 
+function buildDiscountAmount(
+  type: OrderFormState["discountType"],
+  value: string,
+  grossAmount: number,
+) {
+  if (type === "Sem desconto" || grossAmount <= 0) {
+    return 0;
+  }
+
+  if (type === "Percentual") {
+    const percent = Math.min(
+      100,
+      Math.max(0, Number.parseInt(value || "0", 10) || 0),
+    );
+    return Math.min(grossAmount, (grossAmount * percent) / 100);
+  }
+
+  return Math.min(grossAmount, parseCurrencyInput(value));
+}
+
 export default function PedidoForm() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
@@ -253,9 +277,24 @@ export default function PedidoForm() {
     [formState.deliveryFee, formState.deliveryMode],
   );
 
-  const totalAmount = useMemo(
+  const grossAmount = useMemo(
     () => itemsTotalAmount + deliveryFeeAmount,
     [deliveryFeeAmount, itemsTotalAmount],
+  );
+
+  const discountAmount = useMemo(
+    () =>
+      buildDiscountAmount(
+        formState.discountType,
+        formState.discountValue,
+        grossAmount,
+      ),
+    [formState.discountType, formState.discountValue, grossAmount],
+  );
+
+  const totalAmount = useMemo(
+    () => Math.max(0, grossAmount - discountAmount),
+    [discountAmount, grossAmount],
   );
 
   const paidAmountValue = useMemo(
@@ -1442,7 +1481,7 @@ export default function PedidoForm() {
                     <div className="p-4 bg-muted/30 flex justify-between items-center font-bold text-lg">
                       <span>Total dos Itens:</span>
                       <span className="text-primary">
-                        {formatCurrency(totalAmount)}
+                        {formatCurrency(itemsTotalAmount)}
                       </span>
                     </div>
                   </div>
@@ -1479,8 +1518,8 @@ export default function PedidoForm() {
                     </select>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Valor Pago</Label>
+                    <div className="space-y-2">
+                      <Label>Valor Pago</Label>
                     <Input
                       type="text"
                       inputMode="numeric"
@@ -1492,7 +1531,115 @@ export default function PedidoForm() {
                     />
                   </div>
 
+                  <div className="space-y-2">
+                    <Label>Desconto</Label>
+                    <select
+                      className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
+                      value={formState.discountType}
+                      onChange={(event) => {
+                        const nextType = event.target.value as OrderFormState["discountType"];
+                        setFormState((current) => ({
+                          ...current,
+                          discountSource:
+                            nextType === "Sem desconto" ? null : "Manual",
+                          discountType: nextType,
+                          discountValue: nextType === "Sem desconto" ? "" : current.discountValue,
+                          discountLabel:
+                            current.discountSource === "Cupom" && nextType !== "Sem desconto"
+                              ? ""
+                              : current.discountLabel,
+                          couponCode:
+                            current.discountSource === "Cupom" && nextType !== "Sem desconto"
+                              ? ""
+                              : current.couponCode,
+                        }));
+                      }}
+                    >
+                      <option value="Sem desconto">Sem desconto</option>
+                      <option value="Percentual">Percentual</option>
+                      <option value="Valor fixo">Valor fixo</option>
+                    </select>
+                  </div>
+
+                  {formState.discountType !== "Sem desconto" ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label>
+                          {formState.discountType === "Percentual"
+                            ? "Percentual (%)"
+                            : "Valor do desconto"}
+                        </Label>
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          value={formState.discountValue}
+                          onChange={(event) =>
+                            setFormState((current) => ({
+                              ...current,
+                              discountSource: "Manual",
+                              couponCode: "",
+                              discountValue:
+                                current.discountType === "Percentual"
+                                  ? event.target.value.replace(/\D/g, "").slice(0, 3)
+                                  : formatMoneyInput(event.target.value),
+                            }))
+                          }
+                          placeholder={
+                            formState.discountType === "Percentual" ? "10" : "0,00"
+                          }
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Descricao interna</Label>
+                        <Input
+                          value={formState.discountLabel}
+                          onChange={(event) =>
+                            setFormState((current) => ({
+                              ...current,
+                              discountSource: "Manual",
+                              couponCode: "",
+                              discountLabel: event.target.value,
+                            }))
+                          }
+                          placeholder="Ex.: cortesia, cliente fiel"
+                        />
+                      </div>
+
+                      {formState.discountSource === "Cupom" && formState.couponCode ? (
+                        <div className="rounded-xl border border-primary/20 bg-primary/10 px-4 py-3 text-xs text-primary">
+                          Este pedido veio com o cupom {formState.couponCode}. Se voce alterar o
+                          desconto, ele passa a ser manual.
+                        </div>
+                      ) : null}
+                    </>
+                  ) : null}
+
                   <div className="p-4 rounded-xl bg-muted/30 border border-border/50 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Itens:
+                      </span>
+                      <span className="font-bold">{formatCurrency(itemsTotalAmount)}</span>
+                    </div>
+                    {formState.deliveryMode === "Entrega" ? (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          Taxa de entrega:
+                        </span>
+                        <span className="font-bold">
+                          {formatCurrency(deliveryFeeAmount)}
+                        </span>
+                      </div>
+                    ) : null}
+                    {discountAmount > 0 ? (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Desconto:</span>
+                        <span className="font-bold text-primary">
+                          - {formatCurrency(discountAmount)}
+                        </span>
+                      </div>
+                    ) : null}
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">
                         Total do Pedido:
@@ -1505,16 +1652,6 @@ export default function PedidoForm() {
                           {formatCurrency(paidAmountValue)}
                         </span>
                       </div>
-                      {formState.deliveryMode === "Entrega" ? (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            Taxa de entrega:
-                          </span>
-                          <span className="font-bold">
-                            {formatCurrency(deliveryFeeAmount)}
-                          </span>
-                        </div>
-                      ) : null}
                       <div className="flex justify-between text-sm border-t border-border/50 pt-2 mt-2">
                         <span className="text-muted-foreground">Falta Pagar:</span>
                         <span className="font-bold text-destructive">

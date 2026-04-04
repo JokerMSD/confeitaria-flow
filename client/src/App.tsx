@@ -26,6 +26,8 @@ import Cliente from "@/pages/Cliente";
 import ClienteForm from "@/pages/ClienteForm";
 import Usuarios from "@/pages/Usuarios";
 import Usuario from "@/pages/Usuario";
+import Cupons from "@/pages/Cupons";
+import Cupom from "@/pages/Cupom";
 import PrevisaoProducao from "@/pages/PrevisaoProducao";
 import PublicStoreHome from "@/pages/PublicStoreHome";
 import PublicCatalog from "@/pages/PublicCatalog";
@@ -93,6 +95,9 @@ function AdminSwitch() {
       <Route path="/usuarios" component={Usuarios} />
       <Route path="/usuarios/novo" component={Usuario} />
       <Route path="/usuarios/:id" component={Usuario} />
+      <Route path="/cupons" component={Cupons} />
+      <Route path="/cupons/novo" component={Cupom} />
+      <Route path="/cupons/:id" component={Cupom} />
       <Route path="/receitas/:id" component={ReceitaForm} />
       <Route path="/catalogo/:id" component={ReceitaForm} />
       <Route path="/conta" component={MinhaConta} />

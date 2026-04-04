@@ -6,6 +6,19 @@ import type {
   PaymentMethod,
   PaymentStatus,
 } from "./order-item.types";
+import type { DiscountCouponType } from "./discount-coupon.types";
+
+export type OrderDiscountSource = "Manual" | "Cupom";
+export type OrderDiscountType = DiscountCouponType;
+
+export interface OrderDiscount {
+  source: OrderDiscountSource;
+  type: OrderDiscountType;
+  value: number;
+  amountCents: number;
+  label: string | null;
+  couponCode: string | null;
+}
 
 export interface OrderListItem {
   id: string;
@@ -25,6 +38,9 @@ export interface OrderListItem {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   notes: string | null;
+  itemsSubtotalAmountCents: number;
+  discountAmountCents: number;
+  discount: OrderDiscount | null;
   subtotalAmountCents: number;
   paidAmountCents: number;
   remainingAmountCents: number;
@@ -53,6 +69,13 @@ export interface CreateOrderInput {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paidAmountCents: number;
+  discount?: {
+    source?: OrderDiscountSource;
+    type: OrderDiscountType;
+    value: number;
+    label?: string | null;
+    couponCode?: string | null;
+  } | null;
   notes?: string | null;
   items: CreateOrderItemInput[];
 }

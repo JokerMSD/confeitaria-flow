@@ -42,6 +42,13 @@ export interface OrderRowInsert {
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
   notes: string | null;
+  itemsSubtotalAmountCents: number;
+  discountSource: "Manual" | "Cupom" | null;
+  discountType: "Percentual" | "ValorFixo" | null;
+  discountValue: number | null;
+  discountAmountCents: number;
+  discountLabel: string | null;
+  couponCode: string | null;
   subtotalAmountCents: number;
   paidAmountCents: number;
   remainingAmountCents: number;
@@ -130,6 +137,13 @@ export class OrdersRepository {
         paymentMethod: orders.paymentMethod,
         paymentStatus: orders.paymentStatus,
         notes: orders.notes,
+        itemsSubtotalAmountCents: orders.itemsSubtotalAmountCents,
+        discountSource: orders.discountSource,
+        discountType: orders.discountType,
+        discountValue: orders.discountValue,
+        discountAmountCents: orders.discountAmountCents,
+        discountLabel: orders.discountLabel,
+        couponCode: orders.couponCode,
         subtotalAmountCents: orders.subtotalAmountCents,
         paidAmountCents: orders.paidAmountCents,
         remainingAmountCents: orders.remainingAmountCents,

@@ -8,6 +8,7 @@ import {
   Images,
   Settings,
   Store,
+  TicketPercent,
   User,
   Wallet,
 } from "lucide-react";
@@ -57,6 +58,7 @@ export function Sidebar() {
     { href: "/receitas", label: "Receitas", icon: BookOpen },
     { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/catalogo/midias", label: "Midias", icon: Images },
+    { href: "/cupons", label: "Cupons", icon: TicketPercent },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
     { href: "/conta", label: "Conta", icon: Settings },
@@ -148,6 +150,7 @@ export function BottomNav() {
     { href: "/receitas", label: "Receitas", icon: BookOpen },
     { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/catalogo/midias", label: "Midias", icon: Images },
+    { href: "/cupons", label: "Cupons", icon: TicketPercent },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
     { href: "/conta", label: "Conta", icon: Settings },

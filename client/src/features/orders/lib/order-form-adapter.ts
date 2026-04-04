@@ -59,6 +59,16 @@ function decimalStringToCents(value: string) {
   return parseMoneyInputToCents(value) ?? 0;
 }
 
+function apiDiscountTypeToUiType(
+  value: OrderDetailResponse["data"]["discount"] | null,
+): OrderFormState["discountType"] {
+  if (!value) {
+    return "Sem desconto";
+  }
+
+  return value.type === "Percentual" ? "Percentual" : "Valor fixo";
+}
+
 function decimalNumberToCents(value: number) {
   return Math.round(value * 100);
 }
@@ -99,6 +109,11 @@ export function createEmptyOrderFormState(): OrderFormState {
     deliveryReference: "",
     deliveryDistrict: "",
     deliveryFee: "0",
+    discountSource: null,
+    discountType: "Sem desconto",
+    discountValue: "",
+    discountLabel: "",
+    couponCode: "",
     status: "Novo",
     paymentMethod: "Pix",
     paidAmount: "0",
@@ -123,6 +138,16 @@ export function adaptOrderDetailToFormState(
     deliveryReference: response.data.deliveryReference ?? "",
     deliveryDistrict: response.data.deliveryDistrict ?? "",
     deliveryFee: centsToDecimalString(response.data.deliveryFeeCents ?? 0),
+    discountSource: response.data.discount?.source ?? null,
+    discountType: apiDiscountTypeToUiType(response.data.discount ?? null),
+    discountValue:
+      response.data.discount == null
+        ? ""
+        : response.data.discount.type === "Percentual"
+          ? String(response.data.discount.value)
+          : centsToDecimalString(response.data.discount.value),
+    discountLabel: response.data.discount?.label ?? "",
+    couponCode: response.data.discount?.couponCode ?? "",
     status: apiToUiStatusMap[response.data.status],
     paymentMethod: apiToUiPaymentMethodMap[response.data.paymentMethod],
     paidAmount: centsToDecimalString(response.data.paidAmountCents),
@@ -211,6 +236,25 @@ export function adaptFormStateToCreatePayload(
         state.paymentMethod
       ] as CreateOrderRequest["data"]["paymentMethod"],
       paidAmountCents: decimalStringToCents(state.paidAmount),
+      discount:
+        state.discountType === "Sem desconto"
+          ? null
+          : {
+              source:
+                state.discountSource === "Cupom" && state.couponCode
+                  ? "Cupom"
+                  : "Manual",
+              type:
+                state.discountType === "Percentual"
+                  ? "Percentual"
+                  : "ValorFixo",
+              value:
+                state.discountType === "Percentual"
+                  ? Number.parseInt(state.discountValue || "0", 10)
+                  : decimalStringToCents(state.discountValue),
+              label: state.discountLabel.trim() || null,
+              couponCode: state.couponCode.trim() || null,
+            },
       notes: state.notes.trim() || null,
       items: adaptFormItemsToPayload(state.items),
     },

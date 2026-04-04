@@ -19,6 +19,11 @@ export class PublicStoreController {
     res.json({ data });
   }
 
+  async previewCheckout(req: Request, res: Response) {
+    const data = await this.publicStoreService.previewCheckout(req.body.data);
+    res.json({ data });
+  }
+
   async checkout(req: Request, res: Response) {
     const data = await this.publicStoreService.checkout(req.body.data);
     res.status(201).json({ data });

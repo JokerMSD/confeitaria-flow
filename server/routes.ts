@@ -15,6 +15,7 @@ import { registerCustomersRoutes } from "./modules/customers/customers.module";
 import { registerUsersRoutes } from "./modules/users/users.module";
 import { registerProductionRoutes } from "./modules/production/production.module";
 import { registerPublicStoreRoutes } from "./modules/public-store/public-store.module";
+import { registerDiscountCouponRoutes } from "./modules/discount-coupons/discount-coupons.module";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -31,6 +32,7 @@ export async function registerRoutes(
   registerInventoryRoutes(app);
   registerCustomersRoutes(app);
   registerUsersRoutes(app);
+  registerDiscountCouponRoutes(app);
   registerRecipesRoutes(app);
   registerProductAdditionalsRoutes(app);
   registerProductionRoutes(app);

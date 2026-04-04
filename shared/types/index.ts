@@ -3,6 +3,8 @@ export * from "./auth.types";
 export * from "./cash-api.types";
 export * from "./cash.types";
 export * from "./common.types";
+export * from "./discount-coupon-api.types";
+export * from "./discount-coupon.types";
 export * from "./inventory-api.types";
 export * from "./inventory.types";
 export * from "./order-api.types";

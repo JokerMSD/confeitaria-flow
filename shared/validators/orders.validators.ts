@@ -33,6 +33,25 @@ export const paymentMethodSchema = z.enum([
 
 export const deliveryModeSchema = z.enum(["Entrega", "Retirada"]);
 
+const createOrderDiscountInputSchema = z.union([
+  z.object({
+    source: z.enum(["Manual", "Cupom"]).optional().default("Manual"),
+    type: z.literal("Percentual"),
+    value: z.number().int().min(1).max(100),
+    label: z.string().trim().max(160).nullable().optional(),
+    couponCode: z.string().trim().max(64).nullable().optional(),
+  }),
+  z.object({
+    source: z.enum(["Manual", "Cupom"]).optional().default("Manual"),
+    type: z.literal("ValorFixo"),
+    value: centsSchema.refine((amount) => amount > 0, {
+      message: "Desconto fixo precisa ser maior que zero.",
+    }),
+    label: z.string().trim().max(160).nullable().optional(),
+    couponCode: z.string().trim().max(64).nullable().optional(),
+  }),
+]);
+
 export const createOrderItemInputSchema = z.object({
   recipeId: uuidSchema.nullable().optional(),
   fillingRecipeId: uuidSchema.nullable().optional(),
@@ -61,6 +80,7 @@ export const createOrderInputSchema = z
     status: orderStatusSchema,
     paymentMethod: paymentMethodSchema,
     paidAmountCents: centsSchema,
+    discount: createOrderDiscountInputSchema.nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
     items: z.array(createOrderItemInputSchema).min(1),
   })

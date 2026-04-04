@@ -1,5 +1,7 @@
 import type {
   PublicCheckoutRequest,
+  PublicCheckoutPricingPreviewRequest,
+  PublicCheckoutPricingPreviewResponse,
   PublicCheckoutResponse,
   PublicStoreHomeResponse,
   PublicStoreProductDetailResponse,
@@ -26,4 +28,14 @@ export function createPublicCheckout(body: PublicCheckoutRequest) {
     method: "POST",
     body,
   });
+}
+
+export function previewPublicCheckout(body: PublicCheckoutPricingPreviewRequest) {
+  return httpClient<PublicCheckoutPricingPreviewResponse>(
+    "/api/public/store/checkout/preview",
+    {
+      method: "POST",
+      body,
+    },
+  );
 }

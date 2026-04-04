@@ -1,4 +1,5 @@
 export * from "./cash-transactions";
+export * from "./discount-coupons";
 export * from "./inventory-movements";
 export * from "./inventory-items";
 export * from "./order-items";

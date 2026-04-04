@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { CheckCircle2, Pencil, Truck } from "lucide-react";
+import { CheckCircle2, Pencil, TicketPercent, Truck, X } from "lucide-react";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,10 @@ import {
   usePublicCart,
   type PublicCartItem,
 } from "@/features/public-store/lib/public-cart";
-import { usePublicCheckout } from "@/features/public-store/hooks/use-public-store";
+import {
+  usePublicCheckout,
+  usePublicCheckoutPreview,
+} from "@/features/public-store/hooks/use-public-store";
 import {
   calculatePublicItemLineTotalCents,
   calculatePublicItemUnitTotalCents,
@@ -33,6 +36,7 @@ function checkoutFieldClass(active: boolean) {
 export default function PublicCheckout() {
   const cart = usePublicCart();
   const checkoutMutation = usePublicCheckout();
+  const previewMutation = usePublicCheckoutPreview();
   const { toast } = useToast();
   const [editingItem, setEditingItem] = useState<PublicCartItem | null>(null);
   const [success, setSuccess] = useState<{
@@ -50,8 +54,14 @@ export default function PublicCheckout() {
     deliveryDistrict: "",
     deliveryReference: "",
     deliveryFee: "0,00",
+    couponCode: "",
     notes: "",
   });
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string;
+    title: string;
+    discountAmountCents: number;
+  } | null>(null);
 
   useEffect(() => {
     if (form.deliveryMode === "Retirada") {
@@ -73,7 +83,83 @@ export default function PublicCheckout() {
     [form.deliveryFee, form.deliveryMode],
   );
 
-  const finalTotalCents = cart.totalCents + deliveryFeeCents;
+  useEffect(() => {
+    setAppliedCoupon(null);
+  }, [
+    cart.totalCents,
+    form.deliveryMode,
+    deliveryFeeCents,
+    form.couponCode,
+    cart.items.length,
+  ]);
+
+  const finalTotalCents =
+    cart.totalCents + deliveryFeeCents - (appliedCoupon?.discountAmountCents ?? 0);
+
+  const handleApplyCoupon = async () => {
+    if (!form.couponCode.trim()) {
+      toast({
+        title: "Informe o cupom",
+        description: "Digite o codigo antes de aplicar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (cart.items.length === 0) {
+      toast({
+        title: "Carrinho vazio",
+        description: "Adicione itens antes de testar um cupom.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await previewMutation.mutateAsync({
+        data: {
+          deliveryMode: form.deliveryMode,
+          deliveryFeeCents,
+          couponCode: form.couponCode.trim(),
+          items: cart.items.map((item) => ({
+            recipeId: item.recipeId,
+            quantity: item.quantity,
+            fillingRecipeId: item.fillingRecipeIds[0] ?? null,
+            secondaryFillingRecipeId: item.fillingRecipeIds[1] ?? null,
+            tertiaryFillingRecipeId: item.fillingRecipeIds[2] ?? null,
+            additionals: item.additionals.map((additional, index) => ({
+              groupId: additional.groupId,
+              optionId: additional.optionId,
+              position: index,
+            })),
+          })),
+        },
+      });
+
+      if (!response.data.appliedCoupon) {
+        setAppliedCoupon(null);
+        return;
+      }
+
+      setAppliedCoupon({
+        code: response.data.appliedCoupon.code,
+        title: response.data.appliedCoupon.title,
+        discountAmountCents: response.data.appliedCoupon.discountAmountCents,
+      });
+      toast({
+        title: "Cupom aplicado",
+        description: `${response.data.appliedCoupon.code} ativo no pedido.`,
+      });
+    } catch (error) {
+      setAppliedCoupon(null);
+      toast({
+        title: "Nao foi possivel aplicar o cupom",
+        description:
+          error instanceof Error ? error.message : "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSubmit = async () => {
     if (cart.items.length === 0) {
@@ -160,6 +246,7 @@ export default function PublicCheckout() {
               ? form.deliveryReference.trim() || null
               : null,
           deliveryFeeCents,
+          couponCode: appliedCoupon?.code ?? null,
           notes: form.notes.trim() || null,
           items: cart.items.map((item) => ({
             recipeId: item.recipeId,
@@ -387,6 +474,56 @@ export default function PublicCheckout() {
                 }
                 className="h-12 rounded-2xl"
               />
+
+              <div className="space-y-3 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <TicketPercent className="h-4 w-4" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em]">
+                    cupom de desconto
+                  </p>
+                </div>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input
+                    placeholder="Ex.: BEMVINDO10"
+                    value={form.couponCode}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        couponCode: event.target.value.toUpperCase(),
+                      }))
+                    }
+                    className="h-12 rounded-2xl"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 rounded-full px-6"
+                    onClick={handleApplyCoupon}
+                    disabled={previewMutation.isPending}
+                  >
+                    {previewMutation.isPending ? "Aplicando..." : "Aplicar"}
+                  </Button>
+                </div>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between rounded-[1.3rem] border border-primary/20 bg-primary/10 px-4 py-3 text-sm">
+                    <div>
+                      <p className="font-semibold text-primary">{appliedCoupon.code}</p>
+                      <p className="text-muted-foreground">{appliedCoupon.title}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAppliedCoupon(null);
+                        setForm((current) => ({ ...current, couponCode: "" }));
+                      }}
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground"
+                      aria-label="Remover cupom"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
 
@@ -475,6 +612,16 @@ export default function PublicCheckout() {
                       : "Retirada no local"}
                   </span>
                 </div>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Desconto ({appliedCoupon.code})
+                    </span>
+                    <span className="font-semibold text-primary">
+                      - {formatCurrency(appliedCoupon.discountAmountCents / 100)}
+                    </span>
+                  </div>
+                ) : null}
                 <div className="flex items-center justify-between border-t border-border pt-3">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="font-display text-3xl font-bold text-foreground">

@@ -7,6 +7,7 @@ Escopo atual:
 - detalhe publico de produto com adicionais e galeria
 - carrinho persistido no navegador
 - checkout com nome, telefone, entrega/retirada, data, horario, endereco, bairro, referencia, taxa e Pix manual
+- checkout com cupom de desconto validado pelo backend antes de criar o pedido
 - area `Minha conta` para usuario autenticado com historico e configuracoes basicas
 - area administrativa pratica para gerenciar fotos sem abrir produto por produto
 
@@ -15,6 +16,7 @@ Invariantes importantes:
 - autenticacao interna atual nao deve ser deformada para atender cliente final
 - contratos publicos devem nascer no backend com recortes claros, sem expor o dominio administrativo por acidente
 - o significado de entrega/retirada deve ser o mesmo do fluxo interno
+- cupom publico deve ser validado e recalculado no backend; a UI apenas antecipa a leitura
 - conta `user` deve permanecer na frente publica; apenas `admin` e `operador` entram no painel interno
 - fotos do catalogo devem ser servidas pelo backend e refletidas na loja publica sem depender de campo solto no frontend
 

@@ -1,6 +1,7 @@
 import type { InventoryItemUnit } from "./inventory.types";
 import type { OrderStatus } from "./order-item.types";
 import type { ProductAdditionalGroupDetail } from "./product-additional.types";
+import type { AppliedDiscountCoupon } from "./discount-coupon.types";
 
 export interface ProductionForecastAggregate {
   id: string;
@@ -135,12 +136,24 @@ export interface PublicCheckoutInput {
   deliveryReference?: string | null;
   deliveryDistrict?: string | null;
   deliveryFeeCents?: number;
+  couponCode?: string | null;
   notes?: string | null;
+  items: PublicCheckoutItemInput[];
+}
+
+export interface PublicCheckoutPricingPreviewInput {
+  deliveryMode: "Entrega" | "Retirada";
+  deliveryFeeCents?: number;
+  couponCode?: string | null;
   items: PublicCheckoutItemInput[];
 }
 
 export interface PublicCheckoutRequest {
   data: PublicCheckoutInput;
+}
+
+export interface PublicCheckoutPricingPreviewRequest {
+  data: PublicCheckoutPricingPreviewInput;
 }
 
 export interface PublicCheckoutResponse {
@@ -150,6 +163,9 @@ export interface PublicCheckoutResponse {
     status: OrderStatus;
     paymentMethod: "Pix";
     paymentStatus: "Pendente" | "Parcial" | "Pago";
+    itemsSubtotalAmountCents: number;
+    discountAmountCents: number;
+    appliedCoupon: AppliedDiscountCoupon | null;
     subtotalAmountCents: number;
     pixInstructions: string;
   };

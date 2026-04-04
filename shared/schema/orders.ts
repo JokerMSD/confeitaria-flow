@@ -32,6 +32,17 @@ export const orders = pgTable(
     paymentMethod: varchar("payment_method", { length: 32 }).notNull(),
     paymentStatus: varchar("payment_status", { length: 32 }).notNull(),
     notes: text("notes"),
+    itemsSubtotalAmountCents: integer("items_subtotal_amount_cents")
+      .notNull()
+      .default(0),
+    discountSource: varchar("discount_source", { length: 24 }),
+    discountType: varchar("discount_type", { length: 24 }),
+    discountValue: integer("discount_value"),
+    discountAmountCents: integer("discount_amount_cents")
+      .notNull()
+      .default(0),
+    discountLabel: varchar("discount_label", { length: 160 }),
+    couponCode: varchar("coupon_code", { length: 64 }),
     subtotalAmountCents: integer("subtotal_amount_cents").notNull().default(0),
     paidAmountCents: integer("paid_amount_cents").notNull().default(0),
     remainingAmountCents: integer("remaining_amount_cents")

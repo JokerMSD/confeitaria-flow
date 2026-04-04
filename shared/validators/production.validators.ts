@@ -33,6 +33,7 @@ export const publicCheckoutInputSchema = z
     deliveryReference: z.string().trim().max(240).nullable().optional(),
     deliveryDistrict: z.string().trim().max(120).nullable().optional(),
     deliveryFeeCents: centsSchema.optional().default(0),
+    couponCode: z.string().trim().max(64).nullable().optional(),
     notes: z.string().trim().max(2000).nullable().optional(),
     items: z.array(publicCheckoutItemInputSchema).min(1),
   })
@@ -45,3 +46,10 @@ export const publicCheckoutInputSchema = z
       });
     }
   });
+
+export const publicCheckoutPricingPreviewInputSchema = z.object({
+  deliveryMode: deliveryModeSchema,
+  deliveryFeeCents: centsSchema.optional().default(0),
+  couponCode: z.string().trim().max(64).nullable().optional(),
+  items: z.array(publicCheckoutItemInputSchema).min(1),
+});
