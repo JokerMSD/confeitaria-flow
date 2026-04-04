@@ -11,6 +11,8 @@ export function usePublicStoreHome() {
   return useQuery({
     queryKey: publicStoreQueryKeys.home(),
     queryFn: getPublicStoreHome,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -18,6 +20,8 @@ export function usePublicProducts() {
   return useQuery({
     queryKey: publicStoreQueryKeys.products(),
     queryFn: getPublicProducts,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
   });
 }
 
@@ -26,6 +30,8 @@ export function usePublicProduct(id: string) {
     queryKey: publicStoreQueryKeys.product(id),
     queryFn: () => getPublicProduct(id),
     enabled: Boolean(id),
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 

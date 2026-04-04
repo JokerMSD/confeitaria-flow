@@ -12,6 +12,8 @@ import { CustomerOrderSyncService } from "./customer-order-sync.service";
 import { OrdersService } from "./orders.service";
 import { RecipeMediaService } from "./recipe-media.service";
 import { RecipesService } from "./recipes.service";
+import { RecipesRepository } from "../repositories/recipes.repository";
+import { ProductAdditionalGroupsRepository } from "../repositories/product-additional-groups.repository";
 
 function normalizeValue(value: string) {
   return value
@@ -50,11 +52,36 @@ function toSummary(detail: Awaited<ReturnType<RecipesService["getById"]>>): Publ
   };
 }
 
+function fromMilli(value: number) {
+  return Number(value) / 1000;
+}
+
+function toSummaryFromRow(
+  row: any,
+  additionalGroupCount: number,
+  primaryImageUrl: string | null,
+): PublicStoreProductSummary {
+  return {
+    id: row.id,
+    name: row.name,
+    notes: row.notes ?? null,
+    primaryImageUrl,
+    outputQuantity: fromMilli(Number(row.outputQuantityMilli)),
+    outputUnit: row.outputUnit,
+    salePriceCents: row.salePriceCents == null ? null : Number(row.salePriceCents),
+    effectiveSalePriceCents: row.salePriceCents == null ? null : Number(row.salePriceCents),
+    additionalGroupCount,
+  };
+}
+
 export class PublicStoreService {
   private readonly recipesService = new RecipesService();
   private readonly ordersService = new OrdersService();
   private readonly customerOrderSyncService = new CustomerOrderSyncService();
   private readonly recipeMediaService = new RecipeMediaService();
+  private readonly recipesRepository = new RecipesRepository();
+  private readonly productAdditionalGroupsRepository =
+    new ProductAdditionalGroupsRepository();
 
   async getHome(): Promise<PublicStoreHome> {
     const products = await this.listProducts();
@@ -67,8 +94,29 @@ export class PublicStoreService {
   }
 
   async listProducts(): Promise<PublicStoreProductSummary[]> {
-    const products = await this.recipesService.list({ kind: "ProdutoVenda" });
-    return products.map((product) => toSummary(product));
+    const products = await this.recipesRepository.list({ kind: "ProdutoVenda" });
+    const productIds = (products as any[]).map((product) => product.id);
+    const [mediaByRecipeId, additionalGroups] = await Promise.all([
+      this.recipeMediaService.listByRecipeIds(productIds),
+      this.productAdditionalGroupsRepository.listByProductRecipeIds(productIds),
+    ]);
+
+    const additionalGroupCountByProductId = new Map<string, number>();
+    for (const group of additionalGroups as any[]) {
+      additionalGroupCountByProductId.set(
+        group.productRecipeId,
+        (additionalGroupCountByProductId.get(group.productRecipeId) ?? 0) + 1,
+      );
+    }
+
+    return (products as any[]).map((product) =>
+      toSummaryFromRow(
+        product,
+        additionalGroupCountByProductId.get(product.id) ?? 0,
+        (mediaByRecipeId.get(product.id) ?? []).find((media) => !media.variationRecipeId)
+          ?.fileUrl ?? null,
+      ),
+    );
   }
 
   async getProduct(id: string): Promise<PublicStoreProductDetail> {
