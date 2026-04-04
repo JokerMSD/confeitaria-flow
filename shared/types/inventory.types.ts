@@ -104,6 +104,8 @@ export interface InventoryPurchasePlanItem {
   itemId: string;
   itemName: string;
   itemUnit: InventoryItemUnit;
+  recipeEquivalentQuantity: number | null;
+  recipeEquivalentUnit: InventoryItemUnit | null;
   currentQuantity: number;
   requiredQuantity: number;
   deficitQuantity: number;

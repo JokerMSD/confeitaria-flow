@@ -18,6 +18,8 @@ export function adaptInventoryPurchasePlan(
       itemId: item.itemId,
       itemName: item.itemName,
       itemUnit: mapUnit(item.itemUnit),
+      recipeEquivalentQuantity: item.recipeEquivalentQuantity,
+      recipeEquivalentUnit: item.recipeEquivalentUnit,
       currentQuantity: item.currentQuantity,
       requiredQuantity: item.requiredQuantity,
       deficitQuantity: item.deficitQuantity,

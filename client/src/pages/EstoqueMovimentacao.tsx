@@ -30,6 +30,7 @@ import {
   resolveInventoryPurchaseGrossPreviewCents,
   resolveInventoryPurchaseTotalPreviewCents,
 } from "../features/inventory/lib/inventory-movement-adapter";
+import { formatInventoryQuantity } from "@/features/inventory/lib/inventory-quantity-display";
 import {
   formatMoneyInput,
   parseDecimalInput,
@@ -253,6 +254,13 @@ export default function EstoqueMovimentacao() {
     );
   }
 
+  const currentDisplay = formatInventoryQuantity(
+    item.currentQuantity,
+    item.unit,
+    item.recipeEquivalentQuantity,
+    item.recipeEquivalentUnit,
+  );
+
   return (
     <AppLayout title={`Estoque: ${item.name}`}>
       <div className="mx-auto max-w-4xl space-y-6">
@@ -280,9 +288,14 @@ export default function EstoqueMovimentacao() {
                     item.currentQuantity <= item.minQuantity && "text-destructive",
                   )}
                 >
-                  {item.currentQuantity} {item.unit}
+                  {currentDisplay.inlineLabel}
                 </strong>
               </span>
+              {currentDisplay.detail ? (
+                <span className="text-xs text-muted-foreground">
+                  {currentDisplay.detail}
+                </span>
+              ) : null}
             </p>
           </div>
         </div>
@@ -585,6 +598,12 @@ export default function EstoqueMovimentacao() {
                       movement.type === "Saida"
                         ? -Math.abs(movement.quantity)
                         : movement.quantity;
+                    const quantityDisplay = formatInventoryQuantity(
+                      Math.abs(signedQuantity),
+                      item.unit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
                     const originBadge = originBadgeMap[movement.originKind];
 
                     return (
@@ -673,8 +692,15 @@ export default function EstoqueMovimentacao() {
                                   : "text-primary",
                             )}
                           >
-                            {signedQuantity > 0 ? "+" : ""}
-                            {signedQuantity} {item.unit}
+                            <div>
+                              {signedQuantity > 0 ? "+" : "-"}
+                              {quantityDisplay.inlineLabel}
+                            </div>
+                            {quantityDisplay.detail ? (
+                              <div className="text-[11px] font-normal text-muted-foreground">
+                                {quantityDisplay.detail}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </div>

@@ -40,6 +40,41 @@ function formatBaseQuantity(value: number, unit: UiInventoryUnit) {
   };
 }
 
+function formatFractionalUnitLabel(value: number, unit: "un" | "caixa") {
+  const wholeUnits = Math.floor(value);
+  const fractionalPart = value - wholeUnits;
+  const percent = Math.round(fractionalPart * 100);
+  const detail = `real: ${value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} ${unit}`;
+
+  if (wholeUnits <= 0) {
+    return {
+      value: `${percent}%`,
+      unit,
+      inlineLabel: `${percent}% da ${unit === "un" ? "unidade" : "caixa"}`,
+      detail,
+    };
+  }
+
+  if (percent <= 0) {
+    return {
+      value: String(wholeUnits),
+      unit,
+      inlineLabel: `${wholeUnits} ${unit}`,
+      detail: null,
+    };
+  }
+
+  return {
+    value: `${wholeUnits} + ${percent}%`,
+    unit,
+    inlineLabel: `${wholeUnits} ${unit} + ${percent}%`,
+    detail,
+  };
+}
+
 export function formatInventoryQuantity(
   rawValue: number,
   unit: UiInventoryUnit,
@@ -67,7 +102,7 @@ export function formatInventoryQuantity(
       value: convertedDisplay.value,
       unit: convertedDisplay.unit,
       inlineLabel: convertedDisplay.inlineLabel,
-      detail: `saldo real: ${originalDisplay.inlineLabel}`,
+      detail: `real: ${originalDisplay.inlineLabel}`,
     };
   }
 
@@ -103,15 +138,12 @@ export function formatInventoryQuantity(
     maximumFractionDigits: getDisplayPrecision(unit),
   });
 
-  if ((unit === "un" || unit === "caixa") && normalized > 0 && normalized < 1) {
-    const percent = Math.round(normalized * 100);
-    const detail = `aprox. ${value} ${unit}`;
-    return {
-      value: `${percent}%`,
-      unit,
-      inlineLabel: `${percent}% da ${unit === "un" ? "unidade" : "caixa"}`,
-      detail,
-    };
+  if (
+    (unit === "un" || unit === "caixa") &&
+    normalized > 0 &&
+    !Number.isInteger(normalized)
+  ) {
+    return formatFractionalUnitLabel(normalized, unit);
   }
 
   return {

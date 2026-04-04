@@ -137,6 +137,8 @@ export class InventoryPurchasePlanService {
         itemId: item.id,
         itemName: item.name,
         itemUnit: item.unit,
+        recipeEquivalentQuantity: item.recipeEquivalentQuantity,
+        recipeEquivalentUnit: item.recipeEquivalentUnit,
         currentQuantity: roundToThreeDecimals(item.currentQuantity),
         requiredQuantity,
         deficitQuantity,

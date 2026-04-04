@@ -90,6 +90,8 @@ export interface InventoryPurchasePlanListItem {
   itemId: string;
   itemName: string;
   itemUnit: UiInventoryUnit;
+  recipeEquivalentQuantity: number | null;
+  recipeEquivalentUnit: UiInventoryUnit | null;
   currentQuantity: number;
   requiredQuantity: number;
   deficitQuantity: number;

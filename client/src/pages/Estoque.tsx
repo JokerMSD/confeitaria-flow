@@ -280,13 +280,30 @@ export default function Estoque() {
               ) : (
                 <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
                   {purchasePlan.items.map((planItem) => {
-                    const current = formatQuantity(planItem.currentQuantity, planItem.itemUnit);
-                    const required = formatQuantity(planItem.requiredQuantity, planItem.itemUnit);
+                    const current = formatQuantity(
+                      planItem.currentQuantity,
+                      planItem.itemUnit,
+                      planItem.recipeEquivalentQuantity,
+                      planItem.recipeEquivalentUnit,
+                    );
+                    const required = formatQuantity(
+                      planItem.requiredQuantity,
+                      planItem.itemUnit,
+                      planItem.recipeEquivalentQuantity,
+                      planItem.recipeEquivalentUnit,
+                    );
                     const suggested = formatQuantity(
                       planItem.suggestedPurchaseQuantity,
                       planItem.itemUnit,
+                      planItem.recipeEquivalentQuantity,
+                      planItem.recipeEquivalentUnit,
                     );
-                    const deficit = formatQuantity(planItem.deficitQuantity, planItem.itemUnit);
+                    const deficit = formatQuantity(
+                      planItem.deficitQuantity,
+                      planItem.itemUnit,
+                      planItem.recipeEquivalentQuantity,
+                      planItem.recipeEquivalentUnit,
+                    );
 
                     return (
                       <div
