@@ -1,5 +1,7 @@
 import { resolveApiUrl } from "@/lib/api-base";
 
+const unauthorizedEventName = "app:unauthorized";
+
 export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
@@ -17,6 +19,14 @@ export class ApiError extends Error {
   }
 }
 
+function notifyUnauthorized() {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(new CustomEvent(unauthorizedEventName));
+}
+
 export async function httpClient<T>(
   url: string,
   options: ApiRequestOptions = {},
@@ -32,6 +42,10 @@ export async function httpClient<T>(
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      notifyUnauthorized();
+    }
+
     const contentType = response.headers.get("content-type") || "";
 
     if (contentType.includes("application/json")) {
@@ -50,3 +64,5 @@ export async function httpClient<T>(
 
   return (await response.json()) as T;
 }
+
+export { unauthorizedEventName };

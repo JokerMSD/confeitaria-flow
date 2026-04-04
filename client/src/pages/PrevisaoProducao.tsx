@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useProductionForecast } from "@/features/production/hooks/use-production-forecast";
 import { cn, formatDate, getLocalDateKey } from "@/lib/utils";
+import { ApiError } from "@/api/http-client";
 
 function formatQuantity(quantity: number, unit: string) {
   return `${new Intl.NumberFormat("pt-BR", {
@@ -169,6 +170,16 @@ export default function PrevisaoProducao() {
     setDateFrom(start);
     setDateTo(end);
   };
+
+  const forecastErrorMessage = useMemo(() => {
+    const error = forecastQuery.error;
+
+    if (error instanceof ApiError && error.status === 401) {
+      return "Sua sessao administrativa expirou. Entre novamente para carregar a previsao.";
+    }
+
+    return "Nao foi possivel carregar a previsao.";
+  }, [forecastQuery.error]);
 
   return (
     <AppLayout title="Previsao de Producao">
@@ -353,7 +364,7 @@ export default function PrevisaoProducao() {
               ) : null}
               {forecastQuery.isError ? (
                 <p className="text-sm text-destructive">
-                  Nao foi possivel carregar a previsao.
+                  {forecastErrorMessage}
                 </p>
               ) : null}
               {!forecastQuery.isLoading &&

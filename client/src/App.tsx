@@ -1,4 +1,4 @@
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { Route, Switch, useLocation } from "wouter";
@@ -33,6 +33,8 @@ import PublicCheckout from "@/pages/PublicCheckout";
 import MinhaConta from "@/pages/MinhaConta";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { unauthorizedEventName } from "@/api/http-client";
+import { authQueryKeys } from "@/features/auth/lib/auth-query-keys";
 
 function isStaffRole(role?: string) {
   return role === "admin" || role === "operador";
@@ -102,9 +104,23 @@ function AdminSwitch() {
 
 function AuthGate() {
   const [location, setLocation] = useLocation();
+  const queryClient = useQueryClient();
   const authSessionQuery = useAuthSession();
   const session = authSessionQuery.data?.data ?? null;
   const isStaff = isStaffRole(session?.role);
+
+  useEffect(() => {
+    const handleUnauthorized = async () => {
+      await queryClient.invalidateQueries({
+        queryKey: authQueryKeys.session(),
+      });
+    };
+
+    window.addEventListener(unauthorizedEventName, handleUnauthorized);
+    return () => {
+      window.removeEventListener(unauthorizedEventName, handleUnauthorized);
+    };
+  }, [queryClient]);
 
   useEffect(() => {
     if (authSessionQuery.isLoading) {
