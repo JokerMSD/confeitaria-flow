@@ -1,5 +1,12 @@
 import { Link } from "wouter";
-import { ArrowRight, HeartHandshake, ShoppingBag, Truck } from "lucide-react";
+import {
+  ArrowRight,
+  HeartHandshake,
+  ShoppingBag,
+  Star,
+  Truck,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
@@ -12,20 +19,27 @@ export default function PublicStoreHome() {
 
   return (
     <PublicStoreLayout
-      title="Doces sob encomenda com a cara da Universo Doce"
-      subtitle="Escolha no catalogo publico, personalize com adicionais e finalize com retirada ou entrega em um fluxo simples no celular."
+      title="Encomende doces da Universo Doce em um site feito para vender"
+      subtitle="Catalogo, personalizacao, carrinho e checkout com cara de loja profissional, sem perder o atendimento humano da confeitaria."
     >
       <div className="space-y-6">
         <section className="brand-shell brand-hero overflow-hidden p-8 md:p-10">
           <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
             <div>
-              <div className="brand-pill">feito sob encomenda</div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="brand-pill">feito sob encomenda</div>
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-border/70 bg-background/70"
+                >
+                  Pedido online com Pix manual
+                </Badge>
+              </div>
               <h2 className="mt-5 max-w-2xl font-display text-4xl font-bold leading-tight text-foreground md:text-5xl">
-                Bolos e doces com visual delicado, pedido simples e atendimento real.
+                Bolos e doces com visual delicado, pedido simples e foco total em compra.
               </h2>
               <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
-                A frente publica conversa com o mesmo catalogo usado internamente.
-                Isso deixa entrega, retirada, adicionais e producao alinhados desde o checkout.
+                O cliente escolhe produto, sabor, extras, quantidade, entrega ou retirada em um fluxo mais comercial e muito mais claro no celular.
               </p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link href="/loja/catalogo">
@@ -67,7 +81,7 @@ export default function PublicStoreHome() {
                 <div className="rounded-[1.5rem] border border-border/70 bg-card/85 p-4">
                   <ShoppingBag className="h-5 w-5 text-primary" />
                   <p className="mt-3 text-sm font-semibold text-foreground">
-                    Adicionais no checkout
+                    Sabores e extras
                   </p>
                 </div>
                 <div className="rounded-[1.5rem] border border-border/70 bg-card/85 p-4">
@@ -84,17 +98,17 @@ export default function PublicStoreHome() {
         <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <section className="brand-shell self-start p-6 md:p-8">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">
-              Como funciona
+              Como comprar
             </p>
             <div className="mt-5 grid gap-4 md:grid-cols-3">
               {[
                 {
                   title: "1. Escolha",
-                  text: "Navegue pelo catalogo e abra o detalhe do produto para montar o pedido.",
+                  text: "Navegue pelo catalogo, encontre o produto e veja o preco com linguagem mais comercial.",
                 },
                 {
                   title: "2. Personalize",
-                  text: "Adicione opcoes extras e confira tudo no carrinho antes de fechar.",
+                  text: "Monte sabores e extras como em um app de delivery e ajuste tudo no carrinho ou checkout.",
                 },
                 {
                   title: "3. Confirme",
@@ -105,7 +119,9 @@ export default function PublicStoreHome() {
                   key={step.title}
                   className="rounded-[1.75rem] border border-border/70 bg-background/60 p-5"
                 >
-                  <p className="text-sm font-semibold text-primary">{step.title}</p>
+                  <p className="text-sm font-semibold text-primary">
+                    {step.title}
+                  </p>
                   <p className="mt-3 text-sm leading-6 text-muted-foreground">
                     {step.text}
                   </p>
@@ -117,7 +133,7 @@ export default function PublicStoreHome() {
           <Card className="brand-shell self-start overflow-hidden">
             <CardContent className="space-y-4 p-6">
               <p className="text-sm font-semibold uppercase tracking-[0.28em] text-primary">
-                Destaques da loja
+                Mais pedidos da loja
               </p>
               {homeQuery.data?.data.featuredProducts.map((product) => (
                 <div
@@ -126,9 +142,12 @@ export default function PublicStoreHome() {
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="font-semibold text-foreground">{product.name}</p>
+                      <p className="font-semibold text-foreground">
+                        {product.name}
+                      </p>
                       <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        {product.notes || "Produto do catalogo com adicionais opcionais."}
+                        {product.notes ||
+                          "Produto do catalogo com adicionais opcionais."}
                       </p>
                     </div>
                     <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground">
@@ -139,6 +158,10 @@ export default function PublicStoreHome() {
                       )}
                     </span>
                   </div>
+                  <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Star className="h-3.5 w-3.5 text-primary" />
+                    pronto para pedido online
+                  </div>
                 </div>
               ))}
             </CardContent>
@@ -147,9 +170,9 @@ export default function PublicStoreHome() {
 
         <section className="grid gap-4 md:grid-cols-3">
           {[
-            "Paleta suave inspirada na marca, sem perder contraste.",
-            "Modo claro e escuro persistidos para loja e painel.",
-            "Logo aplicada nos pontos de maior valor visual da experiencia.",
+            "Catalogo mais forte visualmente, com foco em conversao.",
+            "Customizacao de sabores e extras mais parecida com delivery apps.",
+            "Checkout publico com leitura mais profissional e clara no celular.",
           ].map((highlight) => (
             <div
               key={highlight}

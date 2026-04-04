@@ -57,7 +57,15 @@ export interface PublicStoreProductSummary {
   additionalGroupCount: number;
 }
 
+export interface PublicStoreFillingOption {
+  id: string;
+  name: string;
+}
+
 export interface PublicStoreProductDetail extends PublicStoreProductSummary {
+  fillingOptions: PublicStoreFillingOption[];
+  minFillings: number;
+  maxFillings: number;
   additionalGroups: ProductAdditionalGroupDetail[];
 }
 
@@ -82,6 +90,9 @@ export interface PublicStoreProductDetailResponse {
 export interface PublicCheckoutItemInput {
   recipeId: string;
   quantity: number;
+  fillingRecipeId?: string | null;
+  secondaryFillingRecipeId?: string | null;
+  tertiaryFillingRecipeId?: string | null;
   additionals?: Array<{
     groupId: string;
     optionId: string;

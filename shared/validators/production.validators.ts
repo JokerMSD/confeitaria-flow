@@ -16,6 +16,9 @@ export const productionForecastFiltersSchema = z.object({
 export const publicCheckoutItemInputSchema = z.object({
   recipeId: uuidSchema,
   quantity: z.number().positive(),
+  fillingRecipeId: uuidSchema.nullable().optional(),
+  secondaryFillingRecipeId: uuidSchema.nullable().optional(),
+  tertiaryFillingRecipeId: uuidSchema.nullable().optional(),
   additionals: z.array(createOrderItemAdditionalInputSchema).optional(),
 });
 

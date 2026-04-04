@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { buildPublicCartLineId, calculatePublicItemLineTotalCents } from "./public-store-item";
 
 const STORAGE_KEY = "public-store-cart";
 const CHANGE_EVENT = "public-store-cart:change";
@@ -14,18 +15,13 @@ export interface PublicCartItemAdditional {
 export interface PublicCartItem {
   lineId: string;
   recipeId: string;
+  baseName: string;
   name: string;
   quantity: number;
   unitPriceCents: number;
+  fillingRecipeIds: string[];
+  fillingNames: string[];
   additionals: PublicCartItemAdditional[];
-}
-
-function buildLineId(recipeId: string, additionals: PublicCartItemAdditional[]) {
-  const suffix = additionals
-    .map((additional) => `${additional.groupId}:${additional.optionId}`)
-    .sort()
-    .join("|");
-  return suffix ? `${recipeId}:${suffix}` : recipeId;
 }
 
 function readCart() {
@@ -65,7 +61,11 @@ export function usePublicCart() {
   }, []);
 
   const addItem = useCallback((item: Omit<PublicCartItem, "lineId">) => {
-    const lineId = buildLineId(item.recipeId, item.additionals);
+    const lineId = buildPublicCartLineId(
+      item.recipeId,
+      item.fillingRecipeIds,
+      item.additionals,
+    );
     const current = readCart();
     const existing = current.find((entry) => entry.lineId === lineId);
     const next = existing
@@ -78,6 +78,28 @@ export function usePublicCart() {
 
     writeCart(next);
   }, []);
+
+  const replaceItem = useCallback(
+    (previousLineId: string, item: Omit<PublicCartItem, "lineId">) => {
+      const current = readCart().filter((entry) => entry.lineId !== previousLineId);
+      const lineId = buildPublicCartLineId(
+        item.recipeId,
+        item.fillingRecipeIds,
+        item.additionals,
+      );
+      const existing = current.find((entry) => entry.lineId === lineId);
+      const next = existing
+        ? current.map((entry) =>
+            entry.lineId === lineId
+              ? { ...entry, quantity: entry.quantity + item.quantity }
+              : entry,
+          )
+        : [...current, { ...item, lineId }];
+
+      writeCart(next);
+    },
+    [],
+  );
 
   const updateQuantity = useCallback((lineId: string, quantity: number) => {
     const current = readCart();
@@ -102,19 +124,7 @@ export function usePublicCart() {
   );
 
   const totalCents = useMemo(
-    () =>
-      items.reduce(
-        (sum, item) =>
-          sum +
-          item.quantity *
-            (item.unitPriceCents +
-              item.additionals.reduce(
-                (additionalsSum, additional) =>
-                  additionalsSum + additional.priceDeltaCents,
-                0,
-              )),
-        0,
-      ),
+    () => items.reduce((sum, item) => sum + calculatePublicItemLineTotalCents(item), 0),
     [items],
   );
 
@@ -123,6 +133,7 @@ export function usePublicCart() {
     itemCount,
     totalCents,
     addItem,
+    replaceItem,
     updateQuantity,
     removeItem,
     clear,

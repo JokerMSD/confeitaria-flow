@@ -1,13 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
-import { CheckCircle2, Truck } from "lucide-react";
+import { CheckCircle2, Pencil, Truck } from "lucide-react";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { usePublicCart } from "@/features/public-store/lib/public-cart";
+import { PublicItemEditorSheet } from "@/features/public-store/components/PublicItemEditorSheet";
+import {
+  usePublicCart,
+  type PublicCartItem,
+} from "@/features/public-store/lib/public-cart";
 import { usePublicCheckout } from "@/features/public-store/hooks/use-public-store";
+import {
+  calculatePublicItemLineTotalCents,
+  calculatePublicItemUnitTotalCents,
+} from "@/features/public-store/lib/public-store-item";
 import { formatCurrency, getTodayLocalDateKey } from "@/lib/utils";
 import {
   formatMoneyInput,
@@ -26,6 +34,7 @@ export default function PublicCheckout() {
   const cart = usePublicCart();
   const checkoutMutation = usePublicCheckout();
   const { toast } = useToast();
+  const [editingItem, setEditingItem] = useState<PublicCartItem | null>(null);
   const [success, setSuccess] = useState<{
     orderNumber: string;
     subtotalAmountCents: number;
@@ -155,6 +164,9 @@ export default function PublicCheckout() {
           items: cart.items.map((item) => ({
             recipeId: item.recipeId,
             quantity: item.quantity,
+            fillingRecipeId: item.fillingRecipeIds[0] ?? null,
+            secondaryFillingRecipeId: item.fillingRecipeIds[1] ?? null,
+            tertiaryFillingRecipeId: item.fillingRecipeIds[2] ?? null,
             additionals: item.additionals.map((additional, index) => ({
               groupId: additional.groupId,
               optionId: additional.optionId,
@@ -185,7 +197,7 @@ export default function PublicCheckout() {
   return (
     <PublicStoreLayout
       title="Checkout"
-      subtitle="Feche seu pedido com dados de contato, retirada ou entrega e confirmacao por Pix manual."
+      subtitle="Finalize a compra com cara de delivery: revise itens, ajuste sabores e extras, e confirme retirada ou entrega."
     >
       {success ? (
         <Card className="brand-shell">
@@ -403,26 +415,46 @@ export default function PublicCheckout() {
                         <p className="font-semibold text-foreground">
                           {item.quantity}x {item.name}
                         </p>
+                        {item.fillingNames.length > 0 ? (
+                          <p className="mt-1 text-sm font-medium text-primary">
+                            Sabor(es): {item.fillingNames.join(" / ")}
+                          </p>
+                        ) : null}
                         {item.additionals.length > 0 ? (
                           <p className="mt-1 text-sm text-muted-foreground">
                             {item.additionals
-                              .map((additional) => additional.optionName)
+                              .map(
+                                (additional) =>
+                                  `${additional.groupName}: ${additional.optionName}`,
+                              )
                               .join(", ")}
                           </p>
                         ) : null}
                       </div>
-                      <span className="font-semibold text-foreground">
-                        {formatCurrency(
-                          (item.quantity *
-                            (item.unitPriceCents +
-                              item.additionals.reduce(
-                                (sum, additional) =>
-                                  sum + additional.priceDeltaCents,
-                                0,
-                              ))) /
-                            100,
-                        )}
-                      </span>
+                      <div className="text-right">
+                        <span className="font-semibold text-foreground">
+                          {formatCurrency(
+                            calculatePublicItemLineTotalCents(item) / 100,
+                          )}
+                        </span>
+                        <div className="mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full"
+                            onClick={() => setEditingItem(item)}
+                          >
+                            <Pencil className="mr-2 h-3.5 w-3.5" />
+                            Editar
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                      Unitario{" "}
+                      {formatCurrency(
+                        calculatePublicItemUnitTotalCents(item) / 100,
+                      )}
                     </div>
                   </div>
                 ))}
@@ -468,6 +500,23 @@ export default function PublicCheckout() {
           </Card>
         </div>
       )}
+
+      <PublicItemEditorSheet
+        item={editingItem}
+        open={Boolean(editingItem)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingItem(null);
+          }
+        }}
+        onSave={(item) => {
+          if (!editingItem) {
+            return;
+          }
+
+          cart.replaceItem(editingItem.lineId, item);
+        }}
+      />
     </PublicStoreLayout>
   );
 }

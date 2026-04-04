@@ -1,17 +1,28 @@
+import { useState } from "react";
 import { Link } from "wouter";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
-import { usePublicCart } from "@/features/public-store/lib/public-cart";
+import { PublicItemEditorSheet } from "@/features/public-store/components/PublicItemEditorSheet";
+import {
+  usePublicCart,
+  type PublicCartItem,
+} from "@/features/public-store/lib/public-cart";
+import {
+  calculatePublicItemLineTotalCents,
+  calculatePublicItemUnitTotalCents,
+} from "@/features/public-store/lib/public-store-item";
 import { formatCurrency } from "@/lib/utils";
 
 export default function PublicCart() {
   const cart = usePublicCart();
+  const [editingItem, setEditingItem] = useState<PublicCartItem | null>(null);
 
   return (
     <PublicStoreLayout
       title="Carrinho"
-      subtitle="Revise quantidades, adicionais e total antes de seguir para o checkout."
+      subtitle="Revise os itens como em um app de delivery: quantidade, sabores, extras e total antes de fechar o pedido."
     >
       {cart.items.length === 0 ? (
         <Card className="brand-shell">
@@ -35,23 +46,28 @@ export default function PublicCart() {
         <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
           <div className="space-y-4">
             {cart.items.map((item) => {
-              const unitTotalCents =
-                item.unitPriceCents +
-                item.additionals.reduce(
-                  (sum, additional) => sum + additional.priceDeltaCents,
-                  0,
-                );
+              const unitTotalCents = calculatePublicItemUnitTotalCents(item);
 
               return (
                 <Card key={item.lineId} className="brand-shell">
                   <CardContent className="space-y-4 p-6">
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <h2 className="font-semibold text-foreground">{item.name}</h2>
+                        <h2 className="font-semibold text-foreground">
+                          {item.name}
+                        </h2>
+                        {item.fillingNames.length > 0 ? (
+                          <p className="mt-1 text-sm font-medium text-primary">
+                            Sabor(es): {item.fillingNames.join(" / ")}
+                          </p>
+                        ) : null}
                         {item.additionals.length > 0 ? (
                           <p className="mt-1 text-sm leading-6 text-muted-foreground">
                             {item.additionals
-                              .map((additional) => additional.optionName)
+                              .map(
+                                (additional) =>
+                                  `${additional.groupName}: ${additional.optionName}`,
+                              )
                               .join(", ")}
                           </p>
                         ) : (
@@ -61,7 +77,9 @@ export default function PublicCart() {
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Preco unitario</p>
+                        <p className="text-sm text-muted-foreground">
+                          Preco unitario
+                        </p>
                         <span className="font-semibold text-foreground">
                           {formatCurrency(unitTotalCents / 100)}
                         </span>
@@ -92,10 +110,20 @@ export default function PublicCart() {
                           +
                         </Button>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-3">
                         <span className="font-display text-2xl font-bold text-foreground">
-                          {formatCurrency((item.quantity * unitTotalCents) / 100)}
+                          {formatCurrency(
+                            calculatePublicItemLineTotalCents(item) / 100,
+                          )}
                         </span>
+                        <Button
+                          variant="outline"
+                          className="rounded-full"
+                          onClick={() => setEditingItem(item)}
+                        >
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Editar
+                        </Button>
                         <Button
                           variant="ghost"
                           onClick={() => cart.removeItem(item.lineId)}
@@ -117,7 +145,9 @@ export default function PublicCart() {
               </p>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Itens</span>
-                <span className="font-semibold text-foreground">{cart.itemCount}</span>
+                <span className="font-semibold text-foreground">
+                  {cart.itemCount}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
@@ -126,8 +156,7 @@ export default function PublicCart() {
                 </span>
               </div>
               <div className="rounded-[1.5rem] border border-dashed border-border px-4 py-3 text-sm leading-6 text-muted-foreground">
-                A taxa de entrega e definida no checkout. Para retirada, o total
-                final permanece igual ao subtotal.
+                A taxa de entrega e definida no checkout. Voce ainda pode editar sabores e extras de cada item antes de concluir.
               </div>
               <Link href="/loja/checkout">
                 <a>
@@ -140,6 +169,23 @@ export default function PublicCart() {
           </Card>
         </div>
       )}
+
+      <PublicItemEditorSheet
+        item={editingItem}
+        open={Boolean(editingItem)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingItem(null);
+          }
+        }}
+        onSave={(item) => {
+          if (!editingItem) {
+            return;
+          }
+
+          cart.replaceItem(editingItem.lineId, item);
+        }}
+      />
     </PublicStoreLayout>
   );
 }

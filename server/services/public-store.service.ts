@@ -1,6 +1,7 @@
 import type {
   PublicCheckoutInput,
   PublicCheckoutResponse,
+  PublicStoreFillingOption,
   PublicStoreHome,
   PublicStoreProductDetail,
   PublicStoreProductSummary,
@@ -10,6 +11,29 @@ import { getTodayOperationalDate } from "../utils/operational-date";
 import { CustomerOrderSyncService } from "./customer-order-sync.service";
 import { OrdersService } from "./orders.service";
 import { RecipesService } from "./recipes.service";
+
+function normalizeValue(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
+function supportsMultipleFillings(productName: string) {
+  const normalized = normalizeValue(productName);
+  return (
+    normalized.includes("ovo de colher") ||
+    normalized.includes("ovo trufado") ||
+    normalized.includes("ovo de pascoa recheado")
+  );
+}
+
+function buildPublicProductName(productName: string, fillingNames: string[]) {
+  return fillingNames.length > 0
+    ? `${productName} - ${fillingNames.join(" / ")}`
+    : productName;
+}
 
 function toSummary(detail: Awaited<ReturnType<RecipesService["getById"]>>): PublicStoreProductSummary {
   return {
@@ -51,8 +75,18 @@ export class PublicStoreService {
       throw new HttpError(404, "Produto não encontrado.");
     }
 
+    const fillingOptions = await this.listFillingOptions();
+    const maxFillings = fillingOptions.length === 0
+      ? 0
+      : supportsMultipleFillings(product.name)
+        ? 3
+        : 1;
+
     return {
       ...toSummary(product),
+      fillingOptions,
+      minFillings: maxFillings > 0 ? 1 : 0,
+      maxFillings,
       additionalGroups: product.additionalGroups,
     };
   }
@@ -63,12 +97,51 @@ export class PublicStoreService {
         const product = await this.getProduct(item.recipeId);
         const unitPriceCents =
           product.effectiveSalePriceCents ?? product.salePriceCents ?? 0;
+        const fillingIds = [
+          item.fillingRecipeId,
+          item.secondaryFillingRecipeId,
+          item.tertiaryFillingRecipeId,
+        ].filter((value): value is string => Boolean(value));
+        const uniqueFillingIds = Array.from(new Set(fillingIds));
+
+        if (uniqueFillingIds.length < product.minFillings) {
+          throw new HttpError(
+            400,
+            `Selecione pelo menos ${product.minFillings} sabor(es) para o item "${product.name}".`,
+          );
+        }
+
+        if (uniqueFillingIds.length > product.maxFillings) {
+          throw new HttpError(
+            400,
+            `O item "${product.name}" aceita no maximo ${product.maxFillings} sabor(es).`,
+          );
+        }
+
+        const fillingMap = new Map(
+          product.fillingOptions.map((option) => [option.id, option]),
+        );
+        const fillingNames = uniqueFillingIds.map((id) => {
+          const filling = fillingMap.get(id);
+
+          if (!filling) {
+            throw new HttpError(
+              400,
+              `O sabor selecionado nao esta disponivel para o item "${product.name}".`,
+            );
+          }
+
+          return filling.name;
+        });
 
         return {
           recipeId: product.id,
-          productName: product.name,
+          productName: buildPublicProductName(product.name, fillingNames),
           quantity: item.quantity,
           unitPriceCents,
+          fillingRecipeId: uniqueFillingIds[0] ?? null,
+          secondaryFillingRecipeId: uniqueFillingIds[1] ?? null,
+          tertiaryFillingRecipeId: uniqueFillingIds[2] ?? null,
           position: index,
           additionals: item.additionals ?? [],
         };
@@ -111,5 +184,16 @@ export class PublicStoreService {
       pixInstructions:
         "Pedido recebido. Envie o comprovante do Pix manual para confirmar o pagamento com a confeitaria.",
     };
+  }
+
+  private async listFillingOptions(): Promise<PublicStoreFillingOption[]> {
+    const fillings = await this.recipesService.list({ kind: "Preparacao" });
+
+    return fillings
+      .map((filling) => ({
+        id: filling.id,
+        name: filling.name,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }
 }

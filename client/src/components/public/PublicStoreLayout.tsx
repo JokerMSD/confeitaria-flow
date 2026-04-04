@@ -82,8 +82,9 @@ export function PublicStoreLayout({
             })}
 
             <Link href="/loja/carrinho">
-              <a className="relative rounded-full border border-border bg-card/90 px-4 py-2 text-foreground shadow-sm">
+              <a className="relative inline-flex items-center gap-2 rounded-full border border-border bg-card/90 px-4 py-2 text-foreground shadow-sm">
                 <ShoppingCart className="h-4 w-4" />
+                <span className="text-sm font-medium">Carrinho</span>
                 {itemCount > 0 ? (
                   <span className="absolute -right-1 -top-1 rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold text-primary-foreground">
                     {itemCount}
@@ -147,7 +148,7 @@ export function PublicStoreLayout({
           <BrandLogo imageClassName="h-12 w-12" />
           <div className="text-sm leading-6 text-muted-foreground">
             <p>Encomendas com retirada ou entrega e pagamento em Pix manual.</p>
-            <p>Catalogo publico integrado ao fluxo real da confeitaria.</p>
+            <p>Catalogo publico pensado para compra, integrado ao fluxo real da confeitaria.</p>
           </div>
         </div>
       </footer>
