@@ -40,6 +40,17 @@ function addAggregate(
   target.set(aggregate.id, { ...aggregate, quantity: roundQuantity(aggregate.quantity) });
 }
 
+function isForecastSkippableError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.message === "Recipe not found." ||
+    error.message === "Inventory item not found."
+  );
+}
+
 export class ProductionForecastService {
   private readonly ordersRepository = new OrdersRepository();
   private readonly orderItemAdditionalsRepository =
@@ -93,57 +104,73 @@ export class ProductionForecastService {
         continue;
       }
 
-      const resolvedRecipe =
-        row.recipeId != null
-          ? {
-              recipeId: row.recipeId,
-              fillingRecipeIds: [
-                row.fillingRecipeId,
-                row.secondaryFillingRecipeId,
-                row.tertiaryFillingRecipeId,
-              ].filter((value): value is string => Boolean(value)),
-              resolutionStrategy: "explicit" as const,
-            }
-          : await this.recipesService.resolveLegacyOrderItemRecipes(row.productName);
+      try {
+        const resolvedRecipe =
+          row.recipeId != null
+            ? {
+                recipeId: row.recipeId,
+                fillingRecipeIds: [
+                  row.fillingRecipeId,
+                  row.secondaryFillingRecipeId,
+                  row.tertiaryFillingRecipeId,
+                ].filter((value): value is string => Boolean(value)),
+                resolutionStrategy: "explicit" as const,
+              }
+            : await this.recipesService.resolveLegacyOrderItemRecipes(
+                row.productName,
+              );
 
-      if (!resolvedRecipe?.recipeId) {
-        continue;
-      }
+        if (!resolvedRecipe?.recipeId) {
+          continue;
+        }
 
-      itemCount += 1;
-      orders.set(row.orderId, {
-        orderId: row.orderId,
-        orderNumber: row.orderNumber,
-        customerName: row.customerName,
-        deliveryDate: row.deliveryDate,
-        status: row.status,
-      });
+        await this.collectRecipeDemand(
+          resolvedRecipe.recipeId,
+          row.quantity,
+          recipeTotals,
+          ingredientTotals,
+          fillingTotals,
+          [],
+          resolvedRecipe.fillingRecipeIds,
+          true,
+        );
 
-      await this.collectRecipeDemand(
-        resolvedRecipe.recipeId,
-        row.quantity,
-        recipeTotals,
-        ingredientTotals,
-        fillingTotals,
-        [],
-        resolvedRecipe.fillingRecipeIds,
-        true,
-      );
-
-      const itemAdditionals = additionalsByOrderItemId.get(row.itemId) ?? [];
-
-      for (const additional of itemAdditionals as any[]) {
-        const aggregateId = `${additional.groupId}:${additional.optionId}`;
-        const current = additionalTotals.get(aggregateId);
-        const nextQuantity = roundQuantity((current?.quantity ?? 0) + row.quantity);
-
-        additionalTotals.set(aggregateId, {
-          id: aggregateId,
-          groupName: additional.groupName,
-          name: additional.optionName,
-          quantity: nextQuantity,
-          unit: "un",
+        itemCount += 1;
+        orders.set(row.orderId, {
+          orderId: row.orderId,
+          orderNumber: row.orderNumber,
+          customerName: row.customerName,
+          deliveryDate: row.deliveryDate,
+          status: row.status,
         });
+
+        const itemAdditionals = additionalsByOrderItemId.get(row.itemId) ?? [];
+
+        for (const additional of itemAdditionals as any[]) {
+          const aggregateId = `${additional.groupId}:${additional.optionId}`;
+          const current = additionalTotals.get(aggregateId);
+          const nextQuantity = roundQuantity(
+            (current?.quantity ?? 0) + row.quantity,
+          );
+
+          additionalTotals.set(aggregateId, {
+            id: aggregateId,
+            groupName: additional.groupName,
+            name: additional.optionName,
+            quantity: nextQuantity,
+            unit: "un",
+          });
+        }
+      } catch (error) {
+        if (!isForecastSkippableError(error)) {
+          throw error;
+        }
+
+        console.warn(
+          `[ProductionForecast] skipped order item ${row.itemId} from ${row.orderNumber}: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
       }
     }
 
