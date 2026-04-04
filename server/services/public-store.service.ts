@@ -452,6 +452,12 @@ export class PublicStoreService {
         customerPhone: input.customerPhone?.trim() || null,
         deliveryMode: input.deliveryMode,
       },
+      items: pricingPreview.resolvedItems.map((item) => ({
+        title: item.productName,
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        description: null,
+      })),
     });
 
     const normalizedPaymentStatus = paymentOrder.status?.toLowerCase() ?? null;

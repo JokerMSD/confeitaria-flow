@@ -10,6 +10,11 @@ interface MercadoPagoApiErrorResponse {
   message?: string;
   cause?: MercadoPagoApiErrorCause[];
   error?: string;
+  errors?: Array<{
+    code?: string;
+    description?: string;
+    message?: string;
+  }>;
 }
 
 export interface MercadoPagoCardOrderInput {
@@ -28,6 +33,12 @@ export interface MercadoPagoCardOrderInput {
     identificationNumber: string;
   };
   metadata?: Record<string, unknown>;
+  items?: Array<{
+    title: string;
+    quantity: number;
+    unitPriceCents: number;
+    description?: string | null;
+  }>;
 }
 
 export interface MercadoPagoOrderStatus {
@@ -73,6 +84,15 @@ function buildFriendlyMercadoPagoMessage(
 
   if (causeDescription) {
     return causeDescription;
+  }
+
+  const errorsDescription = payload?.errors
+    ?.map((error) => error.description?.trim() || error.message?.trim())
+    .filter(Boolean)
+    .join(" ");
+
+  if (errorsDescription) {
+    return errorsDescription;
   }
 
   if (payload?.message?.trim()) {
@@ -165,6 +185,7 @@ export class MercadoPagoService {
       },
       body: JSON.stringify({
         type: "online",
+        capture_mode: "automatic_async",
         processing_mode: "automatic",
         external_reference: input.externalReference,
         total_amount: amount.toFixed(2),
@@ -172,6 +193,7 @@ export class MercadoPagoService {
         notification_url: config.notificationUrl ?? undefined,
         payer: {
           email: input.payer.email.trim(),
+          entity_type: "individual",
           first_name: input.payer.firstName.trim(),
           last_name: input.payer.lastName.trim(),
           identification: {
@@ -179,6 +201,13 @@ export class MercadoPagoService {
             number: sanitizeDigits(input.payer.identificationNumber),
           },
         },
+        items:
+          input.items?.map((item) => ({
+            title: item.title,
+            quantity: item.quantity,
+            unit_price: Number((item.unitPriceCents / 100).toFixed(2)).toFixed(2),
+            description: item.description ?? undefined,
+          })) ?? undefined,
         transactions: {
           payments: [
             {
