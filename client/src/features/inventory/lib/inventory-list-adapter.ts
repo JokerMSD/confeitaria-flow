@@ -20,6 +20,8 @@ export function adaptInventoryItemToListItem(
     currentQuantity: item.currentQuantity,
     minQuantity: item.minQuantity,
     unit: item.unit,
+    recipeEquivalentQuantity: item.recipeEquivalentQuantity,
+    recipeEquivalentUnit: item.recipeEquivalentUnit,
     notes: item.notes ?? "",
     isLowStock: item.currentQuantity <= item.minQuantity,
   };

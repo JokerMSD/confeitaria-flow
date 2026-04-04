@@ -18,9 +18,33 @@ function getDisplayPrecision(unit: UiInventoryUnit) {
   return 1;
 }
 
+function formatBaseQuantity(value: number, unit: UiInventoryUnit) {
+  if (unit === "g" && Math.abs(value) >= 1000) {
+    return formatBaseQuantity(value / 1000, "kg");
+  }
+
+  if (unit === "ml" && Math.abs(value) >= 1000) {
+    return formatBaseQuantity(value / 1000, "l");
+  }
+
+  const normalized = normalizeNearInteger(value);
+  const formatted = normalized.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: getDisplayPrecision(unit),
+  });
+
+  return {
+    value: formatted,
+    unit,
+    inlineLabel: `${formatted} ${unit}`,
+  };
+}
+
 export function formatInventoryQuantity(
   rawValue: number,
   unit: UiInventoryUnit,
+  recipeEquivalentQuantity?: number | null,
+  recipeEquivalentUnit?: UiInventoryUnit | null,
 ): {
   value: string;
   unit: UiInventoryUnit;
@@ -29,30 +53,46 @@ export function formatInventoryQuantity(
 } {
   const safeValue = Number.isFinite(rawValue) ? rawValue : 0;
 
+  if (
+    (unit === "un" || unit === "caixa") &&
+    recipeEquivalentQuantity != null &&
+    recipeEquivalentQuantity > 0 &&
+    recipeEquivalentUnit != null
+  ) {
+    const converted = safeValue * recipeEquivalentQuantity;
+    const convertedDisplay = formatBaseQuantity(converted, recipeEquivalentUnit);
+    const originalDisplay = formatBaseQuantity(safeValue, unit);
+
+    return {
+      value: convertedDisplay.value,
+      unit: convertedDisplay.unit,
+      inlineLabel: convertedDisplay.inlineLabel,
+      detail: `saldo real: ${originalDisplay.inlineLabel}`,
+    };
+  }
+
   if (unit === "g" && Math.abs(safeValue) >= 1000) {
-    const converted = normalizeNearInteger(safeValue / 1000);
-    const value = converted.toLocaleString("pt-BR", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: getDisplayPrecision("kg"),
-    });
+    const { value, unit: convertedUnit, inlineLabel } = formatBaseQuantity(
+      safeValue,
+      unit,
+    );
     return {
       value,
-      unit: "kg",
-      inlineLabel: `${value} kg`,
+      unit: convertedUnit,
+      inlineLabel,
       detail: null,
     };
   }
 
   if (unit === "ml" && Math.abs(safeValue) >= 1000) {
-    const converted = normalizeNearInteger(safeValue / 1000);
-    const value = converted.toLocaleString("pt-BR", {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: getDisplayPrecision("l"),
-    });
+    const { value, unit: convertedUnit, inlineLabel } = formatBaseQuantity(
+      safeValue,
+      unit,
+    );
     return {
       value,
-      unit: "l",
-      inlineLabel: `${value} l`,
+      unit: convertedUnit,
+      inlineLabel,
       detail: null,
     };
   }

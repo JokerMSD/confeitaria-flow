@@ -102,7 +102,15 @@ export default function Estoque() {
   const formatQuantity = (
     value: number,
     unit: Parameters<typeof formatInventoryQuantity>[1],
-  ) => formatInventoryQuantity(value, unit);
+    recipeEquivalentQuantity?: number | null,
+    recipeEquivalentUnit?: Parameters<typeof formatInventoryQuantity>[3],
+  ) =>
+    formatInventoryQuantity(
+      value,
+      unit,
+      recipeEquivalentQuantity,
+      recipeEquivalentUnit,
+    );
 
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir "${name}" do estoque?`)) {
@@ -383,8 +391,18 @@ export default function Estoque() {
                   </tr>
                 ) : (
                   filteredInventory.map((item) => {
-                    const current = formatQuantity(item.currentQuantity, item.unit);
-                    const minimum = formatQuantity(item.minQuantity, item.unit);
+                    const current = formatQuantity(
+                      item.currentQuantity,
+                      item.unit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
+                    const minimum = formatQuantity(
+                      item.minQuantity,
+                      item.unit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
 
                     return (
                       <tr
@@ -419,7 +437,7 @@ export default function Estoque() {
                                 {current.value}
                               </span>
                               <span className="ml-1 text-xs text-muted-foreground">
-                                {current.detail ? item.unit === "un" ? "da unidade" : "da caixa" : current.unit}
+                                {current.unit}
                               </span>
                             </div>
                             {current.detail ? (

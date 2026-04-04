@@ -12,6 +12,8 @@ export interface InventoryListItem {
   currentQuantity: number;
   minQuantity: number;
   unit: UiInventoryUnit;
+  recipeEquivalentQuantity: number | null;
+  recipeEquivalentUnit: UiInventoryUnit | null;
   notes: string;
   isLowStock: boolean;
 }
