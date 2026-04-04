@@ -6,6 +6,7 @@ export interface ApiRequestOptions {
   method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   signal?: AbortSignal;
+  suppressUnauthorizedEvent?: boolean;
 }
 
 export class ApiError extends Error {
@@ -31,7 +32,12 @@ export async function httpClient<T>(
   url: string,
   options: ApiRequestOptions = {},
 ): Promise<T> {
-  const { method = "GET", body, signal } = options;
+  const {
+    method = "GET",
+    body,
+    signal,
+    suppressUnauthorizedEvent = false,
+  } = options;
 
   const response = await fetch(resolveApiUrl(url), {
     method,
@@ -42,7 +48,7 @@ export async function httpClient<T>(
   });
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && !suppressUnauthorizedEvent) {
       notifyUnauthorized();
     }
 

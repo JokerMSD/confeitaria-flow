@@ -7,7 +7,9 @@ import type {
 import { httpClient } from "./http-client";
 
 export function getAuthSession() {
-  return httpClient<AuthSessionResponse>("/api/auth/me");
+  return httpClient<AuthSessionResponse>("/api/auth/me", {
+    suppressUnauthorizedEvent: true,
+  });
 }
 
 export function login(payload: LoginRequest) {

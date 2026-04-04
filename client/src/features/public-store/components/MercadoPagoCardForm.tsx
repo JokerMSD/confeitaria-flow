@@ -203,8 +203,11 @@ export const MercadoPagoCardForm = forwardRef<
               }
 
               if (error) {
+                console.error("Mercado Pago card form mount error", error);
                 setErrorMessage(
-                  "Nao foi possivel carregar o formulario do cartao. Atualize a pagina e tente novamente.",
+                  error.message?.trim()
+                    ? `Nao foi possivel carregar o formulario do cartao: ${error.message}`
+                    : "Nao foi possivel carregar o formulario do cartao. Atualize a pagina e tente novamente.",
                 );
                 setIsReady(false);
                 return;
