@@ -63,7 +63,7 @@ export function Sidebar() {
   const user = authSessionQuery.data?.data;
 
   return (
-    <aside className="sticky left-0 top-0 hidden min-h-screen w-72 flex-col border-r border-sidebar-border bg-sidebar md:flex">
+    <aside className="sticky left-0 top-0 hidden h-screen w-72 flex-col overflow-hidden border-r border-sidebar-border bg-sidebar md:flex">
       <div className="space-y-4 p-6">
         <BrandLogo className="gap-4" imageClassName="h-16 w-16" />
         <div className="rounded-[1.75rem] border border-sidebar-border bg-sidebar-accent/50 p-3">
@@ -73,7 +73,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="mt-4 flex-1 space-y-2 px-4">
+      <nav className="mt-4 flex-1 space-y-2 overflow-y-auto px-4 pb-4">
         {navItems.map((item) => {
           const isActive =
             location === item.href ||
