@@ -289,15 +289,15 @@ export default function Estoque() {
                           <div>
                             <p className="font-semibold">{planItem.itemName}</p>
                             <p className="text-xs text-muted-foreground">
-                              Estoque atual: {current.value} {current.unit} {"\u2022"} Necessário: {required.value} {required.unit}
+                              Estoque atual: {current.inlineLabel} {"\u2022"} Necessário: {required.inlineLabel}
                             </p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-bold text-destructive">
-                              Comprar {suggested.value} {suggested.unit}
+                              Comprar {suggested.inlineLabel}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              Falta: {deficit.value} {deficit.unit}
+                              Falta: {deficit.inlineLabel}
                             </p>
                           </div>
                         </div>
@@ -408,21 +408,37 @@ export default function Estoque() {
                         </td>
 
                         <td className="px-4 py-3 text-right sm:px-6 sm:py-4">
-                          <span
-                            className={cn(
-                              "text-lg font-bold",
-                              item.isLowStock ? "text-destructive" : "text-foreground",
-                            )}
-                          >
-                            {current.value}
-                          </span>
-                          <span className="ml-1 text-xs text-muted-foreground">
-                            {current.unit}
-                          </span>
+                          <div className="space-y-0.5">
+                            <div>
+                              <span
+                                className={cn(
+                                  "text-lg font-bold",
+                                  item.isLowStock ? "text-destructive" : "text-foreground",
+                                )}
+                              >
+                                {current.value}
+                              </span>
+                              <span className="ml-1 text-xs text-muted-foreground">
+                                {current.detail ? item.unit === "un" ? "da unidade" : "da caixa" : current.unit}
+                              </span>
+                            </div>
+                            {current.detail ? (
+                              <div className="text-[11px] text-muted-foreground">
+                                {current.detail}
+                              </div>
+                            ) : null}
+                          </div>
                         </td>
 
                         <td className="hidden px-4 py-3 text-right text-muted-foreground md:table-cell sm:px-6 sm:py-4">
-                          {minimum.value} {minimum.unit}
+                          <div className="space-y-0.5">
+                            <div>{minimum.inlineLabel}</div>
+                            {minimum.detail ? (
+                              <div className="text-[11px] text-muted-foreground">
+                                {minimum.detail}
+                              </div>
+                            ) : null}
+                          </div>
                         </td>
 
                         <td className="px-4 py-3 text-right sm:px-6 sm:py-4">
