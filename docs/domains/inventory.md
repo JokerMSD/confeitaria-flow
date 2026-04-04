@@ -8,6 +8,7 @@ Contratos principais:
 - leitura de movimentacoes para auditoria operacional
 - integracoes automaticas com pedidos prontos/entregues e compras
 - confirmacao explicita de recalibracao manual ao editar saldo, custo ou equivalencia
+- rejeicao de edicao obsoleta por `updatedAt` para evitar sobrescrita silenciosa entre duas sessoes
 
 Invariantes importantes:
 - estoque nao deve ficar negativo por efeito colateral silencioso
@@ -26,6 +27,7 @@ Riscos ativos:
 - pedidos legados sem vinculo completo de receita ainda exigem cuidado
 - pedidos legados ainda dependem de backfill para reduzir inferencia por nome em runtime
 - mensagens de falta de estoque precisam continuar diagnosticas, nao genericas
+- ainda nao existe lock forte; a protecao atual e otimista e depende de a UI enviar o ultimo `updatedAt`
 
 Proximos passos naturais:
 - manter custo e equivalencia coerentes ao evoluir compras

@@ -8,6 +8,7 @@ Contratos principais:
 - transicao rapida de status em `/api/orders/:id/status`
 - vinculo opcional com `customerId` para conectar pedido ao cadastro de cliente
 - selecao explicita de cliente no formulario principal sem perder compatibilidade com nome/telefone legados
+- deteccao de escrita obsoleta por `updatedAt` no formulario e na fila
 
 Invariantes importantes:
 - itens novos nao devem voltar para texto livre
@@ -20,6 +21,7 @@ Riscos ativos:
 - pedidos legados ainda podem depender de observacoes e backfills
 - mudancas em status podem afetar simultaneamente fila, estoque e caixa
 - qualquer alteracao de contrato deve preservar a edicao de pedido e a reidratacao de adicionais
+- a protecao de concorrencia atual e otimista; conflitos sao bloqueados com `409`, mas ainda sem merge automatico
 
 Proximos passos naturais:
 - manter a selecao de cliente e a sincronizacao legada coerentes no mesmo fluxo

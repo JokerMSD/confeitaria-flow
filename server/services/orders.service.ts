@@ -25,6 +25,26 @@ function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
 }
 
+function assertOrderConcurrency(
+  existing: { updatedAt: Date; orderNumber: string; status: string },
+  lastKnownUpdatedAt?: string | null,
+) {
+  if (!lastKnownUpdatedAt) {
+    return;
+  }
+
+  const currentUpdatedAt = existing.updatedAt.toISOString();
+
+  if (lastKnownUpdatedAt === currentUpdatedAt) {
+    return;
+  }
+
+  throw new HttpError(
+    409,
+    `O pedido ${existing.orderNumber} foi alterado por outra sessao e agora esta em ${existing.status}. Reabra o pedido e tente novamente.`,
+  );
+}
+
 function calculatePaymentStatus(
   subtotalAmountCents: number,
   paidAmountCents: number,
@@ -78,6 +98,7 @@ export class OrdersService {
           paidAmountCents: row.paidAmountCents,
           remainingAmountCents: row.remainingAmountCents,
           itemCount: row.itemCount,
+          updatedAt: row.updatedAt.toISOString(),
           items: [] as OrderQueueItem["items"],
         } satisfies OrderQueueItem);
 
@@ -266,6 +287,8 @@ export class OrdersService {
       if (!existing) {
         throw new HttpError(404, "Order not found.");
       }
+
+      assertOrderConcurrency(existing, input.lastKnownUpdatedAt);
 
       const now = new Date();
 
@@ -478,13 +501,19 @@ export class OrdersService {
     });
   }
 
-  async updateStatus(id: string, nextStatus: UpdateOrderInput["status"]) {
+  async updateStatus(
+    id: string,
+    nextStatus: UpdateOrderInput["status"],
+    lastKnownUpdatedAt?: string | null,
+  ) {
     return withTransaction<OrderDetail>(async (tx) => {
       const existing = await this.ordersRepository.findById(id, tx);
 
       if (!existing) {
         throw new HttpError(404, "Order not found.");
       }
+
+      assertOrderConcurrency(existing, lastKnownUpdatedAt);
 
       if (existing.status === "Cancelado") {
         throw new HttpError(400, "Canceled orders cannot be moved.");

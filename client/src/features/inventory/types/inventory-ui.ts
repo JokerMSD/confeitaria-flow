@@ -17,6 +17,7 @@ export interface InventoryListItem {
 }
 
 export interface InventoryFormState {
+  lastKnownUpdatedAt: string | null;
   name: string;
   category: UiInventoryCategory;
   currentQuantity: string;

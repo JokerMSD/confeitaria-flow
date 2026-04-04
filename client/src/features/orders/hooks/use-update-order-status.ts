@@ -11,12 +11,14 @@ export function useUpdateOrderStatus() {
     mutationFn: ({
       id,
       status,
+      lastKnownUpdatedAt,
     }: {
       id: string;
       status: OrderStatus;
+      lastKnownUpdatedAt?: string | null;
     }) =>
       updateOrderStatus(id, {
-        data: { status },
+        data: { status, lastKnownUpdatedAt },
       } satisfies UpdateOrderStatusRequest),
     onSuccess: async (_, variables) => {
       await Promise.all([

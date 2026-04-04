@@ -31,5 +31,6 @@ export interface OrderQueueItem {
   paidAmountCents: number;
   remainingAmountCents: number;
   itemCount: number;
+  updatedAt: string;
   items: OrderQueueLineItem[];
 }

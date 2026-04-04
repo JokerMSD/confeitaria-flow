@@ -41,6 +41,7 @@ export interface CreateInventoryItemInput {
 }
 
 export interface UpdateInventoryItemInput extends CreateInventoryItemInput {
+  lastKnownUpdatedAt?: string | null;
   confirmRecalibration?: boolean;
   recalibrationReason?: string | null;
 }

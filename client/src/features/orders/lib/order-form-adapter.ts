@@ -87,6 +87,7 @@ function mapApiAdditionalToFormItem(
 
 export function createEmptyOrderFormState(): OrderFormState {
   return {
+    lastKnownUpdatedAt: null,
     customerId: null,
     customerName: "",
     phone: "",
@@ -110,6 +111,7 @@ export function adaptOrderDetailToFormState(
   response: OrderDetailResponse,
 ): OrderFormState {
   return {
+    lastKnownUpdatedAt: response.data.updatedAt,
     customerId: response.data.customerId ?? null,
     customerName: response.data.customerName,
     phone: response.data.customerPhone ?? "",
@@ -219,7 +221,10 @@ export function adaptFormStateToUpdatePayload(
   state: OrderFormState,
 ): UpdateOrderRequest {
   return {
-    data: adaptFormStateToCreatePayload(state).data,
+    data: {
+      ...adaptFormStateToCreatePayload(state).data,
+      lastKnownUpdatedAt: state.lastKnownUpdatedAt,
+    },
   };
 }
 

@@ -71,6 +71,7 @@ export function adaptOrderQueueItem(
     paidAmount: paidAmountCents / 100,
     remainingAmount: remainingAmountCents / 100,
     itemCount: order.itemCount ?? order.items.length,
+    updatedAt: order.updatedAt,
     items: order.items.map((item) => ({
       productName: item.productName,
       quantity: item.quantity,

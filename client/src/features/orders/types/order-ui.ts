@@ -74,6 +74,7 @@ export interface OrderFormItemAdditional {
 }
 
 export interface OrderFormState {
+  lastKnownUpdatedAt: string | null;
   customerId: string | null;
   customerName: string;
   phone: string;
@@ -113,6 +114,7 @@ export interface OrderQueueCardItem {
   paidAmount: number;
   remainingAmount: number;
   itemCount: number;
+  updatedAt: string;
   items: Array<{
     productName: string;
     quantity: number;

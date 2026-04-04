@@ -50,6 +50,7 @@ function moneyStringToCents(value: string) {
 
 export function createEmptyInventoryFormState(): InventoryFormState {
   return {
+    lastKnownUpdatedAt: null,
     name: "",
     category: "Ingrediente",
     currentQuantity: "0",
@@ -68,6 +69,7 @@ export function adaptInventoryItemDetailToFormState(
   response: InventoryItemDetailResponse,
 ): InventoryFormState {
   return {
+    lastKnownUpdatedAt: response.data.updatedAt,
     name: response.data.name,
     category: apiToUiCategoryMap[response.data.category],
     currentQuantity: numberToQuantityString(response.data.currentQuantity),
@@ -125,6 +127,7 @@ export function adaptInventoryFormStateToUpdatePayload(
   return {
     data: {
       ...adaptFormStateToInput(state),
+      lastKnownUpdatedAt: state.lastKnownUpdatedAt,
       confirmRecalibration: state.confirmRecalibration,
       recalibrationReason: state.recalibrationReason.trim() || null,
     },

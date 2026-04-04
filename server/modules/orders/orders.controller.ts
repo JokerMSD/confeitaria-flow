@@ -46,6 +46,7 @@ export class OrdersController {
     const data = await this.ordersService.updateStatus(
       String(req.params.id),
       req.body.data.status,
+      req.body.data.lastKnownUpdatedAt,
     );
     res.json({ data });
   }

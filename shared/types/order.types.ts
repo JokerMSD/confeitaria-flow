@@ -57,10 +57,13 @@ export interface CreateOrderInput {
   items: CreateOrderItemInput[];
 }
 
-export interface UpdateOrderInput extends CreateOrderInput {}
+export interface UpdateOrderInput extends CreateOrderInput {
+  lastKnownUpdatedAt?: string | null;
+}
 
 export interface UpdateOrderStatusInput {
   status: OrderStatus;
+  lastKnownUpdatedAt?: string | null;
 }
 
 export interface ListOrdersFilters {

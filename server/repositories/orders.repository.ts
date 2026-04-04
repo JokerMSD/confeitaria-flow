@@ -128,6 +128,7 @@ export class OrdersRepository {
         paidAmountCents: orders.paidAmountCents,
         remainingAmountCents: orders.remainingAmountCents,
         itemCount: orders.itemCount,
+        updatedAt: orders.updatedAt,
         itemProductName: orderItems.productName,
         itemQuantity: orderItems.quantity,
         itemPosition: orderItems.position,

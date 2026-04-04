@@ -149,10 +149,15 @@ export default function EstoqueForm() {
       setLocation("/estoque");
     } catch (error) {
       toast({
-        title: "Erro ao salvar item",
+        title:
+          error instanceof ApiError && error.status === 409
+            ? "Item alterado em outra sessão"
+            : "Erro ao salvar item",
         description:
           error instanceof ApiError
-            ? error.message
+            ? error.status === 409
+              ? `${error.message} Reabra o item para revisar o saldo atual antes de continuar.`
+              : error.message
             : "Nao foi possivel salvar o item do estoque.",
         variant: "destructive",
       });

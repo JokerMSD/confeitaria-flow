@@ -72,6 +72,7 @@ export const createInventoryItemInputSchema =
 
 export const updateInventoryItemInputSchema = createInventoryItemInputBaseSchema
   .extend({
+    lastKnownUpdatedAt: z.string().datetime().nullable().optional(),
     confirmRecalibration: z.boolean().optional(),
     recalibrationReason: z.string().trim().max(240).nullable().optional(),
   })

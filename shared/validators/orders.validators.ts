@@ -74,10 +74,15 @@ export const createOrderInputSchema = z
     }
   });
 
-export const updateOrderInputSchema = createOrderInputSchema;
+export const updateOrderInputSchema = createOrderInputSchema.and(
+  z.object({
+    lastKnownUpdatedAt: z.string().datetime().nullable().optional(),
+  }),
+);
 
 export const updateOrderStatusInputSchema = z.object({
   status: orderStatusSchema,
+  lastKnownUpdatedAt: z.string().datetime().nullable().optional(),
 });
 
 export const listOrdersFiltersSchema = z.object({

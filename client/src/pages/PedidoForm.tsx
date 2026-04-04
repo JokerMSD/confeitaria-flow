@@ -625,11 +625,16 @@ export default function PedidoForm() {
     } catch (error) {
       const message =
         error instanceof ApiError
-          ? error.message
+          ? error.status === 409
+            ? `${error.message} Suas alterações locais ficaram desatualizadas.`
+            : error.message
           : "Não foi possível salvar o pedido.";
 
       toast({
-        title: "Erro ao salvar pedido",
+        title:
+          error instanceof ApiError && error.status === 409
+            ? "Pedido alterado em outra sessão"
+            : "Erro ao salvar pedido",
         description: message,
         variant: "destructive",
       });

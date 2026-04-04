@@ -82,6 +82,15 @@ function getFullDateLabel(dateStr: string) {
   }).format(parseOperationalDate(dateStr));
 }
 
+function getUpdateTimestampLabel(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 function getStatusBadgeClass(status: UiOrderStatus) {
   switch (status) {
     case "Novo":
@@ -361,7 +370,8 @@ function QueueOrderCard({
 
       <div className="mt-5 flex flex-col gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
         <div className="text-sm text-muted-foreground">
-          Criado em {formatDate(order.orderDate)} • {order.paymentMethod}
+          Criado em {formatDate(order.orderDate)} • Atualizado em{" "}
+          {getUpdateTimestampLabel(order.updatedAt)} • {order.paymentMethod}
         </div>
         <div className="flex flex-wrap gap-2">
           <Link href={`/pedidos/${order.id}`}>
@@ -526,6 +536,7 @@ export default function Fila() {
       await updateOrderStatusMutation.mutateAsync({
         id: order.id,
         status: nextStatus,
+        lastKnownUpdatedAt: order.updatedAt,
       });
 
       toast({
@@ -534,13 +545,21 @@ export default function Fila() {
       });
     } catch (error) {
       toast({
-        title: "Erro ao atualizar pedido",
+        title:
+          error instanceof ApiError && error.status === 409
+            ? "Pedido já mudou na fila"
+            : "Erro ao atualizar pedido",
         description:
           error instanceof ApiError
-            ? error.message
+            ? error.status === 409
+              ? `${error.message} A fila foi atualizada para evitar sobrescrever outra alteração.`
+              : error.message
             : "Não foi possível mover o pedido na fila.",
         variant: "destructive",
       });
+      if (error instanceof ApiError && error.status === 409) {
+        await queueQuery.refetch();
+      }
     } finally {
       setPendingOrderId(null);
     }

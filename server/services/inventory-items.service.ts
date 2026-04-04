@@ -13,6 +13,24 @@ function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
 }
 
+function assertInventoryItemConcurrency(
+  existing: { updatedAt: Date; name: string },
+  lastKnownUpdatedAt?: string | null,
+) {
+  if (!lastKnownUpdatedAt) {
+    return;
+  }
+
+  if (existing.updatedAt.toISOString() === lastKnownUpdatedAt) {
+    return;
+  }
+
+  throw new HttpError(
+    409,
+    `O item ${existing.name} foi alterado por outra sessao. Recarregue a tela antes de salvar uma nova recalibracao.`,
+  );
+}
+
 export class InventoryItemsService {
   private readonly inventoryItemsRepository = new InventoryItemsRepository();
   private readonly inventoryMovementsRepository =
@@ -65,6 +83,8 @@ export class InventoryItemsService {
       if (!existing) {
         throw new HttpError(404, "Inventory item not found.");
       }
+
+      assertInventoryItemConcurrency(existing, input.lastKnownUpdatedAt);
 
       const updated = await this.inventoryItemsRepository.updateMetadata(
         id,
