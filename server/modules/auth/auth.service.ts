@@ -68,39 +68,45 @@ export class AuthService {
       throw new HttpError(400, "Email and password are required.");
     }
 
-    const hasPersistedUsers = await this.resolvePersistedUsersAvailability();
+    const hasPersistedCandidate = await this.resolvePersistedCandidate(email);
 
-    try {
-      const user = await this.usersService.authenticate(email, password);
-      return user;
-    } catch (error) {
-      if (hasPersistedUsers) {
-        throw error;
-      }
+    if (hasPersistedCandidate) {
+      return this.usersService.authenticate(email, password);
     }
 
-    const user = this.users.find(
+    const configuredUser = this.users.find(
       (candidate) =>
         candidate.email === email && candidate.password === password,
     );
 
-    if (!user) {
+    if (!configuredUser) {
       throw new HttpError(401, "Invalid email or password.");
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      customerId: user.customerId ?? null,
-      photoUrl: user.photoUrl ?? null,
-    };
+    try {
+      return await this.usersService.ensureConfiguredAuthUser({
+        email: configuredUser.email,
+        fullName: configuredUser.name,
+        password: configuredUser.password,
+        role: configuredUser.role ?? "admin",
+        customerId: configuredUser.customerId ?? null,
+        photoUrl: configuredUser.photoUrl ?? null,
+      });
+    } catch {
+      return {
+        id: configuredUser.id,
+        email: configuredUser.email,
+        name: configuredUser.name,
+        role: configuredUser.role,
+        customerId: configuredUser.customerId ?? null,
+        photoUrl: configuredUser.photoUrl ?? null,
+      };
+    }
   }
 
-  private async resolvePersistedUsersAvailability() {
+  private async resolvePersistedCandidate(email: string) {
     try {
-      return await this.usersService.hasPersistedActiveUsers();
+      return await this.usersService.hasPersistedUserForLogin(email);
     } catch {
       return false;
     }

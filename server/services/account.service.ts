@@ -9,6 +9,7 @@ import { HttpError } from "../utils/http-error";
 import { UsersRepository } from "../repositories/users.repository";
 import { CustomersRepository } from "../repositories/customers.repository";
 import { hashPassword, verifyPassword } from "../utils/password";
+import { UsersService } from "./users.service";
 import {
   removeAccountPhoto,
   saveAccountPhoto,
@@ -28,6 +29,7 @@ function splitFullName(fullName: string) {
 export class AccountService {
   private readonly usersRepository = new UsersRepository();
   private readonly customersRepository = new CustomersRepository();
+  private readonly usersService = new UsersService();
 
   async getProfile(authUser: AuthUser): Promise<AccountProfile> {
     const user = await this.requirePersistedUser(authUser);
@@ -168,7 +170,8 @@ export class AccountService {
   private async requirePersistedUser(authUser: AuthUser) {
     const user =
       (authUser.id ? await this.usersRepository.findById(authUser.id) : null) ??
-      (await this.usersRepository.findByEmail(authUser.email));
+      (await this.usersRepository.findByEmail(authUser.email)) ??
+      (await this.usersService.ensureSessionUser(authUser));
 
     if (!user) {
       throw new HttpError(

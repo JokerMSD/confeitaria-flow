@@ -5,6 +5,7 @@ import type {
   UserItem,
   UserRole,
 } from "@shared/types";
+import { randomUUID } from "crypto";
 import { HttpError } from "../utils/http-error";
 import { UsersRepository } from "../repositories/users.repository";
 import { CustomersRepository } from "../repositories/customers.repository";
@@ -19,6 +20,16 @@ function splitFullName(fullName: string) {
     firstName,
     lastName,
   };
+}
+
+function slugifyUsernamePart(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/(^[.]+|[.]+$)/g, "")
+    .slice(0, 48);
 }
 
 export class UsersService {
@@ -191,8 +202,104 @@ export class UsersService {
     };
   }
 
+  async hasPersistedUserForLogin(emailOrUsername: string) {
+    return Boolean(
+      await this.usersRepository.findByEmailOrUsername(emailOrUsername),
+    );
+  }
+
   async hasPersistedActiveUsers() {
     return (await this.usersRepository.countActive()) > 0;
+  }
+
+  async ensureSessionUser(authUser: AuthUser) {
+    const existing =
+      (authUser.id ? await this.usersRepository.findById(authUser.id) : null) ??
+      (await this.usersRepository.findByEmail(authUser.email));
+
+    if (existing) {
+      return existing;
+    }
+
+    const role = authUser.role ?? "admin";
+    const fullName = authUser.name.trim() || authUser.email;
+    const email = authUser.email.trim().toLowerCase();
+    const customerId = await this.resolveLinkedCustomerId({
+      role,
+      customerId: authUser.customerId ?? null,
+      fullName,
+      email,
+    });
+
+    const created = await this.usersRepository.create({
+      username: await this.generateUniqueUsername(fullName, email),
+      email,
+      fullName,
+      password: await hashPassword(`temp-${randomUUID()}`),
+      role,
+      customerId,
+      photoUrl: authUser.photoUrl ?? null,
+      isActive: true,
+    });
+
+    return created;
+  }
+
+  async ensureConfiguredAuthUser(input: {
+    email: string;
+    fullName: string;
+    password: string;
+    role: UserRole;
+    customerId?: string | null;
+    photoUrl?: string | null;
+  }): Promise<AuthUser> {
+    const email = input.email.trim().toLowerCase();
+    const fullName = input.fullName.trim() || email;
+    const existing = await this.usersRepository.findByEmail(email);
+    const customerId = await this.resolveLinkedCustomerId({
+      role: input.role,
+      customerId: input.customerId ?? existing?.customerId ?? null,
+      fullName,
+      email,
+    });
+
+    const passwordHash = await hashPassword(input.password);
+
+    const user = existing
+      ? await this.usersRepository.update(existing.id, {
+          fullName,
+          password: passwordHash,
+          role: input.role,
+          customerId,
+          photoUrl:
+            input.photoUrl !== undefined
+              ? input.photoUrl ?? null
+              : existing.photoUrl ?? null,
+          isActive: true,
+        })
+      : await this.usersRepository.create({
+          username: await this.generateUniqueUsername(fullName, email),
+          email,
+          fullName,
+          password: passwordHash,
+          role: input.role,
+          customerId,
+          photoUrl: input.photoUrl ?? null,
+          isActive: true,
+        });
+
+    if (!user) {
+      throw new HttpError(500, "Nao foi possivel sincronizar a conta autenticada.");
+    }
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.fullName,
+      role: user.role as UserRole,
+      customerId: user.customerId ?? null,
+      photoUrl: user.photoUrl ?? null,
+    };
   }
 
   async getAuthenticatedUserProfile(authUser: AuthUser) {
@@ -243,5 +350,21 @@ export class UsersService {
     });
 
     return createdCustomer.id;
+  }
+
+  private async generateUniqueUsername(fullName: string, email: string) {
+    const emailBase = slugifyUsernamePart(email.split("@")[0] ?? "");
+    const nameBase = slugifyUsernamePart(fullName);
+    const base = nameBase || emailBase || "usuario";
+
+    let candidate = base;
+    let attempt = 1;
+
+    while (await this.usersRepository.findByUsername(candidate)) {
+      candidate = `${base}.${attempt}`;
+      attempt += 1;
+    }
+
+    return candidate.slice(0, 80);
   }
 }
