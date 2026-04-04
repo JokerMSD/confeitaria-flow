@@ -309,12 +309,14 @@ export const MercadoPagoCardForm = forwardRef<
           readOnly
           className="hidden"
         />
-        <input
+        <select
           id={`${fieldIdPrefix}-identification-type`}
           value={identificationType}
-          readOnly
+          disabled
           className="hidden"
-        />
+        >
+          <option value={identificationType}>{identificationType}</option>
+        </select>
         <input
           id={`${fieldIdPrefix}-identification-number`}
           value={identificationNumber}
@@ -356,19 +358,33 @@ export const MercadoPagoCardForm = forwardRef<
             id: `${fieldIdPrefix}-issuer`,
             label: "Banco emissor",
             column: "",
+            element: "select",
           },
           {
             id: `${fieldIdPrefix}-installments`,
             label: "Parcelas",
             column: "",
+            element: "select",
           },
         ].map((field) => (
           <div key={field.id} className={`space-y-2 ${field.column}`.trim()}>
             <label className="text-sm font-medium text-foreground">{field.label}</label>
-            <div
-              id={field.id}
-              className="flex h-12 items-center rounded-2xl border border-border bg-card px-4 text-sm text-foreground"
-            />
+            {field.element === "select" ? (
+              <select
+                id={field.id}
+                defaultValue=""
+                className="h-12 w-full rounded-2xl border border-border bg-card px-4 text-sm text-foreground outline-none"
+              >
+                <option value="" disabled>
+                  {field.label}
+                </option>
+              </select>
+            ) : (
+              <div
+                id={field.id}
+                className="flex h-12 items-center rounded-2xl border border-border bg-card px-4 text-sm text-foreground"
+              />
+            )}
           </div>
         ))}
       </form>
