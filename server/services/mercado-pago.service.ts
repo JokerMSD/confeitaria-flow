@@ -44,6 +44,10 @@ function resolveMercadoPagoConfig() {
   const publicKey = process.env.MERCADO_PAGO_PUBLIC_KEY?.trim() || null;
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN?.trim() || null;
   const appOrigin = process.env.APP_ORIGIN?.trim() || null;
+  const apiPublicOrigin =
+    process.env.API_PUBLIC_ORIGIN?.trim() ||
+    process.env.RENDER_EXTERNAL_URL?.trim() ||
+    null;
   const enabled = Boolean(publicKey && accessToken);
 
   return {
@@ -51,8 +55,8 @@ function resolveMercadoPagoConfig() {
     publicKey,
     accessToken,
     notificationUrl:
-      enabled && appOrigin
-        ? `${appOrigin.replace(/\/$/, "")}/api/public/store/payments/mercado-pago/webhook`
+      enabled && (apiPublicOrigin || appOrigin)
+        ? `${(apiPublicOrigin || appOrigin)?.replace(/\/$/, "")}/api/public/store/payments/mercado-pago/webhook`
         : null,
   };
 }

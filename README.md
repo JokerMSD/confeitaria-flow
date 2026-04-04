@@ -50,7 +50,8 @@ Monolito para operacao de confeitaria com frontend React + Vite, backend Express
 
 - `DATABASE_URL`: obrigatoria para a API
 - `SESSION_SECRET`: obrigatoria em producao
-- `APP_ORIGIN`: origem principal da aplicacao
+- `APP_ORIGIN`: origem principal do frontend/publico
+- `API_PUBLIC_ORIGIN`: origem publica da API para webhooks e callbacks server-side
 - `CORS_ORIGINS`: lista de origins permitidas
 - `VITE_API_URL`: opcional no frontend; em dev usa `http://localhost:3001`
 - `SESSION_COOKIE_SECURE=true`: para deploy HTTPS
@@ -121,5 +122,5 @@ npm run backfill:legacy-order-recipes
 
 - o startup da API valida schema e pode aplicar migrations SQL antes de subir
 - pedidos legados ainda podem exigir backfills de clientes e receitas
-- o checkout publico pode usar Pix manual ou cartao via Mercado Pago; o webhook precisa apontar para `/api/public/store/payments/mercado-pago/webhook`
+- o checkout publico pode usar Pix manual ou cartao via Mercado Pago; o webhook precisa apontar para `/api/public/store/payments/mercado-pago/webhook` na origem da API
 - a protecao de concorrencia atual e otimista: registros desatualizados retornam `409` para evitar sobrescrita silenciosa

@@ -5,6 +5,7 @@
 2. Garantir que `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGINS` e `AUTH_USERS_JSON` estao definidos.
 3. Se o checkout com cartao estiver ativo, definir tambem:
    - `APP_ORIGIN`
+   - `API_PUBLIC_ORIGIN`
    - `MERCADO_PAGO_PUBLIC_KEY`
    - `MERCADO_PAGO_ACCESS_TOKEN`
 4. A API aplica migrations `.sql` pendentes automaticamente no startup por padrao.
@@ -49,6 +50,7 @@
   - conferir `SESSION_COOKIE_SECURE=true` em producao
 - Mercado Pago:
   - conferir `APP_ORIGIN`
+  - conferir `API_PUBLIC_ORIGIN`
   - conferir `MERCADO_PAGO_PUBLIC_KEY` e `MERCADO_PAGO_ACCESS_TOKEN`
   - conferir webhook publico em `/api/public/store/payments/mercado-pago/webhook`
 - API sobe mas build falha:
