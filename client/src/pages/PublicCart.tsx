@@ -22,7 +22,7 @@ export default function PublicCart() {
   return (
     <PublicStoreLayout
       title="Carrinho"
-      subtitle="Revise os itens como em um app de delivery: quantidade, sabores, extras e total antes de fechar o pedido."
+      subtitle="Revise os itens, ajuste quantidades e confira tudo antes de finalizar o pedido."
     >
       {cart.items.length === 0 ? (
         <Card className="brand-shell">
@@ -156,7 +156,7 @@ export default function PublicCart() {
                 </span>
               </div>
               <div className="rounded-[1.5rem] border border-dashed border-border px-4 py-3 text-sm leading-6 text-muted-foreground">
-                A taxa de entrega e definida no checkout. Voce ainda pode editar sabores e extras de cada item antes de concluir.
+                No checkout voce informa entrega ou retirada e pode ajustar os ultimos detalhes do pedido.
               </div>
               <Link href="/loja/checkout">
                 <a>

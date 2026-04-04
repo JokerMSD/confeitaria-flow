@@ -176,8 +176,8 @@ export function PublicStoreLayout({
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 md:flex-row md:items-center md:justify-between md:px-6">
           <BrandLogo imageClassName="h-12 w-12" />
           <div className="text-sm leading-6 text-muted-foreground">
-            <p>Encomendas com retirada ou entrega e pagamento em Pix manual.</p>
-            <p>Catalogo publico pensado para compra, integrado ao fluxo real da confeitaria.</p>
+            <p>Encomendas com retirada ou entrega e pagamento via Pix.</p>
+            <p>Doces feitos sob encomenda, com atendimento direto da confeitaria.</p>
           </div>
         </div>
       </footer>

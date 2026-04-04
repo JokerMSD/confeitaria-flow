@@ -308,7 +308,7 @@ export function PublicItemCustomizerPanel({
               Adicionais
             </p>
             <p className="text-sm text-muted-foreground">
-              Escolha extras do mesmo jeito que um app de delivery: por grupo, limite e preco.
+              Escolha extras por grupo, com limite e valor de forma bem clara.
             </p>
           </div>
 

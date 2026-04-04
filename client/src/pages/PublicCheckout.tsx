@@ -197,7 +197,7 @@ export default function PublicCheckout() {
   return (
     <PublicStoreLayout
       title="Checkout"
-      subtitle="Finalize a compra com cara de delivery: revise itens, ajuste sabores e extras, e confirme retirada ou entrega."
+      subtitle="Confirme seus dados, escolha entrega ou retirada e finalize seu pedido."
     >
       {success ? (
         <Card className="brand-shell">
@@ -484,7 +484,7 @@ export default function PublicCheckout() {
               </div>
 
               <div className="rounded-[1.5rem] border border-dashed border-border px-4 py-3 text-sm leading-6 text-muted-foreground">
-                O pagamento continua manual em Pix. O pedido entra como confirmado e a confeitaria valida o comprovante depois.
+                O pagamento e realizado via Pix. Depois disso, a confeitaria segue com a confirmacao do pedido.
               </div>
 
               <Button
@@ -494,7 +494,7 @@ export default function PublicCheckout() {
               >
                 {checkoutMutation.isPending
                   ? "Enviando pedido..."
-                  : "Concluir com Pix manual"}
+                  : "Concluir com Pix"}
               </Button>
             </CardContent>
           </Card>

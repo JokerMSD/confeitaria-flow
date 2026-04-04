@@ -21,7 +21,7 @@ export default function PublicStoreHome() {
   return (
     <PublicStoreLayout
       title="Encomende doces da Universo Doce em um site feito para vender"
-      subtitle="Catalogo, personalizacao, carrinho e checkout com cara de loja profissional, sem perder o atendimento humano da confeitaria."
+      subtitle="Escolha seus doces favoritos, personalize sabores e finalize seu pedido de um jeito simples e bonito."
     >
       <div className="space-y-6">
         <section className="brand-shell brand-hero overflow-hidden p-8 md:p-10">
@@ -33,7 +33,7 @@ export default function PublicStoreHome() {
                   variant="outline"
                   className="rounded-full border-border/70 bg-background/70"
                 >
-                  Pedido online com Pix manual
+                  Pedido online via Pix
                 </Badge>
               </div>
               <h2 className="mt-5 max-w-2xl font-display text-4xl font-bold leading-tight text-foreground md:text-5xl">
@@ -109,11 +109,11 @@ export default function PublicStoreHome() {
                 },
                 {
                   title: "2. Personalize",
-                  text: "Monte sabores e extras como em um app de delivery e ajuste tudo no carrinho ou checkout.",
+                  text: "Escolha sabores, extras e quantidade do seu jeito antes de seguir para o carrinho.",
                 },
                 {
                   title: "3. Confirme",
-                  text: "Informe entrega ou retirada, data e horario e finalize em Pix manual.",
+                  text: "Informe entrega ou retirada, escolha data e horario e confirme o pedido.",
                 },
               ].map((step) => (
                 <div
@@ -157,7 +157,7 @@ export default function PublicStoreHome() {
                       </p>
                       <p className="mt-1 text-sm leading-6 text-muted-foreground">
                         {product.notes ||
-                          "Produto do catalogo com adicionais opcionais."}
+                          "Escolha ideal para montar seu pedido com o seu toque."}
                       </p>
                     </div>
                     <span className="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-secondary-foreground">
@@ -170,7 +170,7 @@ export default function PublicStoreHome() {
                   </div>
                   <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
                     <Star className="h-3.5 w-3.5 text-primary" />
-                    pronto para pedido online
+                    pronto para encomenda
                   </div>
                 </div>
               ))}
@@ -180,9 +180,9 @@ export default function PublicStoreHome() {
 
         <section className="grid gap-4 md:grid-cols-3">
           {[
-            "Catalogo mais forte visualmente, com foco em conversao.",
-            "Customizacao de sabores e extras mais parecida com delivery apps.",
-            "Checkout publico com leitura mais profissional e clara no celular.",
+            "Vitrine clara para escolher doces, bolos e presentes especiais.",
+            "Sabores e extras para montar o pedido do seu jeito.",
+            "Checkout simples para combinar entrega ou retirada.",
           ].map((highlight) => (
             <div
               key={highlight}

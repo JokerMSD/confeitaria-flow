@@ -26,7 +26,7 @@ export default function PublicCatalog() {
   return (
     <PublicStoreLayout
       title="Catalogo da loja"
-      subtitle="Uma vitrine mais focada em compra: busca rapida, preco claro, leitura comercial e atalhos para montar o pedido."
+      subtitle="Encontre seus doces favoritos, veja os valores e escolha o que vai entrar no seu pedido."
     >
       <section className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="brand-shell p-4">
@@ -90,7 +90,7 @@ export default function PublicCatalog() {
                     </span>
                   </div>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    {product.notes || "Produto disponivel para pedido publico."}
+                    {product.notes || "Produto disponivel para encomenda."}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <Badge

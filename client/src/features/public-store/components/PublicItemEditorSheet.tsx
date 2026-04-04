@@ -33,7 +33,7 @@ export function PublicItemEditorSheet({
           <SheetHeader className="mb-5 px-1 text-left">
             <SheetTitle>Personalizar item</SheetTitle>
             <SheetDescription>
-              Ajuste sabores, adicionais e quantidade sem sair do carrinho ou checkout.
+              Ajuste sabores, adicionais e quantidade sem sair do seu pedido.
             </SheetDescription>
           </SheetHeader>
 

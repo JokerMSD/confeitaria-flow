@@ -56,7 +56,7 @@ export default function PublicProductDetail() {
       title={product?.name ?? "Produto"}
       subtitle={
         product?.notes ||
-        "Monte sabores, extras e quantidade em uma experiencia mais proxima de um app de delivery."
+        "Escolha sabores, extras e quantidade para montar o seu pedido."
       }
     >
       {product ? (
@@ -90,7 +90,7 @@ export default function PublicProductDetail() {
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-muted-foreground">
                   {product.notes ||
-                    "Produto do catalogo publico integrado ao fluxo real da confeitaria, com sabores e adicionais validados no backend."}
+                    "Escolha a combinacao que mais combina com a sua encomenda."}
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
                   <Link href="/loja/catalogo">
@@ -260,11 +260,11 @@ export default function PublicProductDetail() {
                   <div className="flex items-center gap-2 text-primary">
                     <ShieldCheck className="h-4 w-4" />
                     <p className="text-xs font-semibold uppercase tracking-[0.28em]">
-                      por tras do checkout
+                      sugestao de pedido
                     </p>
                   </div>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    O backend continua sendo a autoridade. Os grupos de extras, os limites de selecao e a montagem do nome do item sao validados no mesmo dominio dos pedidos internos.
+                    Combine sabores, adicione extras e confira uma sugestao de montagem antes de colocar no carrinho.
                   </p>
                   <div className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
                     <p className="text-sm text-muted-foreground">
