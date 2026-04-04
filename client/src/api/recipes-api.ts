@@ -1,11 +1,15 @@
 import type {
+  CatalogMediaAdminResponse,
   CreateRecipeRequest,
+  DeleteRecipeMediaResponse,
   DeleteRecipeResponse,
   ListRecipesFilters,
   ListRecipesResponse,
+  RecipeMediaResponse,
   RecipeDetailResponse,
   RecipeLookupResponse,
   UpdateRecipeRequest,
+  UploadRecipeMediaRequest,
 } from "@shared/types";
 import { httpClient } from "./http-client";
 
@@ -48,6 +52,23 @@ export function updateRecipe(id: string, payload: UpdateRecipeRequest) {
 
 export function deleteRecipe(id: string) {
   return httpClient<DeleteRecipeResponse>(`/api/recipes/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function getCatalogMediaAdmin() {
+  return httpClient<CatalogMediaAdminResponse>("/api/recipes/catalog-media");
+}
+
+export function uploadRecipeMedia(payload: UploadRecipeMediaRequest) {
+  return httpClient<RecipeMediaResponse>("/api/recipes/catalog-media", {
+    method: "POST",
+    body: payload,
+  });
+}
+
+export function deleteRecipeMedia(mediaId: string) {
+  return httpClient<DeleteRecipeMediaResponse>(`/api/recipes/catalog-media/${mediaId}`, {
     method: "DELETE",
   });
 }

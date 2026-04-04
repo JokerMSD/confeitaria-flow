@@ -62,6 +62,7 @@ export interface RecipeListItem extends Recipe, RecipeCostSummary {
 export interface RecipeDetail extends RecipeListItem {
   components: RecipeComponentResolved[];
   additionalGroups: ProductAdditionalGroupDetail[];
+  media: RecipeMedia[];
 }
 
 export interface RecipeLookupItem {
@@ -104,4 +105,31 @@ export interface UpdateRecipeInput extends CreateRecipeInput {}
 export interface ListRecipesFilters {
   search?: string;
   kind?: RecipeKind;
+}
+
+export interface RecipeMedia {
+  id: string;
+  recipeId: string;
+  fileUrl: string;
+  altText: string | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt: string | null;
+}
+
+export interface CatalogMediaAdminItem {
+  recipeId: string;
+  recipeName: string;
+  recipeKind: RecipeKind;
+  maxPhotos: number;
+  media: RecipeMedia[];
+}
+
+export interface UploadRecipeMediaInput {
+  recipeId: string;
+  fileName: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  contentBase64: string;
+  altText?: string | null;
 }

@@ -13,6 +13,7 @@ import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { usePublicStoreHome } from "@/features/public-store/hooks/use-public-store";
 import { formatCurrency } from "@/lib/utils";
 import { BrandLogo } from "@/components/brand/BrandLogo";
+import { resolveMediaUrl } from "@/lib/resolve-media-url";
 
 export default function PublicStoreHome() {
   const homeQuery = usePublicStoreHome();
@@ -140,6 +141,15 @@ export default function PublicStoreHome() {
                   key={product.id}
                   className="rounded-[1.5rem] border border-border/70 bg-background/55 px-4 py-4"
                 >
+                  {product.primaryImageUrl ? (
+                    <div className="mb-3 aspect-[4/3] overflow-hidden rounded-[1.2rem] border border-border/60 bg-muted/20">
+                      <img
+                        src={resolveMediaUrl(product.primaryImageUrl)}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-semibold text-foreground">

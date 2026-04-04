@@ -10,6 +10,7 @@ import { HttpError } from "../utils/http-error";
 import { getTodayOperationalDate } from "../utils/operational-date";
 import { CustomerOrderSyncService } from "./customer-order-sync.service";
 import { OrdersService } from "./orders.service";
+import { RecipeMediaService } from "./recipe-media.service";
 import { RecipesService } from "./recipes.service";
 
 function normalizeValue(value: string) {
@@ -40,6 +41,7 @@ function toSummary(detail: Awaited<ReturnType<RecipesService["getById"]>>): Publ
     id: detail.id,
     name: detail.name,
     notes: detail.notes,
+    primaryImageUrl: detail.media[0]?.fileUrl ?? null,
     outputQuantity: detail.outputQuantity,
     outputUnit: detail.outputUnit,
     salePriceCents: detail.salePriceCents,
@@ -52,6 +54,7 @@ export class PublicStoreService {
   private readonly recipesService = new RecipesService();
   private readonly ordersService = new OrdersService();
   private readonly customerOrderSyncService = new CustomerOrderSyncService();
+  private readonly recipeMediaService = new RecipeMediaService();
 
   async getHome(): Promise<PublicStoreHome> {
     const products = await this.listProducts();
@@ -84,6 +87,7 @@ export class PublicStoreService {
 
     return {
       ...toSummary(product),
+      imageUrls: product.media.map((media) => media.fileUrl),
       fillingOptions,
       minFillings: maxFillings > 0 ? 1 : 0,
       maxFillings,
@@ -188,11 +192,15 @@ export class PublicStoreService {
 
   private async listFillingOptions(): Promise<PublicStoreFillingOption[]> {
     const fillings = await this.recipesService.list({ kind: "Preparacao" });
+    const mediaByRecipeId = await this.recipeMediaService.listByRecipeIds(
+      fillings.map((filling) => filling.id),
+    );
 
     return fillings
       .map((filling) => ({
         id: filling.id,
         name: filling.name,
+        photoUrl: mediaByRecipeId.get(filling.id)?.[0]?.fileUrl ?? null,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }

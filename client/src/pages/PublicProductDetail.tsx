@@ -16,6 +16,7 @@ import { usePublicCart } from "@/features/public-store/lib/public-cart";
 import { PublicItemCustomizerPanel } from "@/features/public-store/components/PublicItemCustomizerPanel";
 import { calculatePublicItemUnitTotalCents } from "@/features/public-store/lib/public-store-item";
 import { formatCurrency } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/resolve-media-url";
 
 export default function PublicProductDetail() {
   const [, params] = useRoute("/loja/produtos/:id");
@@ -90,6 +91,19 @@ export default function PublicProductDetail() {
 
               <Card className="brand-shell overflow-hidden">
                 <CardContent className="space-y-4 p-6">
+                  <div className="aspect-[4/3] overflow-hidden rounded-[1.6rem] border border-border/70 bg-muted/20">
+                    {product.imageUrls[0] ? (
+                      <img
+                        src={resolveMediaUrl(product.imageUrls[0])}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/15 to-background text-sm text-muted-foreground">
+                        Universo Doce
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-primary">
                     <Sparkles className="h-4 w-4" />
                     <p className="text-xs font-semibold uppercase tracking-[0.28em]">
@@ -137,6 +151,22 @@ export default function PublicProductDetail() {
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
             <Card className="brand-shell overflow-hidden">
               <CardContent className="space-y-5 p-6">
+                {product.imageUrls.length > 1 ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    {product.imageUrls.slice(1, 5).map((imageUrl) => (
+                      <div
+                        key={imageUrl}
+                        className="aspect-[4/3] overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/20"
+                      >
+                        <img
+                          src={resolveMediaUrl(imageUrl)}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="flex items-center gap-2 text-primary">
                   <ShoppingBag className="h-4 w-4" />
                   <p className="text-xs font-semibold uppercase tracking-[0.28em]">

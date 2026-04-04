@@ -67,6 +67,7 @@ export interface PublicStoreProductSummary {
   id: string;
   name: string;
   notes: string | null;
+  primaryImageUrl: string | null;
   outputQuantity: number;
   outputUnit: InventoryItemUnit;
   salePriceCents: number | null;
@@ -77,9 +78,11 @@ export interface PublicStoreProductSummary {
 export interface PublicStoreFillingOption {
   id: string;
   name: string;
+  photoUrl: string | null;
 }
 
 export interface PublicStoreProductDetail extends PublicStoreProductSummary {
+  imageUrls: string[];
   fillingOptions: PublicStoreFillingOption[];
   minFillings: number;
   maxFillings: number;

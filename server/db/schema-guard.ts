@@ -26,6 +26,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     "cash_transactions",
     "inventory_items",
     "inventory_movements",
+    "recipe_media",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -60,6 +61,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "purchase_equivalent_quantity",
       "purchase_equivalent_unit",
     ],
+    recipe_media: ["recipe_id", "file_url", "position"],
     product_additional_groups: [
       "product_recipe_id",
       "selection_type",
@@ -104,6 +106,10 @@ const migrationHints: Record<string, string> = {
     "0012_phase12_inventory_weighted_average_cost.sql",
   "inventory_movements.purchase_discount_cents":
     "0013_phase13_inventory_purchase_discount.sql",
+  recipe_media: "0021_phase21_recipe_media.sql",
+  "recipe_media.recipe_id": "0021_phase21_recipe_media.sql",
+  "recipe_media.file_url": "0021_phase21_recipe_media.sql",
+  "recipe_media.position": "0021_phase21_recipe_media.sql",
   product_additional_groups: "0015_phase15_product_additionals.sql",
   product_additional_options: "0015_phase15_product_additionals.sql",
   order_item_additionals: "0015_phase15_product_additionals.sql",

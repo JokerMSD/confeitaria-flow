@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { usePublicProducts } from "@/features/public-store/hooks/use-public-store";
 import { formatCurrency } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/resolve-media-url";
 
 export default function PublicCatalog() {
   const productsQuery = usePublicProducts();
@@ -58,6 +59,19 @@ export default function PublicCatalog() {
             <a>
               <Card className="brand-shell h-full overflow-hidden transition-transform duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10">
                 <CardContent className="space-y-5 p-6">
+                  <div className="aspect-[4/3] overflow-hidden rounded-[1.6rem] border border-border/70 bg-muted/20">
+                    {product.primaryImageUrl ? (
+                      <img
+                        src={resolveMediaUrl(product.primaryImageUrl)}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-gradient-to-br from-primary/10 via-secondary/15 to-background text-sm text-muted-foreground">
+                        Universo Doce
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">

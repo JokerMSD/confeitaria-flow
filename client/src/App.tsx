@@ -20,6 +20,7 @@ import Login from "@/pages/Login";
 import Receitas from "@/pages/Receitas";
 import ReceitaForm from "@/pages/ReceitaForm";
 import Catalogo from "@/pages/Catalogo";
+import CatalogoMidias from "@/pages/CatalogoMidias";
 import Clientes from "@/pages/Clientes";
 import Cliente from "@/pages/Cliente";
 import ClienteForm from "@/pages/ClienteForm";
@@ -84,6 +85,7 @@ function AdminSwitch() {
       <Route path="/caixa/:id" component={CaixaForm} />
       <Route path="/receitas" component={Receitas} />
       <Route path="/catalogo" component={Catalogo} />
+      <Route path="/catalogo/midias" component={CatalogoMidias} />
       <Route path="/clientes" component={Clientes} />
       <Route path="/clientes/novo" component={ClienteForm} />
       <Route path="/clientes/:id/editar" component={ClienteForm} />

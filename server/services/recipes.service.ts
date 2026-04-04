@@ -20,6 +20,7 @@ import { RecipeComponentsRepository } from "../repositories/recipe-components.re
 import { RecipesRepository } from "../repositories/recipes.repository";
 import { ProductAdditionalGroupsRepository } from "../repositories/product-additional-groups.repository";
 import { ProductAdditionalOptionsRepository } from "../repositories/product-additional-options.repository";
+import { RecipeMediaRepository } from "../repositories/recipe-media.repository";
 import {
   convertQuantity,
   convertRecipeQuantityToInventoryUnits,
@@ -77,6 +78,7 @@ export class RecipesService {
     new ProductAdditionalGroupsRepository();
   private readonly productAdditionalOptionsRepository =
     new ProductAdditionalOptionsRepository();
+  private readonly recipeMediaRepository = new RecipeMediaRepository();
   private readonly inventoryItemsRepository = new InventoryItemsRepository();
   private readonly inventoryMovementsRepository =
     new InventoryMovementsRepository();
@@ -539,6 +541,7 @@ export class RecipesService {
       hasIncompleteCost: node.hasIncompleteCost,
       components: node.components,
       additionalGroups: await this.listProductAdditionalGroups(recipeId, executor),
+      media: await this.listRecipeMedia(recipeId, executor),
     };
   }
 
@@ -591,6 +594,21 @@ export class RecipesService {
         updatedAt: option.updatedAt.toISOString(),
         deletedAt: toIsoString(option.deletedAt),
       })),
+    }));
+  }
+
+  private async listRecipeMedia(recipeId: string, executor?: Executor) {
+    const rows = await this.recipeMediaRepository.listByRecipeIds([recipeId], executor);
+
+    return (rows as any[]).map((row) => ({
+      id: row.id,
+      recipeId: row.recipeId,
+      fileUrl: row.fileUrl,
+      altText: row.altText ?? null,
+      position: row.position,
+      createdAt: row.createdAt.toISOString(),
+      updatedAt: row.updatedAt.toISOString(),
+      deletedAt: toIsoString(row.deletedAt),
     }));
   }
 

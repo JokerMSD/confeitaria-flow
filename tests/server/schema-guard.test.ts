@@ -18,6 +18,7 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       "cash_transactions",
       "inventory_items",
       "inventory_movements",
+      "recipe_media",
       "product_additional_groups",
       "product_additional_options",
       "order_item_additionals",
@@ -66,6 +67,10 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "purchase_equivalent_quantity",
           "purchase_equivalent_unit",
         ]),
+      ],
+      [
+        "recipe_media",
+        new Set(["recipe_id", "file_url", "position"]),
       ],
       [
         "product_additional_groups",
@@ -130,6 +135,7 @@ test("schema guard reports pending migrations for missing recent tables and colu
     "cash_transactions",
     "inventory_items",
     "inventory_movements",
+    "recipe_media",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -167,5 +173,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0016_phase16_customers_and_users.sql",
     "0017_phase17_user_accounts.sql",
     "0020_phase20_order_fully_paid_at.sql",
+    "0021_phase21_recipe_media.sql",
   ]);
 });

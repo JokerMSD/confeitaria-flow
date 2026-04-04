@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  Images,
   MoreVertical,
   Package,
   Plus,
@@ -81,12 +82,20 @@ export default function Catalogo() {
                 Cadastre os produtos vendidos e seus precos sugeridos.
               </p>
             </div>
-            <Link href="/catalogo/novo">
-              <a className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md hover:bg-primary/90 transition-all shrink-0">
-                <Plus className="w-5 h-5" />
-                Novo Produto
-              </a>
-            </Link>
+            <div className="flex gap-3">
+              <Link href="/catalogo/midias">
+                <a className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 font-medium text-foreground shadow-sm transition-all hover:bg-muted">
+                  <Images className="w-5 h-5" />
+                  Midias
+                </a>
+              </Link>
+              <Link href="/catalogo/novo">
+                <a className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md hover:bg-primary/90 transition-all shrink-0">
+                  <Plus className="w-5 h-5" />
+                  Novo Produto
+                </a>
+              </Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 bg-card p-4 rounded-xl border border-border/50">

@@ -81,3 +81,15 @@ export const listRecipesFiltersSchema = z.object({
 export const recipeIdParamsSchema = z.object({
   id: uuidSchema,
 });
+
+export const uploadRecipeMediaInputSchema = z.object({
+  recipeId: uuidSchema,
+  fileName: z.string().trim().min(1).max(180),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  contentBase64: z.string().trim().min(1).max(6_000_000),
+  altText: z.string().trim().max(200).nullable().optional(),
+});
+
+export const recipeMediaIdParamsSchema = z.object({
+  mediaId: uuidSchema,
+});

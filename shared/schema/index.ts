@@ -7,6 +7,7 @@ export * from "./orders";
 export * from "./product-additional-groups";
 export * from "./product-additional-options";
 export * from "./recipe-components";
+export * from "./recipe-media";
 export * from "./recipes";
 export * from "./users";
 export * from "./customers";

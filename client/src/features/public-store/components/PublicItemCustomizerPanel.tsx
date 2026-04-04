@@ -17,6 +17,7 @@ import {
   getPublicProductUnitPriceCents,
 } from "../lib/public-store-item";
 import { formatCurrency } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/resolve-media-url";
 
 type DraftItem = Omit<PublicCartItem, "lineId">;
 
@@ -272,7 +273,16 @@ export function PublicItemCustomizerPanel({
                 }
               >
                 <div className="flex items-center justify-between gap-4">
-                  <span className="font-medium text-foreground">{filling.name}</span>
+                  <div className="flex items-center gap-3">
+                    {filling.photoUrl ? (
+                      <img
+                        src={resolveMediaUrl(filling.photoUrl)}
+                        alt={filling.name}
+                        className="h-12 w-12 rounded-xl object-cover"
+                      />
+                    ) : null}
+                    <span className="font-medium text-foreground">{filling.name}</span>
+                  </div>
                   {active ? (
                     <Badge className="rounded-full bg-primary text-primary-foreground hover:bg-primary">
                       Selecionado
