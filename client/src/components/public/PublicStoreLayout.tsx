@@ -1,4 +1,11 @@
-import { CakeSlice, LogIn, LogOut, ShoppingCart } from "lucide-react";
+import {
+  CakeSlice,
+  LayoutDashboard,
+  LogIn,
+  LogOut,
+  Settings,
+  ShoppingCart,
+} from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { usePublicCart } from "@/features/public-store/lib/public-cart";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
@@ -19,7 +26,7 @@ export function PublicStoreLayout({
   subtitle?: string;
   children: React.ReactNode;
 }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { itemCount } = usePublicCart();
   const { toast } = useToast();
   const authSessionQuery = useAuthSession();
@@ -38,6 +45,7 @@ export function PublicStoreLayout({
       await queryClient.invalidateQueries({
         queryKey: authQueryKeys.session(),
       });
+      setLocation("/login");
     } catch {
       toast({
         title: "Nao foi possivel sair",
@@ -97,20 +105,41 @@ export function PublicStoreLayout({
 
             {user ? (
               <>
+                <Link href="/conta">
+                  <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-sm md:hidden">
+                    <Settings className="h-4 w-4" />
+                  </a>
+                </Link>
                 {user.role === "admin" || user.role === "operador" ? (
-                  <Link href="/">
-                    <a className="rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-medium text-foreground shadow-sm">
-                      Painel
-                    </a>
-                  </Link>
+                  <>
+                    <Link href="/">
+                      <a className="hidden rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-medium text-foreground shadow-sm md:inline-flex">
+                        Painel
+                      </a>
+                    </Link>
+                    <Link href="/">
+                      <a className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-sm md:hidden">
+                        <LayoutDashboard className="h-4 w-4" />
+                      </a>
+                    </Link>
+                  </>
                 ) : null}
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="inline-flex items-center gap-2 rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-medium text-foreground shadow-sm"
+                  className="hidden items-center gap-2 rounded-full border border-border bg-card/90 px-4 py-2 text-sm font-medium text-foreground shadow-sm md:inline-flex"
                 >
                   <LogOut className="h-4 w-4" />
                   Sair
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card/90 text-foreground shadow-sm md:hidden"
+                  aria-label="Sair da conta"
+                  title="Sair"
+                >
+                  <LogOut className="h-4 w-4" />
                 </button>
               </>
             ) : (

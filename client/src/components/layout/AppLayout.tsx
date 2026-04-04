@@ -203,8 +203,31 @@ export function BottomNav() {
 }
 
 export function MobileHeader({ title }: { title: string }) {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const authSessionQuery = useAuthSession();
+  const logoutMutation = useLogout();
   const user = authSessionQuery.data?.data;
+
+  const handleLogout = async () => {
+    if (!window.confirm("Deseja sair da sua conta?")) {
+      return;
+    }
+
+    try {
+      await logoutMutation.mutateAsync();
+      await queryClient.invalidateQueries({
+        queryKey: authQueryKeys.session(),
+      });
+      setLocation("/login");
+    } catch {
+      toast({
+        title: "Nao foi possivel sair",
+        description: "Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <header className="sticky left-0 right-0 top-0 z-40 border-b border-border bg-background/84 px-4 py-4 pt-safe backdrop-blur-xl md:hidden">
@@ -219,12 +242,25 @@ export function MobileHeader({ title }: { title: string }) {
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle compact className="rounded-full border-border bg-card px-3" />
-          <Avatar className="h-8 w-8 border border-border">
-            <AvatarImage src={resolveMediaUrl(user?.photoUrl)} />
-            <AvatarFallback>
-              {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <Link href="/conta">
+            <a className="rounded-full border border-border bg-card p-1.5 shadow-sm">
+              <Avatar className="h-8 w-8 border border-border">
+                <AvatarImage src={resolveMediaUrl(user?.photoUrl)} />
+                <AvatarFallback>
+                  {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+            </a>
+          </Link>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-destructive shadow-sm transition-colors hover:bg-destructive/10"
+            aria-label="Sair da conta"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </div>
     </header>
