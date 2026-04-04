@@ -103,3 +103,8 @@ export const publicCheckoutPricingPreviewInputSchema = z.object({
   couponCode: z.string().trim().max(64).nullable().optional(),
   items: z.array(publicCheckoutItemInputSchema).min(1),
 });
+
+export const publicStoreAvailabilityFiltersSchema = z.object({
+  deliveryMode: deliveryModeSchema,
+  selectedDate: operationalDateSchema.optional(),
+});

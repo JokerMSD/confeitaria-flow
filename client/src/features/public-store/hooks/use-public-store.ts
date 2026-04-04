@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   createPublicCheckout,
+  getPublicStoreAvailability,
   getPublicProduct,
   getPublicProducts,
   getPublicStorePaymentConfig,
@@ -33,6 +34,21 @@ export function usePublicStorePaymentConfig() {
     queryFn: getPublicStorePaymentConfig,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
+  });
+}
+
+export function usePublicStoreAvailability(input: {
+  deliveryMode: "Entrega" | "Retirada";
+  selectedDate?: string;
+}) {
+  return useQuery({
+    queryKey: publicStoreQueryKeys.availability(
+      input.deliveryMode,
+      input.selectedDate,
+    ),
+    queryFn: () => getPublicStoreAvailability(input),
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }
 

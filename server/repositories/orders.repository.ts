@@ -256,6 +256,32 @@ export class OrdersRepository {
       );
   }
 
+  async listPublicAvailabilityRows(
+    filters: {
+      deliveryMode: "Entrega" | "Retirada";
+      dateFrom: string;
+      dateTo: string;
+    },
+    executor: Executor = getDb(),
+  ) {
+    return executor
+      .select({
+        deliveryDate: orders.deliveryDate,
+        deliveryTime: orders.deliveryTime,
+      })
+      .from(orders)
+      .where(
+        and(
+          isNull(orders.deletedAt),
+          eq(orders.deliveryMode, filters.deliveryMode),
+          notInArray(orders.status, ["Cancelado"]),
+          sql`${orders.deliveryDate} >= ${filters.dateFrom}`,
+          sql`${orders.deliveryDate} <= ${filters.dateTo}`,
+        ),
+      )
+      .orderBy(asc(orders.deliveryDate), asc(orders.deliveryTime));
+  }
+
   async listCashSyncRows(executor: Executor = getDb()) {
     return executor
       .select({

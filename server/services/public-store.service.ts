@@ -20,6 +20,7 @@ import { RecipeMediaService } from "./recipe-media.service";
 import { RecipesService } from "./recipes.service";
 import { RecipesRepository } from "../repositories/recipes.repository";
 import { ProductAdditionalGroupsRepository } from "../repositories/product-additional-groups.repository";
+import { OrdersRepository } from "../repositories/orders.repository";
 
 function normalizeValue(value: string) {
   return value
@@ -42,6 +43,71 @@ function buildPublicProductName(productName: string, fillingNames: string[]) {
   return fillingNames.length > 0
     ? `${productName} - ${fillingNames.join(" / ")}`
     : productName;
+}
+
+function formatOperationalDateLabel(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+  }).format(parsed);
+}
+
+function formatOperationalWeekdayLabel(date: string) {
+  const parsed = new Date(`${date}T12:00:00`);
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "short",
+  }).format(parsed);
+}
+
+function addDays(date: string, days: number) {
+  const parsed = new Date(`${date}T12:00:00`);
+  parsed.setDate(parsed.getDate() + days);
+  return parsed.toISOString().slice(0, 10);
+}
+
+function buildHalfHourSlots() {
+  const slots: string[] = [];
+
+  for (let hour = 8; hour <= 20; hour += 1) {
+    for (const minute of [0, 30]) {
+      if (hour === 20 && minute === 30) {
+        continue;
+      }
+
+      slots.push(
+        `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
+      );
+    }
+  }
+
+  return slots;
+}
+
+function getCurrentOperationalTimeSlotFloor() {
+  const formatter = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "America/Sao_Paulo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(new Date());
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(
+    parts.find((part) => part.type === "minute")?.value ?? "0",
+  );
+
+  let nextHour = hour;
+  let nextMinute = minute <= 0 ? 0 : minute <= 30 ? 30 : 0;
+
+  if (minute > 30) {
+    nextHour += 1;
+  }
+
+  return `${String(nextHour).padStart(2, "0")}:${String(nextMinute).padStart(
+    2,
+    "0",
+  )}`;
 }
 
 function splitCustomerName(fullName: string) {
@@ -109,6 +175,7 @@ export class PublicStoreService {
   private readonly productAdditionalsService = new ProductAdditionalsService();
   private readonly recipeMediaService = new RecipeMediaService();
   private readonly recipesRepository = new RecipesRepository();
+  private readonly ordersRepository = new OrdersRepository();
   private readonly productAdditionalGroupsRepository =
     new ProductAdditionalGroupsRepository();
 
@@ -161,6 +228,73 @@ export class PublicStoreService {
         )?.fileUrl ?? null,
       ),
     );
+  }
+
+  async getAvailability(input: {
+    deliveryMode: "Entrega" | "Retirada";
+    selectedDate?: string;
+  }) {
+    const today = getTodayOperationalDate();
+    const dateTo = addDays(today, 29);
+    const rows = await this.ordersRepository.listPublicAvailabilityRows({
+      deliveryMode: input.deliveryMode,
+      dateFrom: today,
+      dateTo,
+    });
+
+    const allSlots = buildHalfHourSlots();
+    const nowFloor = getCurrentOperationalTimeSlotFloor();
+    const occupiedByDate = new Map<string, Set<string>>();
+
+    for (const row of rows as Array<{ deliveryDate: string; deliveryTime: string | null }>) {
+      if (!row.deliveryTime) {
+        continue;
+      }
+
+      const current = occupiedByDate.get(row.deliveryDate) ?? new Set<string>();
+      current.add(row.deliveryTime);
+      occupiedByDate.set(row.deliveryDate, current);
+    }
+
+    const availableDates = Array.from({ length: 30 }, (_, index) => addDays(today, index))
+      .map((date) => {
+        const occupied = occupiedByDate.get(date) ?? new Set<string>();
+        const availableSlots = allSlots.filter((slot) => {
+          if (occupied.has(slot)) {
+            return false;
+          }
+
+          if (date === today && slot < nowFloor) {
+            return false;
+          }
+
+          return true;
+        });
+
+        return {
+          date,
+          label: formatOperationalDateLabel(date),
+          weekdayLabel: formatOperationalWeekdayLabel(date),
+          availableSlotCount: availableSlots.length,
+          availableSlots,
+        };
+      })
+      .filter((entry) => entry.availableSlotCount > 0);
+
+    const selectedDate =
+      availableDates.find((entry) => entry.date === input.selectedDate)?.date ??
+      availableDates[0]?.date ??
+      null;
+
+    const selectedEntry = availableDates.find((entry) => entry.date === selectedDate);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      deliveryMode: input.deliveryMode,
+      selectedDate,
+      availableDates: availableDates.map(({ availableSlots, ...entry }) => entry),
+      availableSlots: selectedEntry?.availableSlots ?? [],
+    };
   }
 
   async getProduct(id: string): Promise<PublicStoreProductDetail> {

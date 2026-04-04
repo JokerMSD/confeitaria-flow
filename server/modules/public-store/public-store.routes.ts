@@ -4,6 +4,7 @@ import { validateRequest } from "../../middlewares/validate-request";
 import {
   publicCheckoutInputSchema,
   publicCheckoutPricingPreviewInputSchema,
+  publicStoreAvailabilityFiltersSchema,
 } from "@shared/validators";
 import { PublicStoreController } from "./public-store.controller";
 
@@ -22,6 +23,11 @@ export function registerPublicStoreRoutes(app: Express) {
   app.get(
     "/api/public/store/payment-config",
     controller.paymentConfig.bind(controller),
+  );
+  app.get(
+    "/api/public/store/availability",
+    validateRequest(publicStoreAvailabilityFiltersSchema, "query"),
+    controller.availability.bind(controller),
   );
   app.get("/api/public/store/products", controller.listProducts.bind(controller));
   app.get(

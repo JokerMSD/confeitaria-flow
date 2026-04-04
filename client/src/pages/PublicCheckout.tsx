@@ -22,6 +22,7 @@ import {
 import {
   usePublicCheckout,
   usePublicCheckoutPreview,
+  usePublicStoreAvailability,
   usePublicStorePaymentConfig,
 } from "@/features/public-store/hooks/use-public-store";
 import {
@@ -75,6 +76,10 @@ export default function PublicCheckout() {
     payerIdentificationNumber: "",
     notes: "",
   });
+  const availabilityQuery = usePublicStoreAvailability({
+    deliveryMode: form.deliveryMode,
+    selectedDate: form.deliveryDate || undefined,
+  });
   const [appliedCoupon, setAppliedCoupon] = useState<{
     code: string;
     title: string;
@@ -92,6 +97,38 @@ export default function PublicCheckout() {
       }));
     }
   }, [form.deliveryMode]);
+
+  useEffect(() => {
+    const selectedDate = availabilityQuery.data?.data.selectedDate ?? "";
+    const firstAvailableSlot = availabilityQuery.data?.data.availableSlots[0] ?? "";
+
+    setForm((current) => {
+      let nextDate = current.deliveryDate;
+      let nextTime = current.deliveryTime;
+      let changed = false;
+
+      if (selectedDate && current.deliveryDate !== selectedDate) {
+        nextDate = selectedDate;
+        changed = true;
+      }
+
+      const availableSlots = availabilityQuery.data?.data.availableSlots ?? [];
+      if (!availableSlots.includes(current.deliveryTime)) {
+        nextTime = firstAvailableSlot;
+        if (current.deliveryTime !== nextTime) {
+          changed = true;
+        }
+      }
+
+      return changed
+        ? {
+            ...current,
+            deliveryDate: nextDate,
+            deliveryTime: nextTime,
+          }
+        : current;
+    });
+  }, [availabilityQuery.data]);
 
   const deliveryFeeCents = useMemo(
     () =>
@@ -466,29 +503,104 @@ export default function PublicCheckout() {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
-                <Input
-                  type="date"
-                  value={form.deliveryDate}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      deliveryDate: event.target.value,
-                    }))
-                  }
-                  className="h-12 rounded-2xl"
-                />
-                <Input
-                  type="time"
-                  value={form.deliveryTime}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      deliveryTime: event.target.value,
-                    }))
-                  }
-                  className="h-12 rounded-2xl"
-                />
+              <div className="space-y-4 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Escolha o dia
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Mostramos apenas datas com agenda disponivel para {form.deliveryMode.toLowerCase()}.
+                  </p>
+                </div>
+
+                {availabilityQuery.isLoading ? (
+                  <div className="rounded-[1.4rem] border border-border/70 bg-background/50 px-4 py-3 text-sm text-muted-foreground">
+                    Consultando datas livres...
+                  </div>
+                ) : availabilityQuery.isError ? (
+                  <div className="rounded-[1.4rem] border border-dashed border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    Nao foi possivel consultar a agenda agora. Tente atualizar a pagina em instantes.
+                  </div>
+                ) : availabilityQuery.data?.data.availableDates.length ? (
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {availabilityQuery.data.data.availableDates.map((date) => {
+                      const active = form.deliveryDate === date.date;
+
+                      return (
+                        <button
+                          key={date.date}
+                          type="button"
+                          onClick={() =>
+                            setForm((current) => ({
+                              ...current,
+                              deliveryDate: date.date,
+                            }))
+                          }
+                          className={`rounded-[1.45rem] border px-4 py-4 text-left transition-colors ${checkoutFieldClass(
+                            active,
+                          )}`}
+                        >
+                          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-primary">
+                            {date.weekdayLabel}
+                          </p>
+                          <p className="mt-2 text-lg font-semibold text-foreground">
+                            {date.label}
+                          </p>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {date.availableSlotCount} horario(s) livre(s)
+                          </p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="rounded-[1.4rem] border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                    Nao ha agenda livre para {form.deliveryMode.toLowerCase()} nos proximos dias.
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-sm font-medium text-foreground">
+                    Escolha o horario
+                  </p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Os horarios aparecem em intervalos de 30 minutos, considerando a agenda ja ocupada.
+                  </p>
+                </div>
+
+                {availabilityQuery.data?.data.availableSlots.length ? (
+                  <div className="grid gap-3 grid-cols-3 sm:grid-cols-4">
+                    {availabilityQuery.data.data.availableSlots.map((slot) => {
+                      const active = form.deliveryTime === slot;
+
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          onClick={() =>
+                            setForm((current) => ({
+                              ...current,
+                              deliveryTime: slot,
+                            }))
+                          }
+                          className={`rounded-[1.2rem] border px-3 py-3 text-sm font-medium transition-colors ${checkoutFieldClass(
+                            active,
+                          )}`}
+                        >
+                          {slot}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : availabilityQuery.isError ? (
+                  <div className="rounded-[1.4rem] border border-dashed border-destructive/40 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    A agenda de horarios nao pode ser carregada neste momento.
+                  </div>
+                ) : (
+                  <div className="rounded-[1.4rem] border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                    Selecione um dia com agenda livre para ver os horarios disponiveis.
+                  </div>
+                )}
               </div>
 
               {form.deliveryMode === "Entrega" ? (

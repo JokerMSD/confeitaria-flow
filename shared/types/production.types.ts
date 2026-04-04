@@ -198,3 +198,20 @@ export interface PublicStorePaymentConfigResponse {
     };
   };
 }
+
+export interface PublicStoreAvailabilityDate {
+  date: string;
+  label: string;
+  weekdayLabel: string;
+  availableSlotCount: number;
+}
+
+export interface PublicStoreAvailabilityResponse {
+  data: {
+    generatedAt: string;
+    deliveryMode: "Entrega" | "Retirada";
+    selectedDate: string | null;
+    availableDates: PublicStoreAvailabilityDate[];
+    availableSlots: string[];
+  };
+}

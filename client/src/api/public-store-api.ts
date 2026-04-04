@@ -3,6 +3,7 @@ import type {
   PublicCheckoutPricingPreviewRequest,
   PublicCheckoutPricingPreviewResponse,
   PublicCheckoutResponse,
+  PublicStoreAvailabilityResponse,
   PublicStorePaymentConfigResponse,
   PublicStoreHomeResponse,
   PublicStoreProductDetailResponse,
@@ -17,6 +18,23 @@ export function getPublicStoreHome() {
 export function getPublicStorePaymentConfig() {
   return httpClient<PublicStorePaymentConfigResponse>(
     "/api/public/store/payment-config",
+  );
+}
+
+export function getPublicStoreAvailability(params: {
+  deliveryMode: "Entrega" | "Retirada";
+  selectedDate?: string;
+}) {
+  const searchParams = new URLSearchParams({
+    deliveryMode: params.deliveryMode,
+  });
+
+  if (params.selectedDate) {
+    searchParams.set("selectedDate", params.selectedDate);
+  }
+
+  return httpClient<PublicStoreAvailabilityResponse>(
+    `/api/public/store/availability?${searchParams.toString()}`,
   );
 }
 

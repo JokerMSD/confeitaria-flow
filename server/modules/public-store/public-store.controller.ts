@@ -19,6 +19,17 @@ export class PublicStoreController {
     res.json({ data });
   }
 
+  async availability(req: Request, res: Response) {
+    const data = await this.publicStoreService.getAvailability({
+      deliveryMode: String(req.query.deliveryMode) as "Entrega" | "Retirada",
+      selectedDate:
+        typeof req.query.selectedDate === "string"
+          ? req.query.selectedDate
+          : undefined,
+    });
+    res.json({ data });
+  }
+
   async detail(req: Request, res: Response) {
     const data = await this.publicStoreService.getProduct(String(req.params.id));
     res.json({ data });
