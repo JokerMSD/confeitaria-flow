@@ -86,6 +86,80 @@ function buildAdditionalGroupRule(group: ProductAdditionalGroupDetail) {
   return `Ate ${group.maxSelections} opcao(oes)`;
 }
 
+function mergeAdditionalGroupsWithSavedSelections(
+  groups: ProductAdditionalGroupDetail[],
+  selectedAdditionals: OrderFormItemAdditional[],
+): ProductAdditionalGroupDetail[] {
+  const groupsById = new Map<string, ProductAdditionalGroupDetail>(
+    groups.map((group) => [
+      group.id,
+      {
+        ...group,
+        options: [...group.options],
+      },
+    ]),
+  );
+
+  for (const additional of selectedAdditionals) {
+    const existingGroup = groupsById.get(additional.groupId);
+
+    if (!existingGroup) {
+      groupsById.set(additional.groupId, {
+        id: additional.groupId,
+        productRecipeId: "",
+        name: additional.groupName,
+        selectionType: "multiple",
+        minSelections: 0,
+        maxSelections: Math.max(selectedAdditionals.length, 1),
+        position: additional.position,
+        notes: "Adicional preservado de um pedido salvo.",
+        createdAt: "",
+        updatedAt: "",
+        deletedAt: null,
+        options: [
+          {
+            id: additional.optionId,
+            groupId: additional.groupId,
+            name: additional.optionName,
+            priceDeltaCents: Math.round(additional.priceDelta * 100),
+            position: additional.position,
+            notes: "Opcao preservada de um pedido salvo.",
+            createdAt: "",
+            updatedAt: "",
+            deletedAt: null,
+          },
+        ],
+      });
+      continue;
+    }
+
+    const hasOption = existingGroup.options.some(
+      (option) => option.id === additional.optionId,
+    );
+
+    if (!hasOption) {
+      existingGroup.options.push({
+        id: additional.optionId,
+        groupId: additional.groupId,
+        name: additional.optionName,
+        priceDeltaCents: Math.round(additional.priceDelta * 100),
+        position: additional.position,
+        notes: "Opcao preservada de um pedido salvo.",
+        createdAt: "",
+        updatedAt: "",
+        deletedAt: null,
+      });
+    }
+  }
+
+  return Array.from(groupsById.values())
+    .map((group) => ({
+      ...group,
+      options: [...group.options].sort((a, b) => a.position - b.position),
+    }))
+    .sort((a, b) => a.position - b.position);
+}
+
 function getDeliveryMomentLabel(mode: OrderFormState["deliveryMode"]) {
   return mode === "Entrega" ? "entrega" : "retirada";
 }
@@ -218,8 +292,14 @@ export default function PedidoForm() {
     [newItemRecipeId, productRecipeOptions],
   );
   const selectedProductDetail = selectedProductDetailQuery.data?.data ?? null;
-  const selectedProductAdditionalGroups =
-    selectedProductDetail?.additionalGroups ?? [];
+  const selectedProductAdditionalGroups = useMemo(
+    () =>
+      mergeAdditionalGroupsWithSavedSelections(
+        selectedProductDetail?.additionalGroups ?? [],
+        newItemAdditionals,
+      ),
+    [newItemAdditionals, selectedProductDetail?.additionalGroups],
+  );
   const fillingRecipeOptionsById = useMemo(
     () => new Map(fillingRecipeOptions.map((recipe) => [recipe.id, recipe])),
     [fillingRecipeOptions],
