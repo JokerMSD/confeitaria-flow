@@ -129,6 +129,7 @@ export interface PublicCheckoutItemInput {
 export interface PublicCheckoutInput {
   customerName: string;
   customerPhone?: string | null;
+  customerEmail?: string | null;
   deliveryMode: "Entrega" | "Retirada";
   deliveryDate: string;
   deliveryTime?: string | null;
@@ -137,6 +138,20 @@ export interface PublicCheckoutInput {
   deliveryDistrict?: string | null;
   deliveryFeeCents?: number;
   couponCode?: string | null;
+  paymentMethod?: "Pix" | "MercadoPagoCartao";
+  payer?: {
+    email: string;
+    identificationType: "CPF" | "CNPJ";
+    identificationNumber: string;
+  } | null;
+  mercadoPagoCard?: {
+    token: string;
+    paymentMethodId: string;
+    issuerId?: string | null;
+    installments: number;
+    cardholderName?: string | null;
+    lastFourDigits?: string | null;
+  } | null;
   notes?: string | null;
   items: PublicCheckoutItemInput[];
 }
@@ -161,12 +176,25 @@ export interface PublicCheckoutResponse {
     orderId: string;
     orderNumber: string;
     status: OrderStatus;
-    paymentMethod: "Pix";
+    paymentMethod: "Pix" | "CartaoCredito";
     paymentStatus: "Pendente" | "Parcial" | "Pago";
+    paymentProvider: string | null;
+    paymentProviderStatus: string | null;
+    paymentProviderStatusDetail: string | null;
     itemsSubtotalAmountCents: number;
     discountAmountCents: number;
     appliedCoupon: AppliedDiscountCoupon | null;
     subtotalAmountCents: number;
-    pixInstructions: string;
+    paymentInstructions: string | null;
+  };
+}
+
+export interface PublicStorePaymentConfigResponse {
+  data: {
+    pixEnabled: true;
+    mercadoPago: {
+      enabled: boolean;
+      publicKey: string | null;
+    };
   };
 }

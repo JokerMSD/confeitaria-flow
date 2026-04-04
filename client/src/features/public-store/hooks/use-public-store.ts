@@ -3,6 +3,7 @@ import {
   createPublicCheckout,
   getPublicProduct,
   getPublicProducts,
+  getPublicStorePaymentConfig,
   getPublicStoreHome,
   previewPublicCheckout,
 } from "@/api/public-store-api";
@@ -21,6 +22,15 @@ export function usePublicProducts() {
   return useQuery({
     queryKey: publicStoreQueryKeys.products(),
     queryFn: getPublicProducts,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+  });
+}
+
+export function usePublicStorePaymentConfig() {
+  return useQuery({
+    queryKey: publicStoreQueryKeys.paymentConfig(),
+    queryFn: getPublicStorePaymentConfig,
     staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
   });

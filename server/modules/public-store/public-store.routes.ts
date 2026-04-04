@@ -19,6 +19,10 @@ export function registerPublicStoreRoutes(app: Express) {
   });
 
   app.get("/api/public/store", controller.home.bind(controller));
+  app.get(
+    "/api/public/store/payment-config",
+    controller.paymentConfig.bind(controller),
+  );
   app.get("/api/public/store/products", controller.listProducts.bind(controller));
   app.get(
     "/api/public/store/products/:id",
@@ -34,5 +38,13 @@ export function registerPublicStoreRoutes(app: Express) {
     "/api/public/store/checkout",
     validateRequest(checkoutBodySchema, "body"),
     controller.checkout.bind(controller),
+  );
+  app.post(
+    "/api/public/store/payments/mercado-pago/webhook",
+    controller.mercadoPagoWebhook.bind(controller),
+  );
+  app.get(
+    "/api/public/store/payments/mercado-pago/webhook",
+    controller.mercadoPagoWebhook.bind(controller),
   );
 }

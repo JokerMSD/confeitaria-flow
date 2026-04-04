@@ -1,6 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { CheckCircle2, Pencil, TicketPercent, Truck, X } from "lucide-react";
+import {
+  CheckCircle2,
+  CreditCard,
+  Pencil,
+  QrCode,
+  TicketPercent,
+  Truck,
+  X,
+} from "lucide-react";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +22,7 @@ import {
 import {
   usePublicCheckout,
   usePublicCheckoutPreview,
+  usePublicStorePaymentConfig,
 } from "@/features/public-store/hooks/use-public-store";
 import {
   calculatePublicItemLineTotalCents,
@@ -24,6 +33,10 @@ import {
   formatMoneyInput,
   parseMoneyInputToCents,
 } from "@/features/inventory/lib/inventory-input-helpers";
+import {
+  MercadoPagoCardForm,
+  type MercadoPagoCardFormHandle,
+} from "@/features/public-store/components/MercadoPagoCardForm";
 
 type DeliveryMode = "Entrega" | "Retirada";
 
@@ -37,16 +50,18 @@ export default function PublicCheckout() {
   const cart = usePublicCart();
   const checkoutMutation = usePublicCheckout();
   const previewMutation = usePublicCheckoutPreview();
+  const paymentConfigQuery = usePublicStorePaymentConfig();
   const { toast } = useToast();
+  const mercadoPagoCardFormRef = useRef<MercadoPagoCardFormHandle | null>(null);
   const [editingItem, setEditingItem] = useState<PublicCartItem | null>(null);
-  const [success, setSuccess] = useState<{
-    orderNumber: string;
-    subtotalAmountCents: number;
-    pixInstructions: string;
-  } | null>(null);
+  const [isMercadoPagoReady, setIsMercadoPagoReady] = useState(false);
+  const [success, setSuccess] = useState<Awaited<
+    ReturnType<typeof checkoutMutation.mutateAsync>
+  >["data"] | null>(null);
   const [form, setForm] = useState({
     customerName: "",
     customerPhone: "",
+    customerEmail: "",
     deliveryMode: "Entrega" as DeliveryMode,
     deliveryDate: getTodayLocalDateKey(),
     deliveryTime: "",
@@ -55,6 +70,9 @@ export default function PublicCheckout() {
     deliveryReference: "",
     deliveryFee: "0,00",
     couponCode: "",
+    paymentMethod: "Pix" as "Pix" | "MercadoPagoCartao",
+    payerIdentificationType: "CPF" as "CPF" | "CNPJ",
+    payerIdentificationNumber: "",
     notes: "",
   });
   const [appliedCoupon, setAppliedCoupon] = useState<{
@@ -95,6 +113,15 @@ export default function PublicCheckout() {
 
   const finalTotalCents =
     cart.totalCents + deliveryFeeCents - (appliedCoupon?.discountAmountCents ?? 0);
+  const mercadoPagoEnabled =
+    paymentConfigQuery.data?.data.mercadoPago.enabled === true &&
+    Boolean(paymentConfigQuery.data?.data.mercadoPago.publicKey);
+
+  useEffect(() => {
+    if (!mercadoPagoEnabled && form.paymentMethod === "MercadoPagoCartao") {
+      setForm((current) => ({ ...current, paymentMethod: "Pix" }));
+    }
+  }, [form.paymentMethod, mercadoPagoEnabled]);
 
   const handleApplyCoupon = async () => {
     if (!form.couponCode.trim()) {
@@ -189,6 +216,27 @@ export default function PublicCheckout() {
       return;
     }
 
+    if (form.paymentMethod === "MercadoPagoCartao" && !form.customerEmail.trim()) {
+      toast({
+        title: "E-mail obrigatorio",
+        description: "Informe um e-mail para o pagamento com cartao.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      form.paymentMethod === "MercadoPagoCartao" &&
+      !form.payerIdentificationNumber.trim()
+    ) {
+      toast({
+        title: "Documento obrigatorio",
+        description: "Informe CPF ou CNPJ do pagador.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!form.deliveryDate) {
       toast({
         title: "Data obrigatoria",
@@ -226,10 +274,20 @@ export default function PublicCheckout() {
     }
 
     try {
+      const mercadoPagoCard =
+        form.paymentMethod === "MercadoPagoCartao"
+          ? await mercadoPagoCardFormRef.current?.requestPaymentData()
+          : null;
+
+      if (form.paymentMethod === "MercadoPagoCartao" && !mercadoPagoCard) {
+        throw new Error("O formulario do cartao ainda nao esta pronto.");
+      }
+
       const response = await checkoutMutation.mutateAsync({
         data: {
           customerName: form.customerName.trim(),
           customerPhone: form.customerPhone.trim() || null,
+          customerEmail: form.customerEmail.trim() || null,
           deliveryMode: form.deliveryMode,
           deliveryDate: form.deliveryDate,
           deliveryTime: form.deliveryTime.trim() || null,
@@ -247,6 +305,17 @@ export default function PublicCheckout() {
               : null,
           deliveryFeeCents,
           couponCode: appliedCoupon?.code ?? null,
+          paymentMethod: form.paymentMethod,
+          payer:
+            form.paymentMethod === "MercadoPagoCartao"
+              ? {
+                  email: form.customerEmail.trim(),
+                  identificationType: form.payerIdentificationType,
+                  identificationNumber: form.payerIdentificationNumber.trim(),
+                }
+              : null,
+          mercadoPagoCard:
+            form.paymentMethod === "MercadoPagoCartao" ? mercadoPagoCard : null,
           notes: form.notes.trim() || null,
           items: cart.items.map((item) => ({
             recipeId: item.recipeId,
@@ -264,9 +333,7 @@ export default function PublicCheckout() {
       });
 
       setSuccess({
-        orderNumber: response.data.orderNumber,
-        subtotalAmountCents: response.data.subtotalAmountCents,
-        pixInstructions: response.data.pixInstructions,
+        ...response.data,
       });
       cart.clear();
     } catch (error) {
@@ -304,9 +371,11 @@ export default function PublicCheckout() {
                 {formatCurrency(success.subtotalAmountCents / 100)}
               </strong>
             </p>
-            <div className="rounded-[1.75rem] border border-border/70 bg-background/60 p-4 text-sm leading-6 text-muted-foreground">
-              {success.pixInstructions}
-            </div>
+            {success.paymentInstructions ? (
+              <div className="rounded-[1.75rem] border border-border/70 bg-background/60 p-4 text-sm leading-6 text-muted-foreground">
+                {success.paymentInstructions}
+              </div>
+            ) : null}
             <Link href="/loja/catalogo">
               <a>
                 <Button className="brand-button rounded-full px-6">
@@ -352,6 +421,18 @@ export default function PublicCheckout() {
                     }))
                   }
                   className="h-12 rounded-2xl"
+                />
+                <Input
+                  placeholder="E-mail"
+                  type="email"
+                  value={form.customerEmail}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      customerEmail: event.target.value,
+                    }))
+                  }
+                  className="h-12 rounded-2xl md:col-span-2"
                 />
               </div>
 
@@ -474,6 +555,103 @@ export default function PublicCheckout() {
                 }
                 className="h-12 rounded-2xl"
               />
+
+              <div className="space-y-3 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <CreditCard className="h-4 w-4" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em]">
+                    pagamento
+                  </p>
+                </div>
+                <div className="grid gap-3 md:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({ ...current, paymentMethod: "Pix" }))
+                    }
+                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition-colors ${checkoutFieldClass(
+                      form.paymentMethod === "Pix",
+                    )}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <QrCode className="h-4 w-4 text-primary" />
+                      <p className="font-semibold text-foreground">Pix manual</p>
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      Finalize agora e envie o comprovante para a confeitaria.
+                    </p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        paymentMethod: "MercadoPagoCartao",
+                      }))
+                    }
+                    disabled={!mercadoPagoEnabled}
+                    className={`rounded-[1.4rem] border px-4 py-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60 ${checkoutFieldClass(
+                      form.paymentMethod === "MercadoPagoCartao",
+                    )}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-primary" />
+                      <p className="font-semibold text-foreground">
+                        Cartao online
+                      </p>
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                      Checkout transparente pelo Mercado Pago.
+                    </p>
+                  </button>
+                </div>
+                {form.paymentMethod === "MercadoPagoCartao" ? (
+                  <div className="space-y-4">
+                    <div className="grid gap-4 md:grid-cols-[0.9fr_1.1fr]">
+                      <select
+                        value={form.payerIdentificationType}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            payerIdentificationType: event.target
+                              .value as "CPF" | "CNPJ",
+                          }))
+                        }
+                        className="h-12 rounded-2xl border border-border bg-card px-4 text-sm text-foreground outline-none"
+                      >
+                        <option value="CPF">CPF</option>
+                        <option value="CNPJ">CNPJ</option>
+                      </select>
+                      <Input
+                        placeholder="Documento do pagador"
+                        value={form.payerIdentificationNumber}
+                        onChange={(event) =>
+                          setForm((current) => ({
+                            ...current,
+                            payerIdentificationNumber: event.target.value,
+                          }))
+                        }
+                        className="h-12 rounded-2xl"
+                      />
+                    </div>
+                    {mercadoPagoEnabled && paymentConfigQuery.data?.data.mercadoPago.publicKey ? (
+                      <MercadoPagoCardForm
+                        ref={mercadoPagoCardFormRef}
+                        publicKey={paymentConfigQuery.data.data.mercadoPago.publicKey}
+                        amountCents={finalTotalCents}
+                        customerEmail={form.customerEmail.trim()}
+                        identificationType={form.payerIdentificationType}
+                        identificationNumber={form.payerIdentificationNumber}
+                        onReadyChange={setIsMercadoPagoReady}
+                      />
+                    ) : (
+                      <div className="rounded-[1.4rem] border border-dashed border-border px-4 py-3 text-sm text-muted-foreground">
+                        O pagamento com cartao ainda nao esta configurado neste ambiente.
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
 
               <div className="space-y-3 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
                 <div className="flex items-center gap-2 text-primary">
@@ -631,17 +809,24 @@ export default function PublicCheckout() {
               </div>
 
               <div className="rounded-[1.5rem] border border-dashed border-border px-4 py-3 text-sm leading-6 text-muted-foreground">
-                O pagamento e realizado via Pix. Depois disso, a confeitaria segue com a confirmacao do pedido.
+                {form.paymentMethod === "Pix"
+                  ? "Pix manual: finalize o pedido e envie o comprovante para a confeitaria."
+                  : "Cartao online: o pagamento e processado no checkout transparente do Mercado Pago."}
               </div>
 
               <Button
                 className="brand-button h-12 w-full rounded-full"
                 onClick={handleSubmit}
-                disabled={checkoutMutation.isPending}
+                disabled={
+                  checkoutMutation.isPending ||
+                  (form.paymentMethod === "MercadoPagoCartao" && !isMercadoPagoReady)
+                }
               >
                 {checkoutMutation.isPending
-                  ? "Enviando pedido..."
-                  : "Concluir com Pix"}
+                  ? "Processando pedido..."
+                  : form.paymentMethod === "Pix"
+                    ? "Concluir com Pix"
+                    : "Pagar com cartao"}
               </Button>
             </CardContent>
           </Card>

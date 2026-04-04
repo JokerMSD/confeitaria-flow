@@ -37,6 +37,10 @@ export interface OrderListItem {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  paymentProvider: string | null;
+  paymentProviderPaymentId: string | null;
+  paymentProviderStatus: string | null;
+  paymentProviderStatusDetail: string | null;
   notes: string | null;
   itemsSubtotalAmountCents: number;
   discountAmountCents: number;
@@ -69,6 +73,10 @@ export interface CreateOrderInput {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paidAmountCents: number;
+  paymentProvider?: string | null;
+  paymentProviderPaymentId?: string | null;
+  paymentProviderStatus?: string | null;
+  paymentProviderStatusDetail?: string | null;
   discount?: {
     source?: OrderDiscountSource;
     type: OrderDiscountType;

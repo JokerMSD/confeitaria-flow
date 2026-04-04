@@ -41,6 +41,10 @@ export interface OrderRowInsert {
   status: OrderStatus;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  paymentProvider: string | null;
+  paymentProviderPaymentId: string | null;
+  paymentProviderStatus: string | null;
+  paymentProviderStatusDetail: string | null;
   notes: string | null;
   itemsSubtotalAmountCents: number;
   discountSource: "Manual" | "Cupom" | null;
@@ -62,6 +66,19 @@ export interface OrderRowUpdate extends OrderRowInsert {
 
 export interface OrderStatusUpdate {
   status: OrderStatus;
+  updatedAt: Date;
+}
+
+export interface OrderPaymentSyncUpdate {
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  paymentProvider: string | null;
+  paymentProviderPaymentId: string | null;
+  paymentProviderStatus: string | null;
+  paymentProviderStatusDetail: string | null;
+  paidAmountCents: number;
+  remainingAmountCents: number;
+  fullyPaidAt: Date | null;
   updatedAt: Date;
 }
 
@@ -118,6 +135,26 @@ export class OrdersRepository {
     return order ?? null;
   }
 
+  async findByPaymentProviderPaymentId(
+    paymentProvider: string,
+    paymentProviderPaymentId: string,
+    executor: Executor = getDb(),
+  ) {
+    const [order] = await executor
+      .select()
+      .from(orders)
+      .where(
+        and(
+          isNull(orders.deletedAt),
+          eq(orders.paymentProvider, paymentProvider),
+          eq(orders.paymentProviderPaymentId, paymentProviderPaymentId),
+        ),
+      )
+      .limit(1);
+
+    return order ?? null;
+  }
+
   async listQueueRows(executor: Executor = getDb()) {
     return executor
       .select({
@@ -136,6 +173,10 @@ export class OrdersRepository {
         status: orders.status,
         paymentMethod: orders.paymentMethod,
         paymentStatus: orders.paymentStatus,
+        paymentProvider: orders.paymentProvider,
+        paymentProviderPaymentId: orders.paymentProviderPaymentId,
+        paymentProviderStatus: orders.paymentProviderStatus,
+        paymentProviderStatusDetail: orders.paymentProviderStatusDetail,
         notes: orders.notes,
         itemsSubtotalAmountCents: orders.itemsSubtotalAmountCents,
         discountSource: orders.discountSource,
@@ -273,6 +314,20 @@ export class OrdersRepository {
   async updateStatus(
     id: string,
     data: OrderStatusUpdate,
+    executor: Executor = getDb(),
+  ) {
+    const [order] = await executor
+      .update(orders)
+      .set(data)
+      .where(and(eq(orders.id, id), isNull(orders.deletedAt)))
+      .returning();
+
+    return order ?? null;
+  }
+
+  async updatePaymentSync(
+    id: string,
+    data: OrderPaymentSyncUpdate,
     executor: Executor = getDb(),
   ) {
     const [order] = await executor

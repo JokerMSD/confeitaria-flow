@@ -12,7 +12,7 @@ Monolito para operacao de confeitaria com frontend React + Vite, backend Express
 - fila operacional por data e horario
 - previsao de producao por pedidos confirmados e receitas
 - caixa com recebimentos de pedidos e compras reais declaradas
-- loja publica com catalogo, carrinho, checkout em Pix manual e area de conta
+- loja publica com catalogo, carrinho, checkout em Pix manual ou cartao com Mercado Pago e area de conta
 
 ## Stack
 
@@ -55,6 +55,8 @@ Monolito para operacao de confeitaria com frontend React + Vite, backend Express
 - `VITE_API_URL`: opcional no frontend; em dev usa `http://localhost:3001`
 - `SESSION_COOKIE_SECURE=true`: para deploy HTTPS
 - `AUTH_USERS_JSON`: fallback de auth simples apenas quando ainda nao existem usuarios ativos persistidos no banco
+- `MERCADO_PAGO_PUBLIC_KEY`: chave publica do checkout transparente
+- `MERCADO_PAGO_ACCESS_TOKEN`: token privado para criar e consultar pagamentos
 
 ## Desenvolvimento
 
@@ -119,5 +121,5 @@ npm run backfill:legacy-order-recipes
 
 - o startup da API valida schema e pode aplicar migrations SQL antes de subir
 - pedidos legados ainda podem exigir backfills de clientes e receitas
-- o checkout publico usa Pix manual; nao ha gateway nem webhook
+- o checkout publico pode usar Pix manual ou cartao via Mercado Pago; o webhook precisa apontar para `/api/public/store/payments/mercado-pago/webhook`
 - a protecao de concorrencia atual e otimista: registros desatualizados retornam `409` para evitar sobrescrita silenciosa

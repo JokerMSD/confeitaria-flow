@@ -48,6 +48,10 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "discount_amount_cents",
       "discount_label",
       "coupon_code",
+      "payment_provider",
+      "payment_provider_payment_id",
+      "payment_provider_status",
+      "payment_provider_status_detail",
     ],
     order_items: [
       "recipe_id",
@@ -123,6 +127,12 @@ const migrationHints: Record<string, string> = {
     "0023_phase23_order_discounts_and_coupons.sql",
   "orders.discount_label": "0023_phase23_order_discounts_and_coupons.sql",
   "orders.coupon_code": "0023_phase23_order_discounts_and_coupons.sql",
+  "orders.payment_provider": "0024_phase24_mercado_pago_checkout.sql",
+  "orders.payment_provider_payment_id":
+    "0024_phase24_mercado_pago_checkout.sql",
+  "orders.payment_provider_status": "0024_phase24_mercado_pago_checkout.sql",
+  "orders.payment_provider_status_detail":
+    "0024_phase24_mercado_pago_checkout.sql",
   "inventory_movements.purchase_amount_cents":
     "0012_phase12_inventory_weighted_average_cost.sql",
   "inventory_movements.purchase_equivalent_quantity":

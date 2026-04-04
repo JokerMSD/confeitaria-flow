@@ -3,16 +3,21 @@
 ## Backend No Render
 1. Confirmar codigo no GitHub.
 2. Garantir que `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGINS` e `AUTH_USERS_JSON` estao definidos.
-3. A API aplica migrations `.sql` pendentes automaticamente no startup por padrao.
-4. Se o historico `app_runtime_migrations` ficar inconsistente com o schema real, o bootstrap tenta reaplicar seletivamente as migrations sugeridas pela guarda.
-5. Se precisar desligar isso explicitamente, definir:
+3. Se o checkout com cartao estiver ativo, definir tambem:
+   - `APP_ORIGIN`
+   - `MERCADO_PAGO_PUBLIC_KEY`
+   - `MERCADO_PAGO_ACCESS_TOKEN`
+4. A API aplica migrations `.sql` pendentes automaticamente no startup por padrao.
+5. Se o historico `app_runtime_migrations` ficar inconsistente com o schema real, o bootstrap tenta reaplicar seletivamente as migrations sugeridas pela guarda.
+6. Se precisar desligar isso explicitamente, definir:
    - `AUTO_APPLY_MIGRATIONS=false`
-6. Build command:
+7. Build command:
    - `npm install --include=dev && npm run build:api`
-7. Start command:
+8. Start command:
    - `npm run start:api`
-8. Validar:
+9. Validar:
    - `/api/health`
+   - `/api/public/store/payment-config`
 
 ## Frontend Na Vercel
 1. Configurar `VITE_API_URL` com a URL da API.
@@ -28,6 +33,7 @@
 3. Testar estoque.
 4. Testar caixa.
 5. Testar guia de compra.
+6. Testar checkout publico com Pix e cartao.
 
 ## Problemas Comuns
 - API falha ao subir com erro de schema:
@@ -41,5 +47,9 @@
   - redeployar API
 - Session/cookie:
   - conferir `SESSION_COOKIE_SECURE=true` em producao
+- Mercado Pago:
+  - conferir `APP_ORIGIN`
+  - conferir `MERCADO_PAGO_PUBLIC_KEY` e `MERCADO_PAGO_ACCESS_TOKEN`
+  - conferir webhook publico em `/api/public/store/payments/mercado-pago/webhook`
 - API sobe mas build falha:
   - garantir `npm install --include=dev`

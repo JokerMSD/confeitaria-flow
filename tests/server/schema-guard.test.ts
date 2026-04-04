@@ -42,6 +42,10 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "discount_amount_cents",
           "discount_label",
           "coupon_code",
+          "payment_provider",
+          "payment_provider_payment_id",
+          "payment_provider_status",
+          "payment_provider_status_detail",
         ]),
       ],
       [
@@ -196,5 +200,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0021_phase21_recipe_media.sql",
     "0022_phase22_recipe_media_variation.sql",
     "0023_phase23_order_discounts_and_coupons.sql",
+    "0024_phase24_mercado_pago_checkout.sql",
   ]);
 });

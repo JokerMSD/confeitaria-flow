@@ -14,6 +14,11 @@ export class PublicStoreController {
     res.json({ data });
   }
 
+  async paymentConfig(_req: Request, res: Response) {
+    const data = this.publicStoreService.getPaymentConfig();
+    res.json({ data });
+  }
+
   async detail(req: Request, res: Response) {
     const data = await this.publicStoreService.getProduct(String(req.params.id));
     res.json({ data });
@@ -27,5 +32,21 @@ export class PublicStoreController {
   async checkout(req: Request, res: Response) {
     const data = await this.publicStoreService.checkout(req.body.data);
     res.status(201).json({ data });
+  }
+
+  async mercadoPagoWebhook(req: Request, res: Response) {
+    const paymentId = this.publicStoreService.extractMercadoPagoPaymentId({
+      query: req.query as Record<string, unknown>,
+      body:
+        req.body && typeof req.body === "object"
+          ? (req.body as Record<string, unknown>)
+          : null,
+    });
+
+    if (paymentId) {
+      await this.publicStoreService.syncMercadoPagoPayment(paymentId);
+    }
+
+    res.status(200).json({ ok: true });
   }
 }

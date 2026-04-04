@@ -77,6 +77,27 @@ function calculateFullyPaidAt(
   return null;
 }
 
+function mapExternalPaymentToOrderState(
+  subtotalAmountCents: number,
+  status: string | null | undefined,
+  previousFullyPaidAt?: Date | null,
+) {
+  const normalizedStatus = status?.trim().toLowerCase() ?? null;
+  const paidAmountCents = normalizedStatus === "approved" ? subtotalAmountCents : 0;
+
+  return {
+    paidAmountCents,
+    remainingAmountCents: Math.max(0, subtotalAmountCents - paidAmountCents),
+    paymentStatus: calculatePaymentStatus(subtotalAmountCents, paidAmountCents),
+    fullyPaidAt: calculateFullyPaidAt(
+      subtotalAmountCents,
+      paidAmountCents,
+      previousFullyPaidAt ?? null,
+      normalizedStatus === "approved" ? new Date() : undefined,
+    ),
+  };
+}
+
 export class OrdersService {
   private readonly ordersRepository = new OrdersRepository();
   private readonly orderItemsRepository = new OrderItemsRepository();
@@ -217,6 +238,10 @@ export class OrdersService {
           status: normalized.status,
           paymentMethod: normalized.paymentMethod,
           paymentStatus: normalized.paymentStatus,
+          paymentProvider: normalized.paymentProvider,
+          paymentProviderPaymentId: normalized.paymentProviderPaymentId,
+          paymentProviderStatus: normalized.paymentProviderStatus,
+          paymentProviderStatusDetail: normalized.paymentProviderStatusDetail,
           notes: normalized.notes,
           itemsSubtotalAmountCents: normalized.itemsSubtotalAmountCents,
           discountSource: normalized.discount?.source ?? null,
@@ -373,6 +398,10 @@ export class OrdersService {
           status: normalized.status,
           paymentMethod: normalized.paymentMethod,
           paymentStatus: normalized.paymentStatus,
+          paymentProvider: normalized.paymentProvider,
+          paymentProviderPaymentId: normalized.paymentProviderPaymentId,
+          paymentProviderStatus: normalized.paymentProviderStatus,
+          paymentProviderStatusDetail: normalized.paymentProviderStatusDetail,
           notes: normalized.notes,
           itemsSubtotalAmountCents: normalized.itemsSubtotalAmountCents,
           discountSource: normalized.discount?.source ?? null,
@@ -688,6 +717,79 @@ export class OrdersService {
     });
   }
 
+  async syncExternalPayment(input: {
+    orderId?: string | null;
+    provider: string;
+    providerPaymentId: string;
+    providerStatus: string | null;
+    providerStatusDetail: string | null;
+    paymentMethod: "CartaoCredito";
+  }) {
+    return withTransaction<OrderDetail | null>(async (tx) => {
+      const existing = input.orderId
+        ? await this.ordersRepository.findById(input.orderId, tx)
+        : await this.ordersRepository.findByPaymentProviderPaymentId(
+            input.provider,
+            input.providerPaymentId,
+            tx,
+          );
+
+      if (!existing) {
+        return null;
+      }
+
+      const paymentState = mapExternalPaymentToOrderState(
+        existing.subtotalAmountCents,
+        input.providerStatus,
+        existing.fullyPaidAt ?? null,
+      );
+
+      const updatedOrder = await this.ordersRepository.updatePaymentSync(
+        existing.id,
+        {
+          paymentMethod: input.paymentMethod,
+          paymentStatus: paymentState.paymentStatus,
+          paymentProvider: input.provider,
+          paymentProviderPaymentId: input.providerPaymentId,
+          paymentProviderStatus: input.providerStatus,
+          paymentProviderStatusDetail: input.providerStatusDetail,
+          paidAmountCents: paymentState.paidAmountCents,
+          remainingAmountCents: paymentState.remainingAmountCents,
+          fullyPaidAt: paymentState.fullyPaidAt,
+          updatedAt: new Date(),
+        },
+        tx,
+      );
+
+      if (!updatedOrder) {
+        return null;
+      }
+
+      await this.cashTransactionsService.syncOrderReceipt(
+        {
+          id: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          customerName: updatedOrder.customerName,
+          paymentMethod: updatedOrder.paymentMethod,
+          orderDate: updatedOrder.orderDate,
+          paidAmountCents: updatedOrder.paidAmountCents,
+          fullyPaidAt: updatedOrder.fullyPaidAt ?? null,
+          receivedAt: new Date(),
+        },
+        tx,
+      );
+
+      const items = await this.orderItemsRepository.listByOrderId(updatedOrder.id, tx);
+      const additionals =
+        await this.orderItemAdditionalsRepository.listByOrderItemIds(
+          items.map((item: any) => item.id),
+          tx,
+        );
+
+      return this.mapOrderDetail(updatedOrder, items, additionals);
+    });
+  }
+
   private async normalizeOrderInput(
     input: CreateOrderInput | UpdateOrderInput,
   ) {
@@ -794,6 +896,11 @@ export class OrdersService {
       status: input.status,
       paymentMethod: input.paymentMethod,
       paymentStatus,
+      paymentProvider: input.paymentProvider?.trim() || null,
+      paymentProviderPaymentId: input.paymentProviderPaymentId?.trim() || null,
+      paymentProviderStatus: input.paymentProviderStatus?.trim() || null,
+      paymentProviderStatusDetail:
+        input.paymentProviderStatusDetail?.trim() || null,
       notes,
       itemsSubtotalAmountCents,
       discount,
@@ -860,6 +967,10 @@ export class OrdersService {
       status: row.status,
       paymentMethod: row.paymentMethod,
       paymentStatus: row.paymentStatus,
+      paymentProvider: row.paymentProvider ?? null,
+      paymentProviderPaymentId: row.paymentProviderPaymentId ?? null,
+      paymentProviderStatus: row.paymentProviderStatus ?? null,
+      paymentProviderStatusDetail: row.paymentProviderStatusDetail ?? null,
       notes: row.notes ?? null,
       itemsSubtotalAmountCents: row.itemsSubtotalAmountCents ?? 0,
       discountAmountCents: row.discountAmountCents ?? 0,

@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import type {
   AppliedDiscountCoupon,
   PublicCheckoutInput,
@@ -12,6 +13,7 @@ import { HttpError } from "../utils/http-error";
 import { getTodayOperationalDate } from "../utils/operational-date";
 import { CustomerOrderSyncService } from "./customer-order-sync.service";
 import { DiscountCouponsService } from "./discount-coupons.service";
+import { MercadoPagoService } from "./mercado-pago.service";
 import { OrdersService } from "./orders.service";
 import { ProductAdditionalsService } from "./product-additionals.service";
 import { RecipeMediaService } from "./recipe-media.service";
@@ -40,6 +42,23 @@ function buildPublicProductName(productName: string, fillingNames: string[]) {
   return fillingNames.length > 0
     ? `${productName} - ${fillingNames.join(" / ")}`
     : productName;
+}
+
+function splitCustomerName(fullName: string) {
+  const sanitized = fullName.replace(/\s+/g, " ").trim();
+  const parts = sanitized.split(" ").filter(Boolean);
+
+  if (parts.length <= 1) {
+    return {
+      firstName: parts[0] ?? "Cliente",
+      lastName: "Checkout",
+    };
+  }
+
+  return {
+    firstName: parts[0],
+    lastName: parts.slice(1).join(" "),
+  };
 }
 
 function toSummary(
@@ -86,6 +105,7 @@ export class PublicStoreService {
   private readonly ordersService = new OrdersService();
   private readonly customerOrderSyncService = new CustomerOrderSyncService();
   private readonly discountCouponsService = new DiscountCouponsService();
+  private readonly mercadoPagoService = new MercadoPagoService();
   private readonly productAdditionalsService = new ProductAdditionalsService();
   private readonly recipeMediaService = new RecipeMediaService();
   private readonly recipesRepository = new RecipesRepository();
@@ -100,6 +120,20 @@ export class PublicStoreService {
       featuredProducts: products.slice(0, 4),
       catalogCount: products.length,
     };
+  }
+
+  getPaymentConfig() {
+    return {
+      pixEnabled: true as const,
+      mercadoPago: this.mercadoPagoService.getPublicConfig(),
+    };
+  }
+
+  extractMercadoPagoPaymentId(input: {
+    query?: Record<string, unknown>;
+    body?: Record<string, unknown> | null;
+  }) {
+    return this.mercadoPagoService.extractPaymentIdFromWebhook(input);
   }
 
   async listProducts(): Promise<PublicStoreProductSummary[]> {
@@ -167,6 +201,10 @@ export class PublicStoreService {
   }
 
   async checkout(input: PublicCheckoutInput): Promise<PublicCheckoutResponse["data"]> {
+    if (input.paymentMethod === "MercadoPagoCartao") {
+      return this.checkoutWithMercadoPago(input);
+    }
+
     const pricingPreview = await this.buildCheckoutPreview({
       deliveryMode: input.deliveryMode,
       deliveryFeeCents: input.deliveryFeeCents ?? 0,
@@ -217,13 +255,152 @@ export class PublicStoreService {
       status: order.status,
       paymentMethod: "Pix",
       paymentStatus: order.paymentStatus,
+      paymentProvider: null,
+      paymentProviderStatus: null,
+      paymentProviderStatusDetail: null,
       itemsSubtotalAmountCents: order.itemsSubtotalAmountCents,
       discountAmountCents: order.discountAmountCents,
       appliedCoupon: pricingPreview.appliedCoupon,
       subtotalAmountCents: order.subtotalAmountCents,
-      pixInstructions:
+      paymentInstructions:
         "Pedido recebido. Envie o comprovante do Pix manual para confirmar o pagamento com a confeitaria.",
     };
+  }
+
+  async checkoutWithMercadoPago(
+    input: PublicCheckoutInput,
+  ): Promise<PublicCheckoutResponse["data"]> {
+    if (!input.customerEmail?.trim()) {
+      throw new HttpError(400, "Informe um e-mail para pagar com cartao.");
+    }
+
+    if (!input.payer) {
+      throw new HttpError(400, "Dados do pagador sao obrigatorios para o cartao.");
+    }
+
+    if (!input.mercadoPagoCard) {
+      throw new HttpError(
+        400,
+        "Os dados do cartao nao foram enviados para o pagamento.",
+      );
+    }
+
+    const pricingPreview = await this.buildCheckoutPreview({
+      deliveryMode: input.deliveryMode,
+      deliveryFeeCents: input.deliveryFeeCents ?? 0,
+      couponCode: input.couponCode ?? null,
+      items: input.items,
+    });
+
+    const { firstName, lastName } = splitCustomerName(input.customerName);
+    const customer = await this.customerOrderSyncService.ensureCustomerForContact(
+      input.customerName,
+      input.customerPhone,
+    );
+
+    const payment = await this.mercadoPagoService.createCardPayment({
+      amountCents: pricingPreview.subtotalAmountCents,
+      description: `Pedido Universo Doce - ${input.customerName.trim()}`,
+      externalReference: `public-checkout-${randomUUID()}`,
+      token: input.mercadoPagoCard.token,
+      paymentMethodId: input.mercadoPagoCard.paymentMethodId,
+      issuerId: input.mercadoPagoCard.issuerId ?? null,
+      installments: input.mercadoPagoCard.installments,
+      payer: {
+        email: input.payer.email,
+        firstName,
+        lastName,
+        identificationType: input.payer.identificationType,
+        identificationNumber: input.payer.identificationNumber,
+      },
+      metadata: {
+        customerEmail: input.customerEmail.trim(),
+        customerPhone: input.customerPhone?.trim() || null,
+        deliveryMode: input.deliveryMode,
+      },
+    });
+
+    const normalizedPaymentStatus = payment.status?.toLowerCase() ?? null;
+    if (normalizedPaymentStatus === "rejected" || normalizedPaymentStatus === "cancelled") {
+      throw new HttpError(
+        400,
+        "O pagamento com cartao foi recusado. Revise os dados e tente novamente.",
+      );
+    }
+
+    const paidAmountCents =
+      normalizedPaymentStatus === "approved"
+        ? pricingPreview.subtotalAmountCents
+        : 0;
+
+    const order = await this.ordersService.create({
+      customerId: customer.id,
+      customerName: input.customerName,
+      customerPhone: input.customerPhone ?? null,
+      orderDate: getTodayOperationalDate(),
+      deliveryDate: input.deliveryDate,
+      deliveryTime: input.deliveryTime ?? null,
+      deliveryMode: input.deliveryMode,
+      deliveryAddress: input.deliveryAddress ?? null,
+      deliveryReference: input.deliveryReference ?? null,
+      deliveryDistrict: input.deliveryDistrict ?? null,
+      deliveryFeeCents: input.deliveryFeeCents ?? 0,
+      status: "Confirmado",
+      paymentMethod: "CartaoCredito",
+      paidAmountCents,
+      paymentProvider: "MercadoPago",
+      paymentProviderPaymentId: payment.id,
+      paymentProviderStatus: payment.status,
+      paymentProviderStatusDetail: payment.statusDetail,
+      discount: pricingPreview.orderDiscount,
+      notes: [
+        input.notes?.trim(),
+        `Checkout publico com Mercado Pago (${payment.status ?? "sem-status"}).`,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      items: pricingPreview.resolvedItems.map((item) => ({
+        recipeId: item.recipeId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPriceCents: item.unitPriceCents,
+        fillingRecipeId: item.fillingRecipeId,
+        secondaryFillingRecipeId: item.secondaryFillingRecipeId,
+        tertiaryFillingRecipeId: item.tertiaryFillingRecipeId,
+        position: item.position,
+        additionals: item.additionals,
+      })),
+    });
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status,
+      paymentMethod: "CartaoCredito",
+      paymentStatus: order.paymentStatus,
+      paymentProvider: "MercadoPago",
+      paymentProviderStatus: payment.status,
+      paymentProviderStatusDetail: payment.statusDetail,
+      itemsSubtotalAmountCents: order.itemsSubtotalAmountCents,
+      discountAmountCents: order.discountAmountCents,
+      appliedCoupon: pricingPreview.appliedCoupon,
+      subtotalAmountCents: order.subtotalAmountCents,
+      paymentInstructions:
+        normalizedPaymentStatus === "approved"
+          ? "Pagamento aprovado. Seu pedido ja entrou no fluxo da confeitaria."
+          : "Pagamento enviado para analise. Avisaremos se o cartao precisar de nova confirmacao.",
+    };
+  }
+
+  async syncMercadoPagoPayment(paymentId: string) {
+    const payment = await this.mercadoPagoService.getPaymentById(paymentId);
+    return this.ordersService.syncExternalPayment({
+      provider: "MercadoPago",
+      providerPaymentId: payment.id,
+      providerStatus: payment.status,
+      providerStatusDetail: payment.statusDetail,
+      paymentMethod: "CartaoCredito",
+    });
   }
 
   private async buildCheckoutPreview(input: PublicCheckoutPricingPreviewInput) {

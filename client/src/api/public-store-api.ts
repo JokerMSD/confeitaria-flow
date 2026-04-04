@@ -3,6 +3,7 @@ import type {
   PublicCheckoutPricingPreviewRequest,
   PublicCheckoutPricingPreviewResponse,
   PublicCheckoutResponse,
+  PublicStorePaymentConfigResponse,
   PublicStoreHomeResponse,
   PublicStoreProductDetailResponse,
   PublicStoreProductsResponse,
@@ -11,6 +12,12 @@ import { httpClient } from "./http-client";
 
 export function getPublicStoreHome() {
   return httpClient<PublicStoreHomeResponse>("/api/public/store");
+}
+
+export function getPublicStorePaymentConfig() {
+  return httpClient<PublicStorePaymentConfigResponse>(
+    "/api/public/store/payment-config",
+  );
 }
 
 export function getPublicProducts() {
