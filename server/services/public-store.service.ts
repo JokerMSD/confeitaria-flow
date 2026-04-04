@@ -196,11 +196,11 @@ export class PublicStoreService {
     };
   }
 
-  extractMercadoPagoPaymentId(input: {
+  extractMercadoPagoOrderId(input: {
     query?: Record<string, unknown>;
     body?: Record<string, unknown> | null;
   }) {
-    return this.mercadoPagoService.extractPaymentIdFromWebhook(input);
+    return this.mercadoPagoService.extractOrderIdFromWebhook(input);
   }
 
   async listProducts(): Promise<PublicStoreProductSummary[]> {
@@ -432,7 +432,7 @@ export class PublicStoreService {
       input.customerPhone,
     );
 
-    const payment = await this.mercadoPagoService.createCardPayment({
+    const paymentOrder = await this.mercadoPagoService.createCardOrder({
       amountCents: pricingPreview.subtotalAmountCents,
       description: `Pedido Universo Doce - ${input.customerName.trim()}`,
       externalReference: `public-checkout-${randomUUID()}`,
@@ -454,7 +454,7 @@ export class PublicStoreService {
       },
     });
 
-    const normalizedPaymentStatus = payment.status?.toLowerCase() ?? null;
+    const normalizedPaymentStatus = paymentOrder.status?.toLowerCase() ?? null;
     if (normalizedPaymentStatus === "rejected" || normalizedPaymentStatus === "cancelled") {
       throw new HttpError(
         400,
@@ -483,13 +483,13 @@ export class PublicStoreService {
       paymentMethod: "CartaoCredito",
       paidAmountCents,
       paymentProvider: "MercadoPago",
-      paymentProviderPaymentId: payment.id,
-      paymentProviderStatus: payment.status,
-      paymentProviderStatusDetail: payment.statusDetail,
+      paymentProviderPaymentId: paymentOrder.orderId,
+      paymentProviderStatus: paymentOrder.status,
+      paymentProviderStatusDetail: paymentOrder.statusDetail,
       discount: pricingPreview.orderDiscount,
       notes: [
         input.notes?.trim(),
-        `Checkout publico com Mercado Pago (${payment.status ?? "sem-status"}).`,
+        `Checkout publico com Mercado Pago Orders API (${paymentOrder.status ?? "sem-status"}).`,
       ]
         .filter(Boolean)
         .join("\n"),
@@ -513,8 +513,8 @@ export class PublicStoreService {
       paymentMethod: "CartaoCredito",
       paymentStatus: order.paymentStatus,
       paymentProvider: "MercadoPago",
-      paymentProviderStatus: payment.status,
-      paymentProviderStatusDetail: payment.statusDetail,
+      paymentProviderStatus: paymentOrder.status,
+      paymentProviderStatusDetail: paymentOrder.statusDetail,
       itemsSubtotalAmountCents: order.itemsSubtotalAmountCents,
       discountAmountCents: order.discountAmountCents,
       appliedCoupon: pricingPreview.appliedCoupon,
@@ -526,13 +526,13 @@ export class PublicStoreService {
     };
   }
 
-  async syncMercadoPagoPayment(paymentId: string) {
-    const payment = await this.mercadoPagoService.getPaymentById(paymentId);
+  async syncMercadoPagoOrder(orderId: string) {
+    const paymentOrder = await this.mercadoPagoService.getOrderById(orderId);
     return this.ordersService.syncExternalPayment({
       provider: "MercadoPago",
-      providerPaymentId: payment.id,
-      providerStatus: payment.status,
-      providerStatusDetail: payment.statusDetail,
+      providerPaymentId: paymentOrder.orderId,
+      providerStatus: paymentOrder.status,
+      providerStatusDetail: paymentOrder.statusDetail,
       paymentMethod: "CartaoCredito",
     });
   }

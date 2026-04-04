@@ -46,7 +46,7 @@ export class PublicStoreController {
   }
 
   async mercadoPagoWebhook(req: Request, res: Response) {
-    const paymentId = this.publicStoreService.extractMercadoPagoPaymentId({
+    const orderId = this.publicStoreService.extractMercadoPagoOrderId({
       query: req.query as Record<string, unknown>,
       body:
         req.body && typeof req.body === "object"
@@ -54,8 +54,8 @@ export class PublicStoreController {
           : null,
     });
 
-    if (paymentId) {
-      await this.publicStoreService.syncMercadoPagoPayment(paymentId);
+    if (orderId) {
+      await this.publicStoreService.syncMercadoPagoOrder(orderId);
     }
 
     res.status(200).json({ ok: true });

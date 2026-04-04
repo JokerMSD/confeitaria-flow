@@ -12,7 +12,7 @@ interface MercadoPagoApiErrorResponse {
   error?: string;
 }
 
-export interface MercadoPagoCardPaymentInput {
+export interface MercadoPagoCardOrderInput {
   amountCents: number;
   description: string;
   externalReference: string;
@@ -30,8 +30,9 @@ export interface MercadoPagoCardPaymentInput {
   metadata?: Record<string, unknown>;
 }
 
-export interface MercadoPagoPayment {
-  id: string;
+export interface MercadoPagoOrderStatus {
+  orderId: string;
+  paymentId: string | null;
   status: string | null;
   statusDetail: string | null;
 }
@@ -85,6 +86,49 @@ function buildFriendlyMercadoPagoMessage(
   return fallback;
 }
 
+function parseMercadoPagoOrderStatus(payload: Record<string, unknown> | null) {
+  const transactions =
+    payload &&
+    typeof payload === "object" &&
+    "transactions" in payload &&
+    payload.transactions &&
+    typeof payload.transactions === "object"
+      ? (payload.transactions as { payments?: unknown }).payments
+      : null;
+
+  const firstPayment =
+    Array.isArray(transactions) && transactions.length > 0
+      ? (transactions[0] as Record<string, unknown>)
+      : null;
+
+  const paymentStatus =
+    firstPayment && typeof firstPayment.status === "string"
+      ? firstPayment.status
+      : null;
+  const paymentStatusDetail =
+    firstPayment && typeof firstPayment.status_detail === "string"
+      ? firstPayment.status_detail
+      : firstPayment && typeof firstPayment.statusDetail === "string"
+        ? firstPayment.statusDetail
+        : null;
+
+  const orderStatus =
+    payload && typeof payload.status === "string" ? payload.status : null;
+  const orderStatusDetail =
+    payload && typeof payload.status_detail === "string"
+      ? payload.status_detail
+      : payload && typeof payload.statusDetail === "string"
+        ? payload.statusDetail
+        : null;
+
+  return {
+    paymentId:
+      firstPayment && firstPayment.id != null ? String(firstPayment.id) : null,
+    status: paymentStatus ?? orderStatus,
+    statusDetail: paymentStatusDetail ?? orderStatusDetail,
+  };
+}
+
 export class MercadoPagoService {
   getPublicConfig() {
     const config = resolveMercadoPagoConfig();
@@ -108,11 +152,11 @@ export class MercadoPagoService {
     return config;
   }
 
-  async createCardPayment(input: MercadoPagoCardPaymentInput) {
+  async createCardOrder(input: MercadoPagoCardOrderInput) {
     const config = this.assertConfigured();
     const amount = Number((input.amountCents / 100).toFixed(2));
 
-    const response = await fetch("https://api.mercadopago.com/v1/payments", {
+    const response = await fetch("https://api.mercadopago.com/v1/orders", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${config.accessToken}`,
@@ -120,13 +164,11 @@ export class MercadoPagoService {
         "X-Idempotency-Key": randomUUID(),
       },
       body: JSON.stringify({
-        transaction_amount: amount,
-        token: input.token,
-        description: input.description,
-        installments: input.installments,
-        payment_method_id: input.paymentMethodId,
-        issuer_id: input.issuerId?.trim() || undefined,
+        type: "online",
+        processing_mode: "automatic",
         external_reference: input.externalReference,
+        total_amount: amount.toFixed(2),
+        description: input.description,
         notification_url: config.notificationUrl ?? undefined,
         payer: {
           email: input.payer.email.trim(),
@@ -137,6 +179,20 @@ export class MercadoPagoService {
             number: sanitizeDigits(input.payer.identificationNumber),
           },
         },
+        transactions: {
+          payments: [
+            {
+              amount: amount.toFixed(2),
+              payment_method: {
+                id: input.paymentMethodId,
+                type: "credit_card",
+                token: input.token,
+                installments: input.installments,
+                issuer_id: input.issuerId?.trim() || undefined,
+              },
+            },
+          ],
+        },
         metadata: input.metadata ?? undefined,
       }),
     });
@@ -145,8 +201,6 @@ export class MercadoPagoService {
       | MercadoPagoApiErrorResponse
       | (Record<string, unknown> & {
           id?: string | number;
-          status?: string;
-          status_detail?: string;
         })
       | null;
 
@@ -160,35 +214,34 @@ export class MercadoPagoService {
       );
     }
 
-    const paymentId =
+    const orderId =
       payload && typeof payload === "object" && "id" in payload
-        ? String(payload.id)
+        ? String(payload.id ?? "")
         : "";
 
-    if (!paymentId) {
+    if (!orderId) {
       throw new HttpError(
         502,
-        "Mercado Pago nao devolveu um identificador de pagamento valido.",
+        "Mercado Pago nao devolveu um identificador de order valido.",
       );
     }
 
+    const status = parseMercadoPagoOrderStatus(
+      payload as Record<string, unknown> | null,
+    );
+
     return {
-      id: paymentId,
-      status:
-        payload && typeof payload === "object" && "status" in payload
-          ? String(payload.status ?? "")
-          : null,
-      statusDetail:
-        payload && typeof payload === "object" && "status_detail" in payload
-          ? String(payload.status_detail ?? "")
-          : null,
-    } satisfies MercadoPagoPayment;
+      orderId,
+      paymentId: status.paymentId,
+      status: status.status,
+      statusDetail: status.statusDetail,
+    } satisfies MercadoPagoOrderStatus;
   }
 
-  async getPaymentById(paymentId: string): Promise<MercadoPagoPayment> {
+  async getOrderById(orderId: string): Promise<MercadoPagoOrderStatus> {
     const config = this.assertConfigured();
     const response = await fetch(
-      `https://api.mercadopago.com/v1/payments/${paymentId}`,
+      `https://api.mercadopago.com/v1/orders/${orderId}`,
       {
         headers: {
           Authorization: `Bearer ${config.accessToken}`,
@@ -200,8 +253,6 @@ export class MercadoPagoService {
       | MercadoPagoApiErrorResponse
       | (Record<string, unknown> & {
           id?: string | number;
-          status?: string;
-          status_detail?: string;
         })
       | null;
 
@@ -210,28 +261,29 @@ export class MercadoPagoService {
         400,
         buildFriendlyMercadoPagoMessage(
           payload as MercadoPagoApiErrorResponse | null,
-          "Nao foi possivel consultar o pagamento no Mercado Pago.",
+          "Nao foi possivel consultar a order no Mercado Pago.",
         ),
       );
     }
 
+    const normalizedOrderId =
+      payload && typeof payload === "object" && "id" in payload
+        ? String(payload.id ?? orderId)
+        : orderId;
+
+    const status = parseMercadoPagoOrderStatus(
+      payload as Record<string, unknown> | null,
+    );
+
     return {
-      id:
-        payload && typeof payload === "object" && "id" in payload
-          ? String(payload.id)
-          : paymentId,
-      status:
-        payload && typeof payload === "object" && "status" in payload
-          ? String(payload.status ?? "")
-          : null,
-      statusDetail:
-        payload && typeof payload === "object" && "status_detail" in payload
-          ? String(payload.status_detail ?? "")
-          : null,
+      orderId: normalizedOrderId,
+      paymentId: status.paymentId,
+      status: status.status,
+      statusDetail: status.statusDetail,
     };
   }
 
-  extractPaymentIdFromWebhook(input: {
+  extractOrderIdFromWebhook(input: {
     query?: Record<string, unknown>;
     body?: Record<string, unknown> | null;
   }) {
@@ -267,9 +319,9 @@ export class MercadoPagoService {
         : "";
 
     if (resource) {
-      const paymentId = resource.split("/").filter(Boolean).at(-1);
-      if (paymentId) {
-        return paymentId;
+      const orderId = resource.split("/").filter(Boolean).at(-1);
+      if (orderId) {
+        return orderId;
       }
     }
 
