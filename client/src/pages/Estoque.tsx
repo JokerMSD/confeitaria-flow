@@ -24,6 +24,7 @@ import { useDeleteInventoryItem } from "@/features/inventory/hooks/use-delete-in
 import { useCreateInventoryMovement } from "@/features/inventory/hooks/use-create-inventory-movement";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
 import { adaptInventoryPurchasePlan } from "@/features/inventory/lib/inventory-purchase-plan-adapter";
+import { formatInventoryQuantity } from "@/features/inventory/lib/inventory-quantity-display";
 import { getQuantityStep } from "@/features/inventory/lib/inventory-input-helpers";
 
 export default function Estoque() {
@@ -70,6 +71,7 @@ export default function Estoque() {
       }),
     [inventory],
   );
+
   const purchasePlan = useMemo(
     () =>
       purchasePlanQuery.data?.data
@@ -95,6 +97,11 @@ export default function Estoque() {
 
     return parsedValue;
   };
+
+  const formatQuantity = (
+    value: number,
+    unit: Parameters<typeof formatInventoryQuantity>[1],
+  ) => formatInventoryQuantity(value, unit);
 
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Tem certeza que deseja excluir "${name}" do estoque?`)) {
@@ -172,28 +179,28 @@ export default function Estoque() {
   return (
     <AppLayout title="Estoque">
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between gap-4">
-          <div className="flex-1 flex flex-col sm:flex-row gap-3">
-            <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
+          <div className="flex flex-1 flex-col gap-3 sm:flex-row">
+            <div className="relative max-w-md flex-1">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Buscar item no estoque..."
-                className="pl-9 bg-card"
+                className="bg-card pl-9"
                 value={searchTerm}
                 onChange={(event) => setSearchTerm(event.target.value)}
               />
             </div>
 
-            <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-hide no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="scrollbar-hide no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0 sm:pb-0">
               {categories.map((category) => (
                 <button
                   key={category}
                   onClick={() => setCategoryFilter(category)}
                   className={cn(
-                    "whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all border",
+                    "whitespace-nowrap rounded-full border px-4 py-2 text-sm font-medium transition-all",
                     categoryFilter === category
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-card text-foreground border-border hover:bg-muted",
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-card text-foreground hover:bg-muted",
                   )}
                 >
                   {category === "todas" ? "Todas as Categorias" : category}
@@ -203,34 +210,34 @@ export default function Estoque() {
           </div>
 
           <Link href="/estoque/novo">
-            <a className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-xl font-medium shadow-sm hover:shadow-md hover:bg-primary/90 transition-all shrink-0">
-              <Plus className="w-5 h-5" />
+            <a className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md">
+              <Plus className="h-5 w-5" />
               Novo Item
             </a>
           </Link>
         </div>
 
-        <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="border-b border-border/50 p-5 sm:p-6 bg-muted/20">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+          <div className="border-b border-border/50 bg-muted/20 p-5 sm:p-6">
             <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h3 className="text-lg font-bold flex items-center gap-2">
-                    <ShoppingCart className="w-5 h-5 text-primary" />
+                  <h3 className="flex items-center gap-2 text-lg font-bold">
+                    <ShoppingCart className="h-5 w-5 text-primary" />
                     Necessidade de Compra
                   </h3>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Calculado pelos pedidos ainda em produção: novo, confirmado e em produção.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-sm">
-                  <span className="px-3 py-1.5 rounded-full border bg-background">
+                  <span className="rounded-full border bg-background px-3 py-1.5">
                     Pedidos: {purchasePlanQuery.isLoading ? "..." : purchasePlan?.pendingOrderCount ?? 0}
                   </span>
-                  <span className="px-3 py-1.5 rounded-full border bg-background">
+                  <span className="rounded-full border bg-background px-3 py-1.5">
                     Itens faltando: {purchasePlanQuery.isLoading ? "..." : purchasePlan?.shortageItemCount ?? 0}
                   </span>
-                  <span className="px-3 py-1.5 rounded-full border bg-background font-semibold">
+                  <span className="rounded-full border bg-background px-3 py-1.5 font-semibold">
                     Gasto estimado: {purchasePlanQuery.isLoading ? "..." : formatCurrency(purchasePlan?.estimatedPurchaseCost ?? 0)}
                   </span>
                 </div>
@@ -251,56 +258,66 @@ export default function Estoque() {
                 </div>
               ) : !purchasePlan || purchasePlan.items.length === 0 ? (
                 <div className="text-sm text-muted-foreground">
-                  Nenhuma compra necessaria para os pedidos ainda nao finalizados.
+                  Nenhuma compra necessária para os pedidos ainda não finalizados.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {purchasePlan.items.map((planItem) => (
-                    <div
-                      key={planItem.itemId}
-                      className="rounded-xl border border-border bg-background p-4 space-y-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-semibold">{planItem.itemName}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Estoque atual: {planItem.currentQuantity} {planItem.itemUnit} • Necessario: {planItem.requiredQuantity} {planItem.itemUnit}
+                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                  {purchasePlan.items.map((planItem) => {
+                    const current = formatQuantity(planItem.currentQuantity, planItem.itemUnit);
+                    const required = formatQuantity(planItem.requiredQuantity, planItem.itemUnit);
+                    const suggested = formatQuantity(
+                      planItem.suggestedPurchaseQuantity,
+                      planItem.itemUnit,
+                    );
+                    const deficit = formatQuantity(planItem.deficitQuantity, planItem.itemUnit);
+
+                    return (
+                      <div
+                        key={planItem.itemId}
+                        className="space-y-3 rounded-xl border border-border bg-background p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="font-semibold">{planItem.itemName}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Estoque atual: {current.value} {current.unit} {"\u2022"} Necessário: {required.value} {required.unit}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-bold text-destructive">
+                              Comprar {suggested.value} {suggested.unit}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Falta: {deficit.value} {deficit.unit}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1 text-muted-foreground">
+                            <Calculator className="h-4 w-4" />
+                            Gasto estimado
+                          </span>
+                          <span className="font-semibold">
+                            {planItem.estimatedPurchaseCost == null
+                              ? "Sem custo cadastrado"
+                              : formatCurrency(planItem.estimatedPurchaseCost)}
+                          </span>
+                        </div>
+
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <p>Usado em {planItem.sourceCount} item(ns) de pedido.</p>
+                          <p className="line-clamp-2">
+                            {planItem.sources
+                              .slice(0, 3)
+                              .map((source) => `${source.orderNumber} • ${source.productName}`)
+                              .join(" | ")}
+                            {planItem.sources.length > 3 ? " | ..." : ""}
                           </p>
                         </div>
-                        <div className="text-right">
-                          <p className="text-sm font-bold text-destructive">
-                            Comprar {planItem.suggestedPurchaseQuantity} {planItem.itemUnit}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Falta: {planItem.deficitQuantity} {planItem.itemUnit}
-                          </p>
-                        </div>
                       </div>
-
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground flex items-center gap-1">
-                          <Calculator className="w-4 h-4" />
-                          Gasto estimado
-                        </span>
-                        <span className="font-semibold">
-                          {planItem.estimatedPurchaseCost == null
-                            ? "Sem custo cadastrado"
-                            : formatCurrency(planItem.estimatedPurchaseCost)}
-                        </span>
-                      </div>
-
-                      <div className="text-xs text-muted-foreground space-y-1">
-                        <p>Usado em {planItem.sourceCount} item(ns) de pedido.</p>
-                        <p className="line-clamp-2">
-                          {planItem.sources
-                            .slice(0, 3)
-                            .map((source) => `${source.orderNumber} • ${source.productName}`)
-                            .join(" | ")}
-                          {planItem.sources.length > 3 ? " | ..." : ""}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -311,31 +328,28 @@ export default function Estoque() {
               )}
             </div>
           </div>
+
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="bg-muted/50 text-muted-foreground font-semibold border-b border-border">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-border bg-muted/50 font-semibold text-muted-foreground">
                 <tr>
                   <th className="px-4 py-3 sm:px-6 sm:py-4">Item</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 hidden sm:table-cell">
+                  <th className="hidden px-4 py-3 sm:table-cell sm:px-6 sm:py-4">
                     Categoria
                   </th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">
-                    Quantidade
-                  </th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right hidden md:table-cell">
+                  <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Quantidade</th>
+                  <th className="hidden px-4 py-3 text-right md:table-cell sm:px-6 sm:py-4">
                     Mínimo
                   </th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">Status</th>
-                  <th className="px-4 py-3 sm:px-6 sm:py-4 text-right">Ações</th>
+                  <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Status</th>
+                  <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Ações</th>
                 </tr>
               </thead>
+
               <tbody className="divide-y divide-border/50">
                 {inventoryQuery.isLoading ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-12 text-center text-muted-foreground"
-                    >
+                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
                       Carregando itens do estoque...
                     </td>
                   </tr>
@@ -343,7 +357,7 @@ export default function Estoque() {
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-6 py-12 text-center text-muted-foreground space-y-3"
+                      className="space-y-3 px-6 py-12 text-center text-muted-foreground"
                     >
                       <p>Não foi possível carregar o estoque.</p>
                       <Button variant="outline" onClick={() => inventoryQuery.refetch()}>
@@ -353,128 +367,134 @@ export default function Estoque() {
                   </tr>
                 ) : filteredInventory.length === 0 ? (
                   <tr>
-                    <td
-                      colSpan={6}
-                      className="px-6 py-12 text-center text-muted-foreground"
-                    >
-                      <PackageSearch className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <td colSpan={6} className="px-6 py-12 text-center text-muted-foreground">
+                      <PackageSearch className="mx-auto mb-3 h-12 w-12 opacity-20" />
                       <p>Nenhum item encontrado.</p>
                     </td>
                   </tr>
                 ) : (
-                  filteredInventory.map((item) => (
-                    <tr
-                      key={item.id}
-                      className="hover:bg-muted/30 transition-colors group cursor-pointer"
-                      onClick={() => setLocation(`/estoque/${item.id}`)}
-                    >
-                      <td className="px-4 py-3 sm:px-6 sm:py-4">
-                        <div className="font-bold text-foreground text-base">
-                          {item.name}
-                        </div>
-                        <div className="text-xs text-muted-foreground sm:hidden mt-0.5">
-                          {item.category}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 sm:px-6 sm:py-4 hidden sm:table-cell text-muted-foreground">
-                        <span className="bg-muted px-2 py-1 rounded text-xs font-medium border border-border">
-                          {item.category}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
-                        <span
-                          className={cn(
-                            "font-bold text-lg",
-                            item.isLowStock ? "text-destructive" : "text-foreground",
-                          )}
-                        >
-                          {item.currentQuantity}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-1">
-                          {item.unit}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 sm:px-6 sm:py-4 text-right hidden md:table-cell text-muted-foreground">
-                        {item.minQuantity} {item.unit}
-                      </td>
-                      <td className="px-4 py-3 sm:px-6 sm:py-4 text-right">
-                        {item.isLowStock ? (
-                          <div className="inline-flex items-center gap-1.5 bg-destructive/10 text-destructive px-2.5 py-1 rounded-full text-xs font-bold border border-destructive/20">
-                            <AlertTriangle className="w-3.5 h-3.5" />
-                            <span className="hidden sm:inline">Baixo</span>
-                          </div>
-                        ) : (
-                          <span className="inline-flex bg-success/10 text-success px-2.5 py-1 rounded-full text-xs font-bold border border-success/20">
-                            Normal
-                          </span>
-                        )}
-                      </td>
-                      <td
-                        className="px-4 py-3 sm:px-6 sm:py-4 text-right"
-                        onClick={(event) => event.stopPropagation()}
+                  filteredInventory.map((item) => {
+                    const current = formatQuantity(item.currentQuantity, item.unit);
+                    const minimum = formatQuantity(item.minQuantity, item.unit);
+
+                    return (
+                      <tr
+                        key={item.id}
+                        className="group cursor-pointer transition-colors hover:bg-muted/30"
+                        onClick={() => setLocation(`/estoque/${item.id}`)}
                       >
-                        <div className="flex items-center justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                          <Input
-                            type="number"
-                            min="0.001"
-                            step={getQuantityStep(item.unit)}
-                            inputMode="decimal"
-                            value={getQuickQuantityValue(item.id)}
-                            placeholder="1"
-                            className="h-8 w-16 text-right text-xs"
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) =>
-                              setQuickQuantities((current) => ({
-                                ...current,
-                                [item.id]: event.target.value,
-                              }))
-                            }
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            disabled={
-                              pendingQuickItemId === item.id ||
-                              item.currentQuantity <= 0
-                            }
-                            onClick={() =>
-                              handleQuickQuantityChange(item.id, item.name, "Saida")
-                            }
+                        <td className="px-4 py-3 sm:px-6 sm:py-4">
+                          <div className="text-base font-bold text-foreground">
+                            {item.name}
+                          </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground sm:hidden">
+                            {item.category}
+                          </div>
+                        </td>
+
+                        <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell sm:px-6 sm:py-4">
+                          <span className="rounded border border-border bg-muted px-2 py-1 text-xs font-medium">
+                            {item.category}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3 text-right sm:px-6 sm:py-4">
+                          <span
+                            className={cn(
+                              "text-lg font-bold",
+                              item.isLowStock ? "text-destructive" : "text-foreground",
+                            )}
                           >
-                            <Minus className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            disabled={pendingQuickItemId === item.id}
-                            onClick={() =>
-                              handleQuickQuantityChange(item.id, item.name, "Entrada")
-                            }
-                          >
-                            <Plus className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-primary"
-                            onClick={() => setLocation(`/estoque/${item.id}/editar`)}
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(item.id, item.name)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                            {current.value}
+                          </span>
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            {current.unit}
+                          </span>
+                        </td>
+
+                        <td className="hidden px-4 py-3 text-right text-muted-foreground md:table-cell sm:px-6 sm:py-4">
+                          {minimum.value} {minimum.unit}
+                        </td>
+
+                        <td className="px-4 py-3 text-right sm:px-6 sm:py-4">
+                          {item.isLowStock ? (
+                            <div className="inline-flex items-center gap-1.5 rounded-full border border-destructive/20 bg-destructive/10 px-2.5 py-1 text-xs font-bold text-destructive">
+                              <AlertTriangle className="h-3.5 w-3.5" />
+                              <span className="hidden sm:inline">Baixo</span>
+                            </div>
+                          ) : (
+                            <span className="inline-flex rounded-full border border-success/20 bg-success/10 px-2.5 py-1 text-xs font-bold text-success">
+                              Normal
+                            </span>
+                          )}
+                        </td>
+
+                        <td
+                          className="px-4 py-3 text-right sm:px-6 sm:py-4"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <div className="flex items-center justify-end gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                            <Input
+                              type="number"
+                              min="0.001"
+                              step={getQuantityStep(item.unit)}
+                              inputMode="decimal"
+                              value={getQuickQuantityValue(item.id)}
+                              placeholder="1"
+                              className="h-8 w-16 text-right text-xs"
+                              onClick={(event) => event.stopPropagation()}
+                              onChange={(event) =>
+                                setQuickQuantities((currentState) => ({
+                                  ...currentState,
+                                  [item.id]: event.target.value,
+                                }))
+                              }
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              disabled={
+                                pendingQuickItemId === item.id || item.currentQuantity <= 0
+                              }
+                              onClick={() =>
+                                handleQuickQuantityChange(item.id, item.name, "Saida")
+                              }
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              disabled={pendingQuickItemId === item.id}
+                              onClick={() =>
+                                handleQuickQuantityChange(item.id, item.name, "Entrada")
+                              }
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-primary"
+                              onClick={() => setLocation(`/estoque/${item.id}/editar`)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                              onClick={() => handleDelete(item.id, item.name)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
