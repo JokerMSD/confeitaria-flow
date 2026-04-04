@@ -83,6 +83,7 @@ export interface PublicStoreFillingOption {
   id: string;
   name: string;
   photoUrl: string | null;
+  hasProductSpecificPhoto?: boolean;
 }
 
 export interface PublicStoreProductDetail extends PublicStoreProductSummary {

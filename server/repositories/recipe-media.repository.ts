@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, isNotNull } from "drizzle-orm";
 import { recipeMedia } from "@shared/schema";
 import { getDb } from "../db";
 
@@ -6,6 +6,7 @@ type Executor = ReturnType<typeof getDb> | any;
 
 export interface RecipeMediaRowInsert {
   recipeId: string;
+  variationRecipeId: string | null;
   fileUrl: string;
   altText: string | null;
   position: number;
@@ -41,6 +42,27 @@ export class RecipeMediaRepository {
     return row;
   }
 
+  async listVariationMediaByRecipeId(
+    recipeId: string,
+    executor: Executor = getDb(),
+  ) {
+    return executor
+      .select()
+      .from(recipeMedia)
+      .where(
+        and(
+          eq(recipeMedia.recipeId, recipeId),
+          isNotNull(recipeMedia.variationRecipeId),
+          isNull(recipeMedia.deletedAt),
+        ),
+      )
+      .orderBy(
+        asc(recipeMedia.variationRecipeId),
+        asc(recipeMedia.position),
+        asc(recipeMedia.createdAt),
+      );
+  }
+
   async countByRecipeId(recipeId: string, executor: Executor = getDb()) {
     const rows = await this.listByRecipeIds([recipeId], executor);
     return rows.length;
@@ -71,6 +93,28 @@ export class RecipeMediaRepository {
         updatedAt: deletedAt,
       })
       .where(and(eq(recipeMedia.recipeId, recipeId), isNull(recipeMedia.deletedAt)))
+      .returning();
+  }
+
+  async markDeletedByRecipeAndVariation(
+    recipeId: string,
+    variationRecipeId: string,
+    deletedAt: Date,
+    executor: Executor = getDb(),
+  ) {
+    return executor
+      .update(recipeMedia)
+      .set({
+        deletedAt,
+        updatedAt: deletedAt,
+      })
+      .where(
+        and(
+          eq(recipeMedia.recipeId, recipeId),
+          eq(recipeMedia.variationRecipeId, variationRecipeId),
+          isNull(recipeMedia.deletedAt),
+        ),
+      )
       .returning();
   }
 }

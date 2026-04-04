@@ -70,7 +70,7 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       ],
       [
         "recipe_media",
-        new Set(["recipe_id", "file_url", "position"]),
+        new Set(["recipe_id", "variation_recipe_id", "file_url", "position"]),
       ],
       [
         "product_additional_groups",
@@ -174,5 +174,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0017_phase17_user_accounts.sql",
     "0020_phase20_order_fully_paid_at.sql",
     "0021_phase21_recipe_media.sql",
+    "0022_phase22_recipe_media_variation.sql",
   ]);
 });

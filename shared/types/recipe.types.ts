@@ -110,6 +110,7 @@ export interface ListRecipesFilters {
 export interface RecipeMedia {
   id: string;
   recipeId: string;
+  variationRecipeId: string | null;
   fileUrl: string;
   altText: string | null;
   position: number;
@@ -118,16 +119,25 @@ export interface RecipeMedia {
   deletedAt: string | null;
 }
 
+export interface CatalogMediaAdminVariationItem {
+  variationRecipeId: string;
+  variationName: string;
+  media: RecipeMedia[];
+  fallbackMedia: RecipeMedia | null;
+}
+
 export interface CatalogMediaAdminItem {
   recipeId: string;
   recipeName: string;
   recipeKind: RecipeKind;
   maxPhotos: number;
   media: RecipeMedia[];
+  variations: CatalogMediaAdminVariationItem[];
 }
 
 export interface UploadRecipeMediaInput {
   recipeId: string;
+  variationRecipeId?: string | null;
   fileName: string;
   mimeType: "image/jpeg" | "image/png" | "image/webp";
   contentBase64: string;

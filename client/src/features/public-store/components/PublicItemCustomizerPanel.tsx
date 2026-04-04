@@ -42,11 +42,13 @@ export function PublicItemCustomizerPanel({
   initialItem,
   submitLabel,
   onSubmit,
+  onSelectionPreviewChange,
 }: {
   product: PublicStoreProductDetail;
   initialItem?: PublicCartItem | null;
   submitLabel: string;
   onSubmit: (item: DraftItem) => void;
+  onSelectionPreviewChange?: (selectedFillingIds: string[]) => void;
 }) {
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(1);
@@ -80,6 +82,10 @@ export function PublicItemCustomizerPanel({
         .filter((value): value is NonNullable<typeof value> => Boolean(value)),
     [product.fillingOptions, selectedFillingIds],
   );
+
+  useEffect(() => {
+    onSelectionPreviewChange?.(dedupeFillings(selectedFillingIds));
+  }, [onSelectionPreviewChange, selectedFillingIds]);
 
   const selectedAdditionals = useMemo(() => {
     return product.additionalGroups.flatMap((group) => {

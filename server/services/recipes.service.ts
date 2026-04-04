@@ -600,16 +600,19 @@ export class RecipesService {
   private async listRecipeMedia(recipeId: string, executor?: Executor) {
     const rows = await this.recipeMediaRepository.listByRecipeIds([recipeId], executor);
 
-    return (rows as any[]).map((row) => ({
+    return (rows as any[])
+      .filter((row) => !row.variationRecipeId)
+      .map((row) => ({
       id: row.id,
       recipeId: row.recipeId,
+      variationRecipeId: row.variationRecipeId ?? null,
       fileUrl: row.fileUrl,
       altText: row.altText ?? null,
       position: row.position,
       createdAt: row.createdAt.toISOString(),
       updatedAt: row.updatedAt.toISOString(),
       deletedAt: toIsoString(row.deletedAt),
-    }));
+      }));
   }
 
   private async computeRecipeNode(

@@ -78,7 +78,7 @@ export class PublicStoreService {
       throw new HttpError(404, "Produto não encontrado.");
     }
 
-    const fillingOptions = await this.listFillingOptions();
+    const fillingOptions = await this.listFillingOptions(product.id);
     const maxFillings = fillingOptions.length === 0
       ? 0
       : supportsMultipleFillings(product.name)
@@ -190,17 +190,28 @@ export class PublicStoreService {
     };
   }
 
-  private async listFillingOptions(): Promise<PublicStoreFillingOption[]> {
+  private async listFillingOptions(productId: string): Promise<PublicStoreFillingOption[]> {
     const fillings = await this.recipesService.list({ kind: "Preparacao" });
-    const mediaByRecipeId = await this.recipeMediaService.listByRecipeIds(
+    const globalMediaByRecipeId = await this.recipeMediaService.listByRecipeIds(
       fillings.map((filling) => filling.id),
+    );
+    const productMediaByRecipeId = await this.recipeMediaService.listByRecipeIds([productId]);
+    const productVariationMedia = new Map(
+      (productMediaByRecipeId.get(productId) ?? [])
+        .filter((media) => media.variationRecipeId)
+        .map((media) => [media.variationRecipeId as string, media]),
     );
 
     return fillings
       .map((filling) => ({
         id: filling.id,
         name: filling.name,
-        photoUrl: mediaByRecipeId.get(filling.id)?.[0]?.fileUrl ?? null,
+        photoUrl:
+          productVariationMedia.get(filling.id)?.fileUrl ??
+          globalMediaByRecipeId.get(filling.id)?.find((media) => !media.variationRecipeId)
+            ?.fileUrl ??
+          null,
+        hasProductSpecificPhoto: productVariationMedia.has(filling.id),
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
   }

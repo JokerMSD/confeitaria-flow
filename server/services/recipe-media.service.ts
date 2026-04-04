@@ -1,5 +1,6 @@
 import type {
   CatalogMediaAdminItem,
+  CatalogMediaAdminVariationItem,
   RecipeMedia,
   UploadRecipeMediaInput,
 } from "@shared/types";
@@ -19,9 +20,16 @@ export class RecipeMediaService {
 
   async listAdminItems(): Promise<CatalogMediaAdminItem[]> {
     const recipes = await this.recipesRepository.list();
-    const mediaRows = await this.recipeMediaRepository.listByRecipeIds(
-      recipes.map((recipe: any) => recipe.id),
+    const productRecipes = (recipes as any[]).filter(
+      (recipe) => recipe.kind === "ProdutoVenda",
     );
+    const fillingRecipes = (recipes as any[])
+      .filter((recipe) => recipe.kind === "Preparacao")
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const mediaRows = await this.recipeMediaRepository.listByRecipeIds([
+      ...productRecipes.map((recipe) => recipe.id),
+      ...fillingRecipes.map((recipe) => recipe.id),
+    ]);
     const mediaByRecipeId = new Map<string, RecipeMedia[]>();
 
     for (const row of mediaRows as any[]) {
@@ -30,15 +38,40 @@ export class RecipeMediaService {
       mediaByRecipeId.set(row.recipeId, current);
     }
 
-    return (recipes as any[])
-      .filter((recipe) => recipe.kind === "ProdutoVenda" || recipe.kind === "Preparacao")
-      .map((recipe) => ({
+    return productRecipes.map((recipe) => {
+      const recipeMedia = mediaByRecipeId.get(recipe.id) ?? [];
+      const galleryMedia = recipeMedia.filter((media) => !media.variationRecipeId);
+      const variationMediaById = new Map<string, RecipeMedia[]>();
+
+      for (const media of recipeMedia) {
+        if (!media.variationRecipeId) {
+          continue;
+        }
+
+        const current = variationMediaById.get(media.variationRecipeId) ?? [];
+        current.push(media);
+        variationMediaById.set(media.variationRecipeId, current);
+      }
+
+      const variations: CatalogMediaAdminVariationItem[] = fillingRecipes.map((filling) => ({
+        variationRecipeId: filling.id,
+        variationName: filling.name,
+        media: variationMediaById.get(filling.id) ?? [],
+        fallbackMedia:
+          (mediaByRecipeId.get(filling.id) ?? []).find(
+            (media) => !media.variationRecipeId,
+          ) ?? null,
+      }));
+
+      return {
         recipeId: recipe.id,
         recipeName: recipe.name,
         recipeKind: recipe.kind,
-        maxPhotos: recipe.kind === "Preparacao" ? 1 : 12,
-        media: mediaByRecipeId.get(recipe.id) ?? [],
-      }));
+        maxPhotos: 12,
+        media: galleryMedia,
+        variations,
+      };
+    });
   }
 
   async listByRecipeIds(recipeIds: string[]) {
@@ -62,19 +95,56 @@ export class RecipeMediaService {
         throw new HttpError(404, "Recipe not found.");
       }
 
+      const variationRecipe = input.variationRecipeId
+        ? await this.recipesRepository.findById(input.variationRecipeId, tx)
+        : null;
+
+      if (input.variationRecipeId && !variationRecipe) {
+        throw new HttpError(404, "Variation recipe not found.");
+      }
+
+      if (input.variationRecipeId) {
+        if (recipe.kind !== "ProdutoVenda") {
+          throw new HttpError(
+            400,
+            "Fotos por variacao so podem ser vinculadas a ProdutoVenda.",
+          );
+        }
+
+        if (variationRecipe?.kind !== "Preparacao") {
+          throw new HttpError(
+            400,
+            "A variacao selecionada precisa ser uma receita do tipo Preparacao.",
+          );
+        }
+      }
+
       const existingMedia = await this.recipeMediaRepository.listByRecipeIds(
         [input.recipeId],
         tx,
       );
 
-      if (recipe.kind === "Preparacao" && existingMedia.length > 0) {
+      if (input.variationRecipeId) {
+        const currentVariationMedia = existingMedia.filter(
+          (media: any) => media.variationRecipeId === input.variationRecipeId,
+        );
+
+        for (const media of currentVariationMedia as any[]) {
+          await removeCatalogMedia(media.fileUrl);
+          await this.recipeMediaRepository.markDeleted(media.id, new Date(), tx);
+        }
+      } else if (recipe.kind === "Preparacao" && existingMedia.length > 0) {
         for (const media of existingMedia as any[]) {
           await removeCatalogMedia(media.fileUrl);
           await this.recipeMediaRepository.markDeleted(media.id, new Date(), tx);
         }
       }
 
-      if (recipe.kind === "ProdutoVenda" && existingMedia.length >= 12) {
+      const defaultMediaCount = existingMedia.filter(
+        (media: any) => !media.variationRecipeId,
+      ).length;
+
+      if (!input.variationRecipeId && recipe.kind === "ProdutoVenda" && defaultMediaCount >= 12) {
         throw new HttpError(400, "Cada produto suporta no maximo 12 fotos.");
       }
 
@@ -87,9 +157,13 @@ export class RecipeMediaService {
       const created = await this.recipeMediaRepository.create(
         {
           recipeId: input.recipeId,
+          variationRecipeId: input.variationRecipeId ?? null,
           fileUrl,
           altText: input.altText?.trim() || null,
-          position: recipe.kind === "Preparacao" ? 0 : existingMedia.length,
+          position:
+            input.variationRecipeId || recipe.kind === "Preparacao"
+              ? 0
+              : defaultMediaCount,
         },
         tx,
       );
@@ -128,6 +202,7 @@ export class RecipeMediaService {
     return {
       id: row.id,
       recipeId: row.recipeId,
+      variationRecipeId: row.variationRecipeId ?? null,
       fileUrl: row.fileUrl,
       altText: row.altText ?? null,
       position: row.position,

@@ -61,7 +61,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "purchase_equivalent_quantity",
       "purchase_equivalent_unit",
     ],
-    recipe_media: ["recipe_id", "file_url", "position"],
+    recipe_media: ["recipe_id", "variation_recipe_id", "file_url", "position"],
     product_additional_groups: [
       "product_recipe_id",
       "selection_type",
@@ -108,6 +108,7 @@ const migrationHints: Record<string, string> = {
     "0013_phase13_inventory_purchase_discount.sql",
   recipe_media: "0021_phase21_recipe_media.sql",
   "recipe_media.recipe_id": "0021_phase21_recipe_media.sql",
+  "recipe_media.variation_recipe_id": "0022_phase22_recipe_media_variation.sql",
   "recipe_media.file_url": "0021_phase21_recipe_media.sql",
   "recipe_media.position": "0021_phase21_recipe_media.sql",
   product_additional_groups: "0015_phase15_product_additionals.sql",

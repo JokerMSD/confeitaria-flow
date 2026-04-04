@@ -84,6 +84,7 @@ export const recipeIdParamsSchema = z.object({
 
 export const uploadRecipeMediaInputSchema = z.object({
   recipeId: uuidSchema,
+  variationRecipeId: uuidSchema.nullable().optional(),
   fileName: z.string().trim().min(1).max(180),
   mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
   contentBase64: z.string().trim().min(1).max(6_000_000),

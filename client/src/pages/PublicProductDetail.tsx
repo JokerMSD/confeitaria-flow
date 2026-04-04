@@ -1,4 +1,5 @@
 import { Link, useLocation, useRoute } from "wouter";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -25,6 +26,30 @@ export default function PublicProductDetail() {
   const cart = usePublicCart();
   const productQuery = usePublicProduct(params?.id ?? "");
   const product = productQuery.data?.data;
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<string | null>(null);
+  const [previewFillingIds, setPreviewFillingIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedGalleryImage(product?.imageUrls[0] ?? null);
+    setPreviewFillingIds([]);
+  }, [product?.id, product?.imageUrls]);
+
+  const activeFillingPhotoUrl = useMemo(() => {
+    if (!product) {
+      return null;
+    }
+
+    for (const fillingId of previewFillingIds) {
+      const filling = product.fillingOptions.find((option) => option.id === fillingId);
+      if (filling?.photoUrl) {
+        return filling.photoUrl;
+      }
+    }
+
+    return null;
+  }, [previewFillingIds, product]);
+
+  const heroImageUrl = activeFillingPhotoUrl ?? selectedGalleryImage ?? product?.imageUrls[0] ?? null;
 
   return (
     <PublicStoreLayout
@@ -92,9 +117,9 @@ export default function PublicProductDetail() {
               <Card className="brand-shell overflow-hidden">
                 <CardContent className="space-y-4 p-6">
                   <div className="aspect-[4/3] overflow-hidden rounded-[1.6rem] border border-border/70 bg-muted/20">
-                    {product.imageUrls[0] ? (
+                    {heroImageUrl ? (
                       <img
-                        src={resolveMediaUrl(product.imageUrls[0])}
+                        src={resolveMediaUrl(heroImageUrl)}
                         alt={product.name}
                         className="h-full w-full object-cover"
                       />
@@ -128,6 +153,11 @@ export default function PublicProductDetail() {
                       <p className="mt-2 font-semibold text-foreground">
                         {product.fillingOptions.length} opcoes disponiveis
                       </p>
+                      {activeFillingPhotoUrl ? (
+                        <p className="mt-1 text-xs text-primary">
+                          A foto principal acompanha o sabor selecionado.
+                        </p>
+                      ) : null}
                     </div>
                     <div className="rounded-[1.4rem] border border-border/70 bg-background/55 p-4">
                       <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
@@ -151,20 +181,31 @@ export default function PublicProductDetail() {
           <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
             <Card className="brand-shell overflow-hidden">
               <CardContent className="space-y-5 p-6">
-                {product.imageUrls.length > 1 ? (
+                {product.imageUrls.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3">
-                    {product.imageUrls.slice(1, 5).map((imageUrl) => (
-                      <div
+                    {product.imageUrls.slice(0, 4).map((imageUrl) => (
+                      <button
+                        type="button"
                         key={imageUrl}
-                        className="aspect-[4/3] overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/20"
+                        onClick={() => setSelectedGalleryImage(imageUrl)}
+                        className={
+                          imageUrl === selectedGalleryImage && !activeFillingPhotoUrl
+                            ? "aspect-[4/3] overflow-hidden rounded-[1.25rem] border-2 border-primary bg-muted/20"
+                            : "aspect-[4/3] overflow-hidden rounded-[1.25rem] border border-border/70 bg-muted/20"
+                        }
                       >
                         <img
                           src={resolveMediaUrl(imageUrl)}
                           alt={product.name}
                           className="h-full w-full object-cover"
                         />
-                      </div>
+                      </button>
                     ))}
+                  </div>
+                ) : null}
+                {activeFillingPhotoUrl ? (
+                  <div className="rounded-[1.25rem] border border-primary/30 bg-primary/8 px-4 py-3 text-sm text-primary">
+                    Mostrando a foto do sabor selecionado. Sem sabor selecionado, a galeria do produto volta a ser a principal.
                   </div>
                 ) : null}
                 <div className="flex items-center gap-2 text-primary">
@@ -176,6 +217,7 @@ export default function PublicProductDetail() {
 
                 <PublicItemCustomizerPanel
                   product={product}
+                  onSelectionPreviewChange={setPreviewFillingIds}
                   submitLabel="Adicionar ao carrinho"
                   onSubmit={(draft) => {
                     cart.addItem(draft);
