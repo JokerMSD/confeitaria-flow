@@ -20,6 +20,11 @@ import type {
 
 type Executor = ReturnType<typeof getDb> | any;
 
+function toSafeNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export interface OrderRowInsert {
   orderNumber: string;
   customerId?: string | null;
@@ -226,13 +231,11 @@ export class OrdersRepository {
       .from(orders)
       .where(and(...conditions));
 
-    return (
-      summary ?? {
-        soldAmountCents: 0,
-        receivedAmountCents: 0,
-        receivableAmountCents: 0,
-      }
-    );
+    return {
+      soldAmountCents: toSafeNumber(summary?.soldAmountCents),
+      receivedAmountCents: toSafeNumber(summary?.receivedAmountCents),
+      receivableAmountCents: toSafeNumber(summary?.receivableAmountCents),
+    };
   }
 
   async create(data: OrderRowInsert, executor: Executor = getDb()) {

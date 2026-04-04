@@ -6,6 +6,11 @@ import type { ListCustomersFilters } from "@shared/types";
 
 type Executor = ReturnType<typeof getDb> | any;
 
+function toSafeNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 export class CustomersRepository {
   async list(filters: ListCustomersFilters = {}, executor: Executor = getDb()) {
     const conditions = [isNull(customers.deletedAt)];
@@ -103,14 +108,12 @@ export class CustomersRepository {
       .from(orders)
       .where(eq(orders.customerId, id));
 
-    return (
-      stats ?? {
-        totalSpentCents: 0,
-        lastOrderDate: null,
-        orderCount: 0,
-        openOrderCount: 0,
-      }
-    );
+    return {
+      totalSpentCents: toSafeNumber(stats?.totalSpentCents),
+      lastOrderDate: stats?.lastOrderDate ?? null,
+      orderCount: toSafeNumber(stats?.orderCount),
+      openOrderCount: toSafeNumber(stats?.openOrderCount),
+    };
   }
 
   async listOrders(id: string, executor: Executor = getDb()) {
