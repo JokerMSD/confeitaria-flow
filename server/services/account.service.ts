@@ -3,11 +3,16 @@ import type {
   AuthUser,
   ChangeAccountPasswordInput,
   UpdateAccountProfileInput,
+  UploadAccountPhotoInput,
 } from "@shared/types";
 import { HttpError } from "../utils/http-error";
 import { UsersRepository } from "../repositories/users.repository";
 import { CustomersRepository } from "../repositories/customers.repository";
 import { hashPassword, verifyPassword } from "../utils/password";
+import {
+  removeAccountPhoto,
+  saveAccountPhoto,
+} from "../utils/account-photo-storage";
 
 function splitFullName(fullName: string) {
   const parts = fullName.trim().split(/\s+/).filter(Boolean);
@@ -80,6 +85,7 @@ export class AccountService {
     const user = await this.requirePersistedUser(authUser);
     const nextEmail = input.email.trim().toLowerCase();
     const nextFullName = input.fullName.trim();
+    const nextPhotoUrl = input.photoUrl?.trim() || null;
 
     if (nextEmail !== user.email) {
       const existingEmail = await this.usersRepository.findByEmail(nextEmail);
@@ -99,8 +105,12 @@ export class AccountService {
       fullName: nextFullName,
       email: nextEmail,
       customerId,
-      photoUrl: input.photoUrl?.trim() || null,
+      photoUrl: nextPhotoUrl,
     } as any);
+
+    if (!nextPhotoUrl && user.photoUrl) {
+      await removeAccountPhoto(user.photoUrl);
+    }
 
     return this.getProfile({
       id: user.id,
@@ -108,7 +118,7 @@ export class AccountService {
       name: nextFullName,
       role: user.role,
       customerId,
-      photoUrl: input.photoUrl?.trim() || null,
+      photoUrl: nextPhotoUrl,
     });
   }
 
@@ -128,6 +138,31 @@ export class AccountService {
     return {
       ok: true as const,
     };
+  }
+
+  async uploadPhoto(authUser: AuthUser, input: UploadAccountPhotoInput) {
+    const user = await this.requirePersistedUser(authUser);
+
+    let photoUrl: string;
+    try {
+      photoUrl = await saveAccountPhoto({
+        userId: user.id,
+        mimeType: input.mimeType,
+        contentBase64: input.contentBase64,
+        previousPhotoUrl: user.photoUrl ?? null,
+      });
+    } catch (error) {
+      throw new HttpError(
+        400,
+        error instanceof Error ? error.message : "Nao foi possivel salvar a foto.",
+      );
+    }
+
+    await this.usersRepository.update(user.id, {
+      photoUrl,
+    });
+
+    return { photoUrl };
   }
 
   private async requirePersistedUser(authUser: AuthUser) {

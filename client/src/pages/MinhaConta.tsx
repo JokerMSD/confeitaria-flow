@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { Link } from "wouter";
-import { Loader2, LockKeyhole, Save, ShoppingBag, UserCircle2 } from "lucide-react";
+import { ImagePlus, Loader2, LockKeyhole, Save, ShoppingBag, Trash2, UserCircle2 } from "lucide-react";
 import { PublicStoreLayout } from "@/components/public/PublicStoreLayout";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,10 +13,12 @@ import {
   useAccountOrders,
   useAccountProfile,
   useChangeAccountPassword,
+  useUploadAccountPhoto,
   useUpdateAccountProfile,
 } from "@/features/account/hooks/use-account";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { resolveMediaUrl } from "@/lib/resolve-media-url";
 
 function isStaffRole(role?: string) {
   return role === "admin" || role === "operador";
@@ -29,12 +31,16 @@ export default function MinhaConta() {
   const ordersQuery = useAccountOrders();
   const updateProfileMutation = useUpdateAccountProfile();
   const changePasswordMutation = useChangeAccountPassword();
+  const uploadAccountPhotoMutation = useUploadAccountPhoto();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [profileForm, setProfileForm] = useState({
     fullName: "",
     email: "",
     phone: "",
     photoUrl: "",
   });
+  const [selectedPhotoFile, setSelectedPhotoFile] = useState<File | null>(null);
+  const [selectedPhotoPreview, setSelectedPhotoPreview] = useState<string | null>(null);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
@@ -54,6 +60,20 @@ export default function MinhaConta() {
     });
   }, [profileQuery.data]);
 
+  useEffect(() => {
+    if (!selectedPhotoFile) {
+      setSelectedPhotoPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(selectedPhotoFile);
+    setSelectedPhotoPreview(previewUrl);
+
+    return () => {
+      URL.revokeObjectURL(previewUrl);
+    };
+  }, [selectedPhotoFile]);
+
   const session = authSessionQuery.data?.data ?? null;
   const profile = profileQuery.data?.data;
   const orders = useMemo(() => ordersQuery.data?.data ?? [], [ordersQuery.data]);
@@ -63,16 +83,103 @@ export default function MinhaConta() {
     ? "Atualize seus dados de acesso, foto e senha sem sair do painel administrativo."
     : "Atualize seus dados, altere a senha e acompanhe seus pedidos feitos pela loja.";
 
+  const isSavingProfile =
+    updateProfileMutation.isPending || uploadAccountPhotoMutation.isPending;
+  const resolvedPhotoUrl = resolveMediaUrl(selectedPhotoPreview ?? profileForm.photoUrl);
+
+  function fileToBase64(file: File) {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = typeof reader.result === "string" ? reader.result : "";
+        const [, contentBase64 = ""] = result.split(",");
+        resolve(contentBase64);
+      };
+      reader.onerror = () => {
+        reject(new Error("Nao foi possivel ler a imagem selecionada."));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const handleSelectPhoto = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast({
+        title: "Formato invalido",
+        description: "Envie uma imagem JPG, PNG ou WEBP.",
+        variant: "destructive",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "A foto deve ter no maximo 2 MB.",
+        variant: "destructive",
+      });
+      event.target.value = "";
+      return;
+    }
+
+    setSelectedPhotoFile(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setSelectedPhotoFile(null);
+    setSelectedPhotoPreview(null);
+    setProfileForm((current) => ({
+      ...current,
+      photoUrl: "",
+    }));
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
   const handleSaveProfile = async () => {
     try {
+      let nextPhotoUrl = profileForm.photoUrl || null;
+
+      if (selectedPhotoFile) {
+        const contentBase64 = await fileToBase64(selectedPhotoFile);
+        const uploadResponse = await uploadAccountPhotoMutation.mutateAsync({
+          data: {
+            fileName: selectedPhotoFile.name,
+            mimeType: selectedPhotoFile.type as "image/jpeg" | "image/png" | "image/webp",
+            contentBase64,
+          },
+        });
+        nextPhotoUrl = uploadResponse.data.photoUrl;
+      }
+
       await updateProfileMutation.mutateAsync({
         data: {
           fullName: profileForm.fullName,
           email: profileForm.email,
           phone: profileForm.phone || null,
-          photoUrl: profileForm.photoUrl || null,
+          photoUrl: nextPhotoUrl,
         },
       });
+
+      setSelectedPhotoFile(null);
+      setSelectedPhotoPreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setProfileForm((current) => ({
+        ...current,
+        photoUrl: nextPhotoUrl ?? "",
+      }));
 
       toast({
         title: "Perfil atualizado",
@@ -146,7 +253,7 @@ export default function MinhaConta() {
           <CardContent className="space-y-5 p-6">
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20 border border-border">
-                <AvatarImage src={profileForm.photoUrl || undefined} />
+                <AvatarImage src={resolvedPhotoUrl} />
                 <AvatarFallback>
                   {(profile?.fullName?.slice(0, 2) ?? "DC").toUpperCase()}
                 </AvatarFallback>
@@ -250,25 +357,47 @@ export default function MinhaConta() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Foto (URL)</Label>
-              <Input
-                className="rounded-2xl"
-                value={profileForm.photoUrl}
-                onChange={(event) =>
-                  setProfileForm((current) => ({
-                    ...current,
-                    photoUrl: event.target.value,
-                  }))
-                }
-                placeholder="https://..."
-              />
+              <Label>Foto de perfil</Label>
+              <div className="space-y-3 rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
+                <Input
+                  ref={fileInputRef}
+                  className="rounded-2xl"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleSelectPhoto}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Envie JPG, PNG ou WEBP com ate 2 MB.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImagePlus className="mr-2 h-4 w-4" />
+                    Escolher foto
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="rounded-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={handleRemovePhoto}
+                    disabled={!profileForm.photoUrl && !selectedPhotoFile}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Remover foto
+                  </Button>
+                </div>
+              </div>
             </div>
             <Button
               onClick={handleSaveProfile}
-              disabled={updateProfileMutation.isPending}
+              disabled={isSavingProfile}
               className="brand-button w-full rounded-full"
             >
-              {updateProfileMutation.isPending ? (
+              {isSavingProfile ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
                 <Save className="mr-2 h-4 w-4" />

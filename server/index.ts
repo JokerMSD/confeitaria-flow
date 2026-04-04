@@ -1,4 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { mkdirSync } from "fs";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
@@ -32,6 +34,7 @@ declare module "http" {
 
 app.use(
   express.json({
+    limit: "5mb",
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
@@ -39,6 +42,9 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+const uploadsPath = path.resolve(process.cwd(), "uploads");
+mkdirSync(uploadsPath, { recursive: true });
+app.use("/uploads", express.static(uploadsPath));
 app.set("trust proxy", 1);
 app.use(corsMiddleware);
 app.use(createSessionMiddleware());

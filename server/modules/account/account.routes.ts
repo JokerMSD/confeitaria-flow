@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { z } from "zod";
 import {
   changeAccountPasswordInputSchema,
+  uploadAccountPhotoInputSchema,
   updateAccountProfileInputSchema,
 } from "@shared/validators";
 import { validateRequest } from "../../middlewares/validate-request";
@@ -21,5 +22,10 @@ export function registerAccountRoutes(app: Express) {
     "/api/account/password",
     validateRequest(z.object({ data: changeAccountPasswordInputSchema }), "body"),
     controller.changePassword.bind(controller),
+  );
+  app.post(
+    "/api/account/photo",
+    validateRequest(z.object({ data: uploadAccountPhotoInputSchema }), "body"),
+    controller.uploadPhoto.bind(controller),
   );
 }

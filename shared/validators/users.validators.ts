@@ -2,6 +2,14 @@ import { z } from "zod";
 import type { UserRole } from "@shared/types";
 
 const userRoleSchema = z.enum(["admin", "operador", "user"] as const);
+const photoUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(
+    (value) => /^https?:\/\//i.test(value) || value.startsWith("/uploads/"),
+    "Informe uma URL valida ou um caminho interno de upload.",
+  );
 
 export const createUserInputSchema = z.object({
   username: z.string().trim().min(3).max(80),
@@ -10,7 +18,7 @@ export const createUserInputSchema = z.object({
   password: z.string().min(8).max(128),
   role: userRoleSchema,
   customerId: z.string().uuid().nullable().optional(),
-  photoUrl: z.string().trim().url().nullable().optional(),
+  photoUrl: photoUrlSchema.nullable().optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -21,7 +29,7 @@ export const updateUserInputSchema = z.object({
   password: z.string().min(8).max(128).optional(),
   role: userRoleSchema.optional(),
   customerId: z.string().uuid().nullable().optional(),
-  photoUrl: z.string().trim().url().nullable().optional(),
+  photoUrl: photoUrlSchema.nullable().optional(),
   isActive: z.boolean().optional(),
 });
 

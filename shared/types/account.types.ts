@@ -21,6 +21,12 @@ export interface UpdateAccountProfileInput {
   photoUrl?: string | null;
 }
 
+export interface UploadAccountPhotoInput {
+  fileName: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  contentBase64: string;
+}
+
 export interface ChangeAccountPasswordInput {
   currentPassword: string;
   newPassword: string;
@@ -36,6 +42,16 @@ export interface UpdateAccountProfileRequest {
 
 export interface ChangeAccountPasswordRequest {
   data: ChangeAccountPasswordInput;
+}
+
+export interface UploadAccountPhotoRequest {
+  data: UploadAccountPhotoInput;
+}
+
+export interface UploadAccountPhotoResponse {
+  data: {
+    photoUrl: string;
+  };
 }
 
 export interface AccountOrdersResponse {

@@ -36,6 +36,25 @@ export class AccountController {
     res.json({ data });
   }
 
+  async uploadPhoto(req: Request, res: Response) {
+    const currentUser = req.session.user!;
+    const data = await this.accountService.uploadPhoto(
+      currentUser,
+      req.body.data,
+    );
+
+    req.session.user = {
+      id: currentUser.id,
+      email: currentUser.email,
+      name: currentUser.name,
+      role: currentUser.role,
+      customerId: currentUser.customerId ?? null,
+      photoUrl: data.photoUrl,
+    };
+
+    res.json({ data });
+  }
+
   async orders(req: Request, res: Response) {
     const data = await this.accountService.listOrders(req.session.user!);
     res.json({ data });

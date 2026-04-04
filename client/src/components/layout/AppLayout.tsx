@@ -19,6 +19,7 @@ import { authQueryKeys } from "@/features/auth/lib/auth-query-keys";
 import { queryClient } from "@/lib/queryClient";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { resolveMediaUrl } from "@/lib/resolve-media-url";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
@@ -106,7 +107,7 @@ export function Sidebar() {
       <div className="mt-auto border-t border-sidebar-border p-4">
         <div className="mb-4 flex items-center gap-3 px-2">
           <Avatar className="h-9 w-9 border border-border">
-            <AvatarImage src={user?.photoUrl ?? undefined} />
+            <AvatarImage src={resolveMediaUrl(user?.photoUrl)} />
             <AvatarFallback>
               {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
             </AvatarFallback>
@@ -216,7 +217,7 @@ export function MobileHeader({ title }: { title: string }) {
         <div className="flex items-center gap-2">
           <ThemeToggle compact className="rounded-full border-border bg-card px-3" />
           <Avatar className="h-8 w-8 border border-border">
-            <AvatarImage src={user?.photoUrl ?? undefined} />
+            <AvatarImage src={resolveMediaUrl(user?.photoUrl)} />
             <AvatarFallback>
               {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
             </AvatarFallback>

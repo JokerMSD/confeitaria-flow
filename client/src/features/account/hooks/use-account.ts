@@ -3,6 +3,7 @@ import {
   changeAccountPassword,
   getAccountOrders,
   getAccountProfile,
+  uploadAccountPhoto,
   updateAccountProfile,
 } from "@/api/account-api";
 import { queryClient } from "@/lib/queryClient";
@@ -41,5 +42,17 @@ export function useUpdateAccountProfile() {
 export function useChangeAccountPassword() {
   return useMutation({
     mutationFn: changeAccountPassword,
+  });
+}
+
+export function useUploadAccountPhoto() {
+  return useMutation({
+    mutationFn: uploadAccountPhoto,
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: accountQueryKeys.profile() }),
+        queryClient.invalidateQueries({ queryKey: authQueryKeys.session() }),
+      ]);
+    },
   });
 }

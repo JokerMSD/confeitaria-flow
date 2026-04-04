@@ -3,6 +3,8 @@ import type {
   AccountProfileResponse,
   ChangeAccountPasswordRequest,
   UpdateAccountProfileRequest,
+  UploadAccountPhotoRequest,
+  UploadAccountPhotoResponse,
 } from "@shared/types";
 import { httpClient } from "./http-client";
 
@@ -24,6 +26,13 @@ export function updateAccountProfile(payload: UpdateAccountProfileRequest) {
 export function changeAccountPassword(payload: ChangeAccountPasswordRequest) {
   return httpClient<{ data: { ok: true } }>("/api/account/password", {
     method: "PUT",
+    body: payload,
+  });
+}
+
+export function uploadAccountPhoto(payload: UploadAccountPhotoRequest) {
+  return httpClient<UploadAccountPhotoResponse>("/api/account/photo", {
+    method: "POST",
     body: payload,
   });
 }
