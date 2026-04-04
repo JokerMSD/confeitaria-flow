@@ -51,11 +51,17 @@ function StatCard({
 }) {
   return (
     <Card className="rounded-[1.7rem] border-border/70 bg-card/80 p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-3 font-display text-4xl font-bold text-foreground">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{detail}</p>
+      <div className="flex min-h-[112px] items-start justify-between gap-4">
+        <div className="min-w-0 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            {label}
+          </p>
+          <p className="text-sm leading-6 text-muted-foreground">{detail}</p>
+        </div>
+        <p className="shrink-0 text-right font-display text-4xl font-bold text-foreground">
+          {value}
+        </p>
+      </div>
     </Card>
   );
 }
@@ -272,7 +278,7 @@ export default function Cliente() {
           </div>
         ) : (
           <div className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <StatCard
                 label="Total gasto"
                 value={formatCurrency(customer.totalSpentCents / 100)}

@@ -31,11 +31,17 @@ function StatCard({
 }) {
   return (
     <Card className="rounded-[1.8rem] border-border/70 bg-card/80 p-5 shadow-sm">
-      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-        {label}
-      </p>
-      <p className="mt-3 font-display text-4xl font-bold text-foreground">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{detail}</p>
+      <div className="flex min-h-[112px] items-start justify-between gap-4">
+        <div className="min-w-0 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            {label}
+          </p>
+          <p className="text-sm leading-6 text-muted-foreground">{detail}</p>
+        </div>
+        <p className="shrink-0 text-right font-display text-4xl font-bold text-foreground">
+          {value}
+        </p>
+      </div>
     </Card>
   );
 }
@@ -194,7 +200,7 @@ export default function Clientes() {
                     className="rounded-[1.6rem] border border-border/70 bg-background/55 p-5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
                   >
                     <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                      <div className="min-w-0 space-y-4">
+                      <div className="min-w-0 flex-1 space-y-4">
                         <div className="flex flex-wrap items-center gap-3">
                           <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                             <UserRound className="h-5 w-5" />
@@ -256,7 +262,7 @@ export default function Clientes() {
                         </div>
                       </div>
 
-                      <div className="grid min-w-full gap-3 sm:grid-cols-3 xl:min-w-[360px]">
+                      <div className="grid min-w-full gap-3 sm:grid-cols-3 xl:min-w-[430px]">
                         <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
                           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                             Total gasto
