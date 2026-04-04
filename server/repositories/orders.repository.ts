@@ -45,6 +45,7 @@ export interface OrderRowInsert {
   subtotalAmountCents: number;
   paidAmountCents: number;
   remainingAmountCents: number;
+  fullyPaidAt: Date | null;
   itemCount: number;
 }
 
@@ -209,6 +210,7 @@ export class OrdersRepository {
         paymentMethod: orders.paymentMethod,
         orderDate: orders.orderDate,
         paidAmountCents: orders.paidAmountCents,
+        fullyPaidAt: orders.fullyPaidAt,
       })
       .from(orders)
       .where(isNull(orders.deletedAt))

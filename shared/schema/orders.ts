@@ -37,6 +37,10 @@ export const orders = pgTable(
     remainingAmountCents: integer("remaining_amount_cents")
       .notNull()
       .default(0),
+    fullyPaidAt: timestamp("fully_paid_at", {
+      withTimezone: true,
+      mode: "date",
+    }),
     itemCount: integer("item_count").notNull().default(0),
     orderSequence: bigserial("order_sequence", { mode: "number" }).notNull(),
     createdAt: timestamp("created_at", {

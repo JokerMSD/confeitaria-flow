@@ -68,6 +68,7 @@ export class CashTransactionsService {
             paymentMethod: order.paymentMethod,
             orderDate: order.orderDate,
             paidAmountCents: order.paidAmountCents,
+            fullyPaidAt: order.fullyPaidAt ?? null,
           },
           tx,
         );
@@ -156,6 +157,7 @@ export class CashTransactionsService {
       paymentMethod: PaymentMethod;
       orderDate: string;
       paidAmountCents: number;
+      fullyPaidAt?: Date | null;
       receivedAt?: Date | null;
     },
     executor: any,
@@ -166,7 +168,7 @@ export class CashTransactionsService {
       executor,
     );
 
-    if (order.paidAmountCents <= 0) {
+    if (order.paidAmountCents <= 0 || !order.fullyPaidAt) {
       if (existing) {
         await this.cashTransactionsRepository.markDeletedBySource(
           "PedidoRecebimento",
@@ -186,6 +188,7 @@ export class CashTransactionsService {
       amountCents: order.paidAmountCents,
       paymentMethod: order.paymentMethod,
       transactionDate:
+        order.fullyPaidAt ??
         order.receivedAt ??
         existing?.transactionDate ??
         new Date(`${order.orderDate}T12:00:00.000Z`),

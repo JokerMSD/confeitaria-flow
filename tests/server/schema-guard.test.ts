@@ -32,6 +32,7 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "delivery_district",
           "delivery_fee_cents",
           "customer_id",
+          "fully_paid_at",
         ]),
       ],
       [
@@ -165,5 +166,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0015_phase15_product_additionals.sql",
     "0016_phase16_customers_and_users.sql",
     "0017_phase17_user_accounts.sql",
+    "0020_phase20_order_fully_paid_at.sql",
   ]);
 });

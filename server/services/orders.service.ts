@@ -54,6 +54,19 @@ function calculatePaymentStatus(
   return "Parcial";
 }
 
+function calculateFullyPaidAt(
+  subtotalAmountCents: number,
+  paidAmountCents: number,
+  previousFullyPaidAt?: Date | null,
+  changedAt?: Date,
+) {
+  if (paidAmountCents >= subtotalAmountCents && subtotalAmountCents > 0) {
+    return previousFullyPaidAt ?? changedAt ?? new Date();
+  }
+
+  return null;
+}
+
 export class OrdersService {
   private readonly ordersRepository = new OrdersRepository();
   private readonly orderItemsRepository = new OrderItemsRepository();
@@ -170,6 +183,13 @@ export class OrdersService {
       const sequence = await this.ordersRepository.nextOrderSequence(tx);
       const now = new Date();
 
+      const fullyPaidAt = calculateFullyPaidAt(
+        normalized.subtotalAmountCents,
+        normalized.paidAmountCents,
+        null,
+        now,
+      );
+
       const createdOrder = await this.ordersRepository.create(
         {
           orderNumber: formatOrderNumber(sequence),
@@ -191,6 +211,7 @@ export class OrdersService {
           subtotalAmountCents: normalized.subtotalAmountCents,
           paidAmountCents: normalized.paidAmountCents,
           remainingAmountCents: normalized.remainingAmountCents,
+          fullyPaidAt,
           itemCount: normalized.itemCount,
         },
         tx,
@@ -237,7 +258,8 @@ export class OrdersService {
           paymentMethod: createdOrder.paymentMethod,
           orderDate: createdOrder.orderDate,
           paidAmountCents: createdOrder.paidAmountCents,
-          receivedAt: createdOrder.paidAmountCents > 0 ? now : null,
+          fullyPaidAt: createdOrder.fullyPaidAt ?? null,
+          receivedAt: null,
         },
         tx,
       );
@@ -309,6 +331,13 @@ export class OrdersService {
         tx,
       );
 
+      const fullyPaidAt = calculateFullyPaidAt(
+        normalized.subtotalAmountCents,
+        normalized.paidAmountCents,
+        existing.fullyPaidAt ?? null,
+        now,
+      );
+
       const updatedOrder = await this.ordersRepository.update(
         id,
         {
@@ -331,6 +360,7 @@ export class OrdersService {
           subtotalAmountCents: normalized.subtotalAmountCents,
           paidAmountCents: normalized.paidAmountCents,
           remainingAmountCents: normalized.remainingAmountCents,
+          fullyPaidAt,
           itemCount: normalized.itemCount,
           updatedAt: now,
         },
@@ -392,8 +422,9 @@ export class OrdersService {
           paymentMethod: updatedOrder.paymentMethod,
           orderDate: updatedOrder.orderDate,
           paidAmountCents: updatedOrder.paidAmountCents,
+          fullyPaidAt: updatedOrder.fullyPaidAt ?? null,
           receivedAt:
-            updatedOrder.paidAmountCents !== existing.paidAmountCents ||
+            fullyPaidAt?.toISOString() !== existing.fullyPaidAt?.toISOString() ||
             updatedOrder.paymentMethod !== existing.paymentMethod
               ? now
               : null,
@@ -611,6 +642,7 @@ export class OrdersService {
           paymentMethod: deleted.paymentMethod,
           orderDate: deleted.orderDate,
           paidAmountCents: 0,
+          fullyPaidAt: null,
         },
         tx,
       );

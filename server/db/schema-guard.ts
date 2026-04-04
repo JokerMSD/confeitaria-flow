@@ -38,6 +38,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "delivery_district",
       "delivery_fee_cents",
       "customer_id",
+      "fully_paid_at",
     ],
     order_items: [
       "recipe_id",
@@ -94,6 +95,7 @@ const migrationHints: Record<string, string> = {
   "orders.delivery_district": "0014_phase14_order_delivery_mode.sql",
   "orders.delivery_fee_cents": "0014_phase14_order_delivery_mode.sql",
   "orders.customer_id": "0016_phase16_customers_and_users.sql",
+  "orders.fully_paid_at": "0020_phase20_order_fully_paid_at.sql",
   "inventory_movements.purchase_amount_cents":
     "0012_phase12_inventory_weighted_average_cost.sql",
   "inventory_movements.purchase_equivalent_quantity":
