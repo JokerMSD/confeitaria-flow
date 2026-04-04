@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
-  ShieldCheck,
   ShoppingBag,
   Sparkles,
 } from "lucide-react";
@@ -129,12 +128,12 @@ export default function PublicProductDetail() {
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-primary">
-                    <Sparkles className="h-4 w-4" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em]">
-                      resumo rapido
-                    </p>
-                  </div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-4 w-4" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em]">
+                    destaques do item
+                  </p>
+                </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Preco base</p>
                     <p className="mt-1 font-display text-4xl font-bold text-foreground">
@@ -211,7 +210,7 @@ export default function PublicProductDetail() {
                 <div className="flex items-center gap-2 text-primary">
                   <ShoppingBag className="h-4 w-4" />
                   <p className="text-xs font-semibold uppercase tracking-[0.28em]">
-                    personalize este item
+                    monte do seu jeito
                   </p>
                 </div>
 
@@ -237,13 +236,13 @@ export default function PublicProductDetail() {
                   <div className="flex items-center gap-2 text-primary">
                     <CheckCircle2 className="h-4 w-4" />
                     <p className="text-xs font-semibold uppercase tracking-[0.28em]">
-                      o que voce escolhe aqui
+                      escolha ideal para voce
                     </p>
                   </div>
                   {[
-                    "Sabores com ate tres combinacoes quando o produto permitir.",
-                    "Adicionais estruturados por grupo, com limite e preco claros.",
-                    "Quantidade, carrinho e checkout com entrega ou retirada.",
+                    "Combine sabores para deixar o pedido do seu jeito.",
+                    "Acrescente extras para deixar tudo ainda mais especial.",
+                    "Escolha a quantidade e finalize com entrega ou retirada.",
                   ].map((item) => (
                     <div
                       key={item}
@@ -257,18 +256,12 @@ export default function PublicProductDetail() {
 
               <Card className="brand-shell">
                 <CardContent className="space-y-4 p-6">
-                  <div className="flex items-center gap-2 text-primary">
-                    <ShieldCheck className="h-4 w-4" />
-                    <p className="text-xs font-semibold uppercase tracking-[0.28em]">
-                      sugestao de pedido
-                    </p>
-                  </div>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    Combine sabores, adicione extras e confira uma sugestao de montagem antes de colocar no carrinho.
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-primary">
+                    sugestao de montagem
                   </p>
                   <div className="rounded-[1.5rem] border border-border/70 bg-background/55 p-4">
                     <p className="text-sm text-muted-foreground">
-                      Exemplo de item montado
+                      Seu item pode ficar assim
                     </p>
                     <p className="mt-2 font-semibold text-foreground">
                       {product.fillingOptions.length > 0
@@ -279,14 +272,14 @@ export default function PublicProductDetail() {
                         : product.name}
                     </p>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Base:{" "}
+                      A partir de{" "}
                       {formatCurrency(
                         (product.effectiveSalePriceCents ??
                           product.salePriceCents ??
                           0) / 100,
                       )}
                       {product.additionalGroups[0]?.options[0]
-                        ? ` + extras a partir de ${formatCurrency(
+                        ? ` e com extras a partir de ${formatCurrency(
                             calculatePublicItemUnitTotalCents({
                               unitPriceCents:
                                 product.effectiveSalePriceCents ??
