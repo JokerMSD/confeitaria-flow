@@ -5,6 +5,7 @@ import {
   Home,
   LogOut,
   PackageSearch,
+  Settings,
   Store,
   User,
   Wallet,
@@ -38,7 +39,7 @@ export function Sidebar() {
       setLocation("/login");
     } catch {
       toast({
-        title: "Não foi possível sair",
+        title: "Nao foi possivel sair",
         description: "Tente novamente.",
         variant: "destructive",
       });
@@ -50,11 +51,12 @@ export function Sidebar() {
     { href: "/fila", label: "Fila", icon: Home },
     { href: "/producao/previsao", label: "Producao", icon: ChefHat },
     { href: "/clientes", label: "Clientes", icon: User },
-    { href: "/usuarios", label: "Usuários", icon: User },
+    { href: "/usuarios", label: "Usuarios", icon: User },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
-    { href: "/catalogo", label: "Catálogo", icon: Store },
+    { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
+    { href: "/conta", label: "Conta", icon: Settings },
   ];
 
   const user = authSessionQuery.data?.data;
@@ -111,7 +113,7 @@ export function Sidebar() {
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold text-sidebar-foreground">
-              {user?.name ?? "Usuário"}
+              {user?.name ?? "Usuario"}
             </p>
             <p className="truncate text-xs text-sidebar-foreground/60">
               {user?.email ?? "usuario@docegestao.com"}
@@ -136,14 +138,15 @@ export function BottomNav() {
   const [location] = useLocation();
 
   const navItems = [
-    { href: "/", label: "Início", icon: Home },
+    { href: "/", label: "Inicio", icon: Home },
     { href: "/fila", label: "Fila", icon: Home },
     { href: "/producao/previsao", label: "Producao", icon: ChefHat },
     { href: "/clientes", label: "Clientes", icon: User },
     { href: "/receitas", label: "Receitas", icon: BookOpen },
-    { href: "/catalogo", label: "Catálogo", icon: Store },
+    { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
+    { href: "/conta", label: "Conta", icon: Settings },
   ];
 
   return (
