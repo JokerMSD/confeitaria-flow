@@ -26,6 +26,7 @@ export const inventoryMovements = pgTable(
     reference: varchar("reference", { length: 120 }),
     purchaseAmountCents: integer("purchase_amount_cents"),
     purchaseDiscountCents: integer("purchase_discount_cents"),
+    purchasePaymentMethod: varchar("purchase_payment_method", { length: 24 }),
     purchaseEquivalentQuantity: doublePrecision("purchase_equivalent_quantity"),
     purchaseEquivalentUnit: varchar("purchase_equivalent_unit", { length: 16 }),
     sourceType: varchar("source_type", { length: 32 }),

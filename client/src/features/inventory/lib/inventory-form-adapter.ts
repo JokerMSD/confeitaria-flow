@@ -59,6 +59,8 @@ export function createEmptyInventoryFormState(): InventoryFormState {
     recipeEquivalentUnit: "g",
     purchaseUnitCost: "",
     notes: "",
+    confirmRecalibration: false,
+    recalibrationReason: "",
   };
 }
 
@@ -78,6 +80,8 @@ export function adaptInventoryItemDetailToFormState(
       (response.data.recipeEquivalentUnit as UiInventoryUnit | null) ?? "g",
     purchaseUnitCost: centsToMoneyString(response.data.purchaseUnitCostCents),
     notes: response.data.notes ?? "",
+    confirmRecalibration: false,
+    recalibrationReason: "",
   };
 }
 
@@ -119,6 +123,10 @@ export function adaptInventoryFormStateToUpdatePayload(
   state: InventoryFormState,
 ): UpdateInventoryItemRequest {
   return {
-    data: adaptFormStateToInput(state),
+    data: {
+      ...adaptFormStateToInput(state),
+      confirmRecalibration: state.confirmRecalibration,
+      recalibrationReason: state.recalibrationReason.trim() || null,
+    },
   };
 }

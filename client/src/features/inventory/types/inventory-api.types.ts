@@ -7,6 +7,36 @@ export interface InventoryMovement {
   quantity: number;
   reason: string | null;
   reference: string | null;
+  purchaseAmountCents: number | null;
+  purchaseDiscountCents: number | null;
+  purchasePaymentMethod:
+    | "Pix"
+    | "Dinheiro"
+    | "CartaoCredito"
+    | "CartaoDebito"
+    | "Transferencia"
+    | null;
+  purchaseEquivalentQuantity: number | null;
+  purchaseEquivalentUnit:
+    | "un"
+    | "kg"
+    | "g"
+    | "l"
+    | "ml"
+    | "caixa"
+    | null;
+  sourceType: string | null;
+  sourceId: string | null;
+  isSystemGenerated: boolean;
+  originKind:
+    | "Manual"
+    | "Pedido"
+    | "AjusteAutomatico"
+    | "Compra"
+    | "Sistema";
+  originLabel: string;
+  explanation: string;
+  affectsCash: boolean;
   createdAt: string;
 }
 

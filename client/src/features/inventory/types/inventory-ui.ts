@@ -26,6 +26,8 @@ export interface InventoryFormState {
   recipeEquivalentUnit: UiInventoryUnit;
   purchaseUnitCost: string;
   notes: string;
+  confirmRecalibration: boolean;
+  recalibrationReason: string;
 }
 
 export type UiInventoryMovementType = "Entrada" | "Saida" | "Ajuste";
@@ -37,6 +39,19 @@ export interface InventoryMovementListItem {
   quantity: number;
   reason: string;
   reference: string;
+  originKind: "Manual" | "Pedido" | "AjusteAutomatico" | "Compra" | "Sistema";
+  originLabel: string;
+  explanation: string;
+  affectsCash: boolean;
+  purchaseAmountCents: number | null;
+  purchaseDiscountCents: number | null;
+  purchasePaymentMethod:
+    | "Pix"
+    | "Dinheiro"
+    | "Cartão de crédito"
+    | "Cartão de débito"
+    | "Transferência"
+    | "";
   createdAt: string;
 }
 
@@ -45,7 +60,8 @@ export interface InventoryMovementFormState {
   quantity: string;
   reason: string;
   reference: string;
-  registerPurchase: boolean;
+  registerPurchaseCost: boolean;
+  registerCashExpense: boolean;
   purchaseAmount: string;
   purchaseDiscount: string;
   purchaseEquivalentQuantity: string;
@@ -64,6 +80,7 @@ export interface InventoryPurchasePlanSourceItem {
   deliveryDate: string;
   productName: string;
   quantity: number;
+  usesLegacyRecipeResolution: boolean;
 }
 
 export interface InventoryPurchasePlanListItem {

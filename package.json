@@ -19,7 +19,8 @@
     "check": "tsc",
     "test": "node --import tsx --test tests/index.test.ts",
     "db:push": "drizzle-kit push",
-    "backfill:order-customers": "tsx script/backfill-order-customers.ts"
+    "backfill:order-customers": "tsx script/backfill-order-customers.ts",
+    "backfill:legacy-order-recipes": "tsx script/backfill-legacy-order-item-recipes.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

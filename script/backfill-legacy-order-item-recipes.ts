@@ -47,23 +47,37 @@ async function main() {
 
       let recipeId: string | null = exactProduct?.id ?? null;
       let fillingRecipeId: string | null = null;
+      let secondaryFillingRecipeId: string | null = null;
+      let tertiaryFillingRecipeId: string | null = null;
 
       if (!recipeId) {
         const parts = productName.split(/\s+-\s+/).map((part) => part.trim());
         const baseName = parts[0] ?? productName;
-        const fillingName = parts.length > 1 ? parts.slice(1).join(" - ") : "";
+        const fillingNames =
+          parts.length > 1
+            ? parts
+                .slice(1)
+                .join(" - ")
+                .split("/")
+                .map((value) => normalizeName(value))
+                .filter(Boolean)
+            : [];
 
         const baseProduct = productRecipes.find(
           (recipe) => normalizeName(recipe.name) === normalizeName(baseName),
         );
-        const fillingRecipe = fillingName
-          ? preparationRecipes.find(
-              (recipe) => normalizeName(recipe.name) === normalizeName(fillingName),
-            )
-          : null;
+        const fillingRecipes = fillingNames
+          .map((fillingName) =>
+            preparationRecipes.find(
+              (recipe) => normalizeName(recipe.name) === fillingName,
+            ) ?? null,
+          )
+          .filter(Boolean);
 
         recipeId = baseProduct?.id ?? null;
-        fillingRecipeId = fillingRecipe?.id ?? null;
+        fillingRecipeId = fillingRecipes[0]?.id ?? null;
+        secondaryFillingRecipeId = fillingRecipes[1]?.id ?? null;
+        tertiaryFillingRecipeId = fillingRecipes[2]?.id ?? null;
       }
 
       if (!recipeId) {
@@ -74,9 +88,17 @@ async function main() {
         `update order_items
          set recipe_id = $2,
              filling_recipe_id = $3,
+             secondary_filling_recipe_id = $4,
+             tertiary_filling_recipe_id = $5,
              updated_at = now()
          where id = $1`,
-        [row.id, recipeId, fillingRecipeId],
+        [
+          row.id,
+          recipeId,
+          fillingRecipeId,
+          secondaryFillingRecipeId,
+          tertiaryFillingRecipeId,
+        ],
       );
 
       updatedCount += 1;

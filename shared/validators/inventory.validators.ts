@@ -20,7 +20,7 @@ export const inventoryItemUnitSchema = z.enum([
 const quantitySchema = z.number().finite().min(0);
 const movementQuantitySchema = z.number().finite().min(0);
 
-export const createInventoryItemInputSchema = z.object({
+const createInventoryItemInputBaseSchema = z.object({
   name: z.string().trim().min(1).max(160),
   category: inventoryItemCategorySchema,
   currentQuantity: quantitySchema,
@@ -30,7 +30,12 @@ export const createInventoryItemInputSchema = z.object({
   recipeEquivalentUnit: inventoryItemUnitSchema.nullable().optional(),
   purchaseUnitCostCents: centsSchema.nullable().optional(),
   notes: z.string().trim().max(1000).nullable().optional(),
-}).superRefine((value, ctx) => {
+});
+
+function refineInventoryItemInput(
+  value: z.infer<typeof createInventoryItemInputBaseSchema>,
+  ctx: z.RefinementCtx,
+) {
   const hasEquivalentQuantity = value.recipeEquivalentQuantity != null;
   const hasEquivalentUnit = value.recipeEquivalentUnit != null;
 
@@ -60,9 +65,17 @@ export const createInventoryItemInputSchema = z.object({
       path: ["purchaseUnitCostCents"],
     });
   }
-});
+}
 
-export const updateInventoryItemInputSchema = createInventoryItemInputSchema;
+export const createInventoryItemInputSchema =
+  createInventoryItemInputBaseSchema.superRefine(refineInventoryItemInput);
+
+export const updateInventoryItemInputSchema = createInventoryItemInputBaseSchema
+  .extend({
+    confirmRecalibration: z.boolean().optional(),
+    recalibrationReason: z.string().trim().max(240).nullable().optional(),
+  })
+  .superRefine(refineInventoryItemInput);
 
 export const listInventoryItemsFiltersSchema = z.object({
   search: z.string().trim().max(160).optional(),
@@ -89,12 +102,12 @@ export const createInventoryMovementInputSchema = z.object({
   const hasAmount = value.purchaseAmountCents != null;
   const hasMethod = value.purchasePaymentMethod != null;
 
-  if (hasAmount !== hasMethod) {
+  if (hasMethod && !hasAmount) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message:
-        "Inventory movement purchaseAmountCents and purchasePaymentMethod must be provided together.",
-      path: hasAmount ? ["purchasePaymentMethod"] : ["purchaseAmountCents"],
+        "Inventory movement purchasePaymentMethod requires purchaseAmountCents.",
+      path: ["purchasePaymentMethod"],
     });
   }
 
@@ -113,6 +126,15 @@ export const createInventoryMovementInputSchema = z.object({
       message:
         "Inventory movement purchaseDiscountCents requires purchaseAmountCents.",
       path: ["purchaseDiscountCents"],
+    });
+  }
+
+  if (hasMethod && value.type !== "Entrada") {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message:
+        "Inventory movement purchasePaymentMethod is only available for stock entries.",
+      path: ["purchasePaymentMethod"],
     });
   }
 });

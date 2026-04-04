@@ -117,8 +117,14 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
   await new CashTransactionsService().reconcileOrderReceipts();
 
-  app.use((err: any, _req: Request, _res: Response, next: NextFunction) => {
-    console.error("Internal Server Error:", err);
+  app.use((err: any, req: Request, _res: Response, next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const label = status >= 500 ? "UnhandledError" : "HandledError";
+    const message = err.message || "Internal Server Error";
+    console.error(
+      `[${label}] ${req.method} ${req.path} -> ${status} ${message}`,
+      err?.stack ?? err,
+    );
     next(err);
   });
   app.use(errorHandler);

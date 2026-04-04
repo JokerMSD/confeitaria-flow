@@ -50,12 +50,13 @@ export class InventoryPurchasePlanService {
       pendingOrderIds.add(row.orderId);
       const resolvedRecipe = row.recipeId
         ? {
-          recipeId: row.recipeId,
+            recipeId: row.recipeId,
             fillingRecipeIds: [
               row.fillingRecipeId,
               row.secondaryFillingRecipeId,
               row.tertiaryFillingRecipeId,
             ].filter((value): value is string => Boolean(value)),
+            resolutionStrategy: "explicit" as const,
           }
         : await this.recipesService.resolveLegacyOrderItemRecipes(
             row.productName,
@@ -87,6 +88,8 @@ export class InventoryPurchasePlanService {
           deliveryDate: row.deliveryDate,
           productName: row.productName,
           quantity: row.quantity,
+          usesLegacyRecipeResolution:
+            resolvedRecipe.resolutionStrategy === "legacy-name",
         });
         sourcesByItemId.set(itemId, sources);
       }

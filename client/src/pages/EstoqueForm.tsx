@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useParams } from "wouter";
-import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Loader2, Save } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { QuantityStepperField } from "@/components/forms/QuantityStepperField";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,14 @@ export default function EstoqueForm() {
     createEmptyInventoryFormState(),
   );
 
+  const originalFormState = useMemo(
+    () =>
+      inventoryItemQuery.data
+        ? adaptInventoryItemDetailToFormState(inventoryItemQuery.data)
+        : null,
+    [inventoryItemQuery.data],
+  );
+
   const isSaving =
     createInventoryMutation.isPending || updateInventoryMutation.isPending;
   const shouldShowRecipeEquivalentFields =
@@ -57,6 +65,39 @@ export default function EstoqueForm() {
     }
   }, [inventoryItemQuery.data, isEditing]);
 
+  const recalibrationChecks = useMemo(() => {
+    if (!isEditing || !originalFormState) {
+      return {
+        hasSensitiveChanges: false,
+        stockChanged: false,
+        costChanged: false,
+        equivalenceChanged: false,
+        structureChanged: false,
+      };
+    }
+
+    const stockChanged =
+      formState.currentQuantity.trim() !== originalFormState.currentQuantity.trim();
+    const costChanged =
+      formState.purchaseUnitCost.trim() !== originalFormState.purchaseUnitCost.trim();
+    const equivalenceChanged =
+      formState.recipeEquivalentQuantity.trim() !==
+        originalFormState.recipeEquivalentQuantity.trim() ||
+      formState.recipeEquivalentUnit !== originalFormState.recipeEquivalentUnit;
+    const structureChanged =
+      formState.category !== originalFormState.category ||
+      formState.unit !== originalFormState.unit;
+
+    return {
+      hasSensitiveChanges:
+        stockChanged || costChanged || equivalenceChanged || structureChanged,
+      stockChanged,
+      costChanged,
+      equivalenceChanged,
+      structureChanged,
+    };
+  }, [formState, isEditing, originalFormState]);
+
   const setField = <K extends keyof InventoryFormState>(
     key: K,
     value: InventoryFormState[K],
@@ -70,8 +111,22 @@ export default function EstoqueForm() {
   const handleSave = async () => {
     if (!formState.name.trim()) {
       toast({
-        title: "Preencha os campos obrigatórios",
+        title: "Preencha os campos obrigatorios",
         description: "Nome do item e obrigatorio.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (
+      isEditing &&
+      recalibrationChecks.hasSensitiveChanges &&
+      !formState.confirmRecalibration
+    ) {
+      toast({
+        title: "Confirme a recalibracao manual",
+        description:
+          "Saldo, custo medio ou equivalencia mudaram. Confirme essa recalibracao antes de salvar.",
         variant: "destructive",
       });
       return;
@@ -83,12 +138,12 @@ export default function EstoqueForm() {
           id: itemId,
           payload: adaptInventoryFormStateToUpdatePayload(formState),
         });
-        toast({ title: "Item atualizado com sucesso!" });
+        toast({ title: "Item atualizado com sucesso." });
       } else {
         await createInventoryMutation.mutateAsync(
           adaptInventoryFormStateToCreatePayload(formState),
         );
-        toast({ title: "Item cadastrado com sucesso!" });
+        toast({ title: "Item cadastrado com sucesso." });
       }
 
       setLocation("/estoque");
@@ -98,7 +153,7 @@ export default function EstoqueForm() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Não foi possível salvar o item do estoque.",
+            : "Nao foi possivel salvar o item do estoque.",
         variant: "destructive",
       });
     }
@@ -107,9 +162,9 @@ export default function EstoqueForm() {
   if (isEditing && inventoryItemQuery.isLoading) {
     return (
       <AppLayout title="Editar Item">
-        <div className="max-w-2xl mx-auto">
+        <div className="mx-auto max-w-2xl">
           <Card className="glass-card">
-            <CardContent className="p-10 flex items-center justify-center gap-3 text-muted-foreground">
+            <CardContent className="flex items-center justify-center gap-3 p-10 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
               <span>Carregando item...</span>
             </CardContent>
@@ -122,17 +177,15 @@ export default function EstoqueForm() {
   if (isEditing && inventoryItemQuery.isError) {
     return (
       <AppLayout title="Editar Item">
-        <div className="max-w-2xl mx-auto">
+        <div className="mx-auto max-w-2xl">
           <Card className="glass-card">
-            <CardContent className="p-10 text-center space-y-4">
+            <CardContent className="space-y-4 p-10 text-center">
               <div className="space-y-2">
-                <h2 className="text-xl font-display font-bold text-foreground">
-                  Item indisponível
-                </h2>
+                <h2 className="text-xl font-bold text-foreground">Item indisponivel</h2>
                 <p className="text-muted-foreground">
                   {inventoryItemQuery.error instanceof ApiError
                     ? inventoryItemQuery.error.message
-                    : "Não foi possível carregar o item do estoque."}
+                    : "Nao foi possivel carregar o item do estoque."}
                 </p>
               </div>
               <div className="flex justify-center gap-3">
@@ -152,7 +205,7 @@ export default function EstoqueForm() {
 
   return (
     <AppLayout title={isEditing ? "Editar Item" : "Novo Item de Estoque"}>
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="mx-auto max-w-2xl space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button
@@ -161,35 +214,35 @@ export default function EstoqueForm() {
               onClick={() => setLocation("/estoque")}
               className="rounded-full"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h2 className="text-2xl font-display font-bold text-foreground">
+              <h2 className="text-2xl font-bold text-foreground">
                 {isEditing ? "Editar Item" : "Novo Item"}
               </h2>
             </div>
           </div>
           <Button onClick={handleSave} className="gap-2 rounded-xl" disabled={isSaving}>
             {isSaving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Save className="w-4 h-4" />
+              <Save className="h-4 w-4" />
             )}
             Salvar
           </Button>
         </div>
 
         <Card className="glass-card">
-          <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className="space-y-6 p-6">
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="name">Nome do Item *</Label>
+                <Label htmlFor="name">Nome do item *</Label>
                 <Input
                   id="name"
                   value={formState.name}
                   onChange={(event) => setField("name", event.target.value)}
                   placeholder="Ex: Leite Condensado, Caixa Kraft 20x20..."
-                  className="text-lg py-6"
+                  className="py-6 text-lg"
                 />
               </div>
 
@@ -209,7 +262,7 @@ export default function EstoqueForm() {
               </div>
 
               <div className="space-y-2">
-                <Label>Unidade de Medida</Label>
+                <Label>Unidade de medida</Label>
                 <select
                   className="flex h-12 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
                   value={formState.unit}
@@ -236,23 +289,27 @@ export default function EstoqueForm() {
 
               <QuantityStepperField
                 id="currentQuantity"
-                label="Quantidade Atual *"
+                label="Quantidade atual *"
                 value={formState.currentQuantity}
                 onChange={(value) => setField("currentQuantity", value)}
                 placeholder="0"
                 unit={formState.unit}
-                inputClassName="text-xl font-bold font-display"
-                helpText="Itens novos podem ser cadastrados com estoque inicial zero."
+                inputClassName="text-xl font-bold"
+                helpText={
+                  isEditing
+                    ? "Ao editar, mudar este valor gera ajuste de saldo e recalibra o item."
+                    : "Itens novos podem ser cadastrados com estoque inicial zero."
+                }
               />
 
               <QuantityStepperField
                 id="minQuantity"
-                label="Estoque Minimo (Alerta)"
+                label="Estoque minimo (alerta)"
                 value={formState.minQuantity}
                 onChange={(value) => setField("minQuantity", value)}
                 placeholder="0"
                 unit={formState.unit}
-                inputClassName="text-xl font-bold font-display text-warning"
+                inputClassName="text-xl font-bold text-warning"
                 helpText="Avisaremos quando chegar neste valor."
               />
 
@@ -267,7 +324,7 @@ export default function EstoqueForm() {
                     }
                     placeholder="Ex: 500"
                     unit={formState.recipeEquivalentUnit}
-                    inputClassName="text-lg font-display"
+                    inputClassName="text-lg"
                   />
 
                   <div className="space-y-2">
@@ -288,7 +345,7 @@ export default function EstoqueForm() {
                       <option value="l">Litro (l)</option>
                       <option value="un">Unidade (un)</option>
                     </select>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       Exemplo: 1 unidade de manteiga equivale a 500 g.
                     </p>
                   </div>
@@ -298,7 +355,7 @@ export default function EstoqueForm() {
               {formState.category === "Ingrediente" && (
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="purchaseUnitCost">
-                    Preço unitário de compra do ingrediente
+                    Preco unitario de compra do ingrediente
                   </Label>
                   <Input
                     id="purchaseUnitCost"
@@ -312,19 +369,85 @@ export default function EstoqueForm() {
                       )
                     }
                     placeholder="0,00"
-                    className="text-lg font-display"
+                    className="text-lg"
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Toda entrada deste ingrediente vai gerar automaticamente uma saída no caixa com base neste preço.
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Este custo serve para media estimada e plano de compra. O caixa so
+                    recebe compra real quando a entrada for registrada com pagamento.
                   </p>
                 </div>
               )}
 
+              {isEditing && recalibrationChecks.hasSensitiveChanges && (
+                <div className="space-y-4 rounded-2xl border border-amber-300/70 bg-amber-50/80 p-4 md:col-span-2 dark:border-amber-700/60 dark:bg-amber-950/30">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 text-amber-700 dark:text-amber-300" />
+                    <div className="space-y-2 text-sm">
+                      <p className="font-semibold text-amber-900 dark:text-amber-100">
+                        Esta edicao recalibra o item
+                      </p>
+                      <p className="text-amber-800/90 dark:text-amber-200/90">
+                        O backend vai tratar essas mudancas como recalibracao manual
+                        do cadastro e do estoque.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {recalibrationChecks.stockChanged && (
+                          <span className="rounded-full border border-amber-300 bg-background px-2.5 py-1 text-xs font-medium">
+                            Saldo atual
+                          </span>
+                        )}
+                        {recalibrationChecks.costChanged && (
+                          <span className="rounded-full border border-amber-300 bg-background px-2.5 py-1 text-xs font-medium">
+                            Custo medio
+                          </span>
+                        )}
+                        {recalibrationChecks.equivalenceChanged && (
+                          <span className="rounded-full border border-amber-300 bg-background px-2.5 py-1 text-xs font-medium">
+                            Equivalencia de receita
+                          </span>
+                        )}
+                        {recalibrationChecks.structureChanged && (
+                          <span className="rounded-full border border-amber-300 bg-background px-2.5 py-1 text-xs font-medium">
+                            Categoria ou unidade
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="recalibrationReason">Motivo da recalibracao</Label>
+                    <Input
+                      id="recalibrationReason"
+                      value={formState.recalibrationReason}
+                      onChange={(event) =>
+                        setField("recalibrationReason", event.target.value)
+                      }
+                      placeholder="Ex: contagem fisica, correcao de custo do fornecedor..."
+                    />
+                  </div>
+
+                  <label className="flex items-center gap-3 rounded-xl border border-amber-300/70 bg-background/80 px-4 py-3 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={formState.confirmRecalibration}
+                      onChange={(event) =>
+                        setField("confirmRecalibration", event.target.checked)
+                      }
+                    />
+                    <span>
+                      Confirmo que esta edicao recalibra manualmente saldo, custo ou
+                      equivalencia deste item.
+                    </span>
+                  </label>
+                </div>
+              )}
+
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="notes">Observações Opcionais</Label>
+                <Label htmlFor="notes">Observacoes opcionais</Label>
                 <textarea
                   id="notes"
-                  className="w-full min-h-[100px] rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+                  className="min-h-[100px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Fornecedor favorito, marca preferida, validade media..."
                   value={formState.notes}
                   onChange={(event) => setField("notes", event.target.value)}

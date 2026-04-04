@@ -102,6 +102,7 @@ export class ProductionForecastService {
                 row.secondaryFillingRecipeId,
                 row.tertiaryFillingRecipeId,
               ].filter((value): value is string => Boolean(value)),
+              resolutionStrategy: "explicit" as const,
             }
           : await this.recipesService.resolveLegacyOrderItemRecipes(row.productName);
 

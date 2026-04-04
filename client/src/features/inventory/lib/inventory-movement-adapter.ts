@@ -26,6 +26,22 @@ const uiToApiTypeMap: Record<UiInventoryMovementType, ApiInventoryMovementType> 
   Ajuste: "Ajuste",
 };
 
+const apiToUiPaymentMethodMap = {
+  Pix: "Pix",
+  Dinheiro: "Dinheiro",
+  CartaoCredito: "Cartão de crédito",
+  CartaoDebito: "Cartão de débito",
+  Transferencia: "Transferência",
+} as const;
+
+const uiToApiPaymentMethodMap = {
+  Pix: "Pix",
+  Dinheiro: "Dinheiro",
+  "Cartão de crédito": "CartaoCredito",
+  "Cartão de débito": "CartaoDebito",
+  Transferência: "Transferencia",
+} as const;
+
 function numberToQuantityString(value: number) {
   return Number.isInteger(value) ? String(value) : String(value);
 }
@@ -40,7 +56,8 @@ export function createEmptyInventoryMovementFormState(): InventoryMovementFormSt
     quantity: "",
     reason: "",
     reference: "",
-    registerPurchase: false,
+    registerPurchaseCost: false,
+    registerCashExpense: false,
     purchaseAmount: "",
     purchaseDiscount: "",
     purchaseEquivalentQuantity: "",
@@ -58,6 +75,16 @@ export function adaptInventoryMovementToListItem(
     quantity: movement.quantity,
     reason: movement.reason ?? "",
     reference: movement.reference ?? "",
+    originKind: movement.originKind,
+    originLabel: movement.originLabel,
+    explanation: movement.explanation,
+    affectsCash: movement.affectsCash,
+    purchaseAmountCents: movement.purchaseAmountCents,
+    purchaseDiscountCents: movement.purchaseDiscountCents,
+    purchasePaymentMethod:
+      movement.purchasePaymentMethod == null
+        ? ""
+        : apiToUiPaymentMethodMap[movement.purchasePaymentMethod],
     createdAt: movement.createdAt,
   };
 }
@@ -74,11 +101,18 @@ export function adaptInventoryMovementToFormState(
     quantity: numberToQuantityString(Math.abs(movement.quantity)),
     reason: movement.reason ?? "",
     reference: movement.reference ?? "",
-    registerPurchase: false,
+    registerPurchaseCost: movement.purchaseAmountCents != null,
+    registerCashExpense: movement.purchasePaymentMethod != null,
     purchaseAmount: "",
     purchaseDiscount: "",
-    purchaseEquivalentQuantity: "",
-    purchasePaymentMethod: "Pix",
+    purchaseEquivalentQuantity:
+      movement.purchaseEquivalentQuantity == null
+        ? ""
+        : numberToQuantityString(movement.purchaseEquivalentQuantity),
+    purchasePaymentMethod:
+      movement.purchasePaymentMethod == null
+        ? "Pix"
+        : apiToUiPaymentMethodMap[movement.purchasePaymentMethod],
   };
 }
 
@@ -93,7 +127,7 @@ function isUnitPurchase(unit: UiInventoryUnit | undefined) {
 export function resolveInventoryPurchaseAmountCents(
   state: InventoryMovementFormState,
 ) {
-  if (!state.registerPurchase) {
+  if (!state.registerPurchaseCost) {
     return null;
   }
 
@@ -105,7 +139,7 @@ export function resolveInventoryPurchaseAmountCents(
 export function resolveInventoryPurchaseDiscountCents(
   state: InventoryMovementFormState,
 ) {
-  if (!state.registerPurchase) {
+  if (!state.registerPurchaseCost) {
     return null;
   }
 
@@ -149,14 +183,6 @@ export function resolveInventoryPurchaseGrossPreviewCents(
   return amountCents;
 }
 
-const uiToApiPaymentMethodMap = {
-  Pix: "Pix",
-  Dinheiro: "Dinheiro",
-  "Cartão de crédito": "CartaoCredito",
-  "Cartão de débito": "CartaoDebito",
-  Transferência: "Transferencia",
-} as const;
-
 export function adaptInventoryMovementFormStateToCreatePayload(
   itemId: string,
   state: InventoryMovementFormState,
@@ -172,7 +198,7 @@ export function adaptInventoryMovementFormStateToCreatePayload(
     purchaseEquivalentQuantity: state.purchaseEquivalentQuantity.trim()
       ? quantityStringToNumber(state.purchaseEquivalentQuantity)
       : null,
-    purchasePaymentMethod: state.registerPurchase
+    purchasePaymentMethod: state.registerPurchaseCost && state.registerCashExpense
       ? uiToApiPaymentMethodMap[state.purchasePaymentMethod]
       : null,
   };

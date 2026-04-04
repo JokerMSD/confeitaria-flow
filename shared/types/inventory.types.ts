@@ -5,6 +5,12 @@ export type InventoryItemCategory = "ProdutoPronto" | "Ingrediente" | "Embalagem
 export type InventoryItemUnit = "un" | "kg" | "g" | "l" | "ml" | "caixa";
 
 export type InventoryMovementType = "Entrada" | "Saida" | "Ajuste";
+export type InventoryMovementOriginKind =
+  | "Manual"
+  | "Pedido"
+  | "AjusteAutomatico"
+  | "Compra"
+  | "Sistema";
 
 export interface InventoryItem {
   id: string;
@@ -34,7 +40,10 @@ export interface CreateInventoryItemInput {
   notes?: string | null;
 }
 
-export interface UpdateInventoryItemInput extends CreateInventoryItemInput {}
+export interface UpdateInventoryItemInput extends CreateInventoryItemInput {
+  confirmRecalibration?: boolean;
+  recalibrationReason?: string | null;
+}
 
 export interface ListInventoryItemsFilters {
   search?: string;
@@ -48,9 +57,18 @@ export interface InventoryMovement {
   quantity: number;
   reason: string;
   reference: string | null;
+  purchaseAmountCents: number | null;
+  purchaseDiscountCents: number | null;
+  purchasePaymentMethod: PaymentMethod | null;
+  purchaseEquivalentQuantity: number | null;
+  purchaseEquivalentUnit: InventoryItemUnit | null;
   sourceType: string | null;
   sourceId: string | null;
   isSystemGenerated: boolean;
+  originKind: InventoryMovementOriginKind;
+  originLabel: string;
+  explanation: string;
+  affectsCash: boolean;
   createdAt: string;
 }
 
@@ -78,6 +96,7 @@ export interface InventoryPurchasePlanSource {
   deliveryDate: string;
   productName: string;
   quantity: number;
+  usesLegacyRecipeResolution: boolean;
 }
 
 export interface InventoryPurchasePlanItem {

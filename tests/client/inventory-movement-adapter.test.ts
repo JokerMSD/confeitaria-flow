@@ -11,7 +11,7 @@ import {
 test("unit-based purchase keeps entered price and previews multiplied total", () => {
   const state = createEmptyInventoryMovementFormState();
   state.quantity = "3";
-  state.registerPurchase = true;
+  state.registerPurchaseCost = true;
   state.purchaseAmount = "32,00";
 
   assert.equal(resolveInventoryPurchaseAmountCents(state), 3200);
@@ -26,7 +26,7 @@ test("unit-based purchase keeps entered price and previews multiplied total", ()
 test("weight-based purchase keeps entered amount as total", () => {
   const state = createEmptyInventoryMovementFormState();
   state.quantity = "0,705";
-  state.registerPurchase = true;
+  state.registerPurchaseCost = true;
   state.purchaseAmount = "14,90";
 
   assert.equal(resolveInventoryPurchaseAmountCents(state), 1490);
@@ -41,7 +41,7 @@ test("weight-based purchase keeps entered amount as total", () => {
 test("purchase discount reduces the effective total preview and payload carries discount", () => {
   const state = createEmptyInventoryMovementFormState();
   state.quantity = "3";
-  state.registerPurchase = true;
+  state.registerPurchaseCost = true;
   state.purchaseAmount = "39,98";
   state.purchaseDiscount = "2,40";
 

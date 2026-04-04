@@ -1,6 +1,7 @@
 import type {
   CreateInventoryMovementInput,
   InventoryMovement,
+  InventoryMovementOriginKind,
   ListInventoryMovementsFilters,
 } from "@shared/types";
 import { withTransaction } from "../db/transaction";
@@ -15,6 +16,10 @@ function toIsoString(value: Date | null) {
 
 function isUnitPurchase(unit: string) {
   return unit === "un" || unit === "caixa";
+}
+
+function normalizeText(value: string | null | undefined) {
+  return value?.trim() || null;
 }
 
 export class InventoryMovementsService {
@@ -113,6 +118,7 @@ export class InventoryMovementsService {
           reference: normalized.reference,
           purchaseAmountCents: effectivePurchaseAmountCents,
           purchaseDiscountCents: normalized.purchaseDiscountCents,
+          purchasePaymentMethod: normalized.purchasePaymentMethod,
           purchaseEquivalentQuantity: normalized.purchaseEquivalentQuantity,
           purchaseEquivalentUnit:
             normalized.purchaseEquivalentQuantity != null
@@ -138,23 +144,6 @@ export class InventoryMovementsService {
             unit: item.unit,
             amountCents: purchaseCashAmountCents,
             paymentMethod: normalized.purchasePaymentMethod,
-          },
-          tx,
-        );
-      } else if (
-        item.category === "Ingrediente" &&
-        item.purchaseUnitCostCents != null &&
-        item.purchaseUnitCostCents > 0 &&
-        normalized.type === "Entrada"
-      ) {
-        await this.cashTransactionsService.registerInventoryPurchaseExpense(
-          {
-            movementId: createdMovement.id,
-            itemName: item.name,
-            quantity: normalized.quantity,
-            unit: item.unit,
-            amountCents: Math.round(normalized.quantity * item.purchaseUnitCostCents),
-            paymentMethod: "Pix",
           },
           tx,
         );
@@ -272,16 +261,6 @@ export class InventoryMovementsService {
       throw new HttpError(400, "Inventory movement quantity must be greater than zero.");
     }
 
-    if (
-      (input.purchaseAmountCents == null) !==
-      (input.purchasePaymentMethod == null)
-    ) {
-      throw new HttpError(
-        400,
-        "Inventory purchase amount and payment method must be provided together.",
-      );
-    }
-
     if (input.purchaseAmountCents != null && input.purchaseAmountCents <= 0) {
       throw new HttpError(
         400,
@@ -292,7 +271,7 @@ export class InventoryMovementsService {
     if (input.purchaseAmountCents != null && input.type !== "Entrada") {
       throw new HttpError(
         400,
-        "Inventory purchase cash integration is only available for stock entries.",
+        "Inventory purchase cost is only available for stock entries.",
       );
     }
 
@@ -324,6 +303,20 @@ export class InventoryMovementsService {
       );
     }
 
+    if (input.purchasePaymentMethod != null && input.purchaseAmountCents == null) {
+      throw new HttpError(
+        400,
+        "Inventory purchase payment method requires a purchase amount.",
+      );
+    }
+
+    if (input.purchasePaymentMethod != null && input.type !== "Entrada") {
+      throw new HttpError(
+        400,
+        "Inventory purchase payment method is only available for stock entries.",
+      );
+    }
+
     const grossPurchaseAmountCents = input.purchaseAmountCents ?? null;
     const discountCents = input.purchaseDiscountCents ?? null;
 
@@ -335,8 +328,8 @@ export class InventoryMovementsService {
       reference,
       purchaseAmountCents: grossPurchaseAmountCents,
       purchaseDiscountCents: discountCents,
-      purchaseEquivalentQuantity: input.purchaseEquivalentQuantity ?? null,
       purchasePaymentMethod: input.purchasePaymentMethod ?? null,
+      purchaseEquivalentQuantity: input.purchaseEquivalentQuantity ?? null,
     };
   }
 
@@ -357,6 +350,26 @@ export class InventoryMovementsService {
   }
 
   private mapInventoryMovement(row: any): InventoryMovement {
+    const purchaseAmountCents =
+      row.purchaseAmountCents == null ? null : Number(row.purchaseAmountCents);
+    const purchaseDiscountCents =
+      row.purchaseDiscountCents == null ? null : Number(row.purchaseDiscountCents);
+    const purchaseEquivalentQuantity =
+      row.purchaseEquivalentQuantity == null
+        ? null
+        : Number(row.purchaseEquivalentQuantity);
+    const purchasePaymentMethod = row.purchasePaymentMethod ?? null;
+    const metadata = this.resolveMovementMetadata({
+      type: row.type,
+      quantity: Number(row.quantity),
+      reason: row.reason,
+      reference: row.reference ?? null,
+      sourceType: row.sourceType ?? null,
+      isSystemGenerated: Boolean(row.isSystemGenerated),
+      purchaseAmountCents,
+      purchasePaymentMethod,
+    });
+
     return {
       id: row.id,
       itemId: row.itemId,
@@ -364,10 +377,96 @@ export class InventoryMovementsService {
       quantity: Number(row.quantity),
       reason: row.reason,
       reference: row.reference ?? null,
+      purchaseAmountCents,
+      purchaseDiscountCents,
+      purchasePaymentMethod,
+      purchaseEquivalentQuantity,
+      purchaseEquivalentUnit: row.purchaseEquivalentUnit ?? null,
       sourceType: row.sourceType ?? null,
       sourceId: row.sourceId ?? null,
       isSystemGenerated: Boolean(row.isSystemGenerated),
+      originKind: metadata.originKind,
+      originLabel: metadata.originLabel,
+      explanation: metadata.explanation,
+      affectsCash: metadata.affectsCash,
       createdAt: row.createdAt.toISOString(),
+    };
+  }
+
+  private resolveMovementMetadata(input: {
+    type: string;
+    quantity: number;
+    reason: string;
+    reference: string | null;
+    sourceType: string | null;
+    isSystemGenerated: boolean;
+    purchaseAmountCents: number | null;
+    purchasePaymentMethod: string | null;
+  }): {
+    originKind: InventoryMovementOriginKind;
+    originLabel: string;
+    explanation: string;
+    affectsCash: boolean;
+  } {
+    const normalizedReason = normalizeText(input.reason) ?? "Sem motivo informado";
+    const normalizedReference = normalizeText(input.reference);
+    const affectsCash = input.purchasePaymentMethod != null;
+    const usesLegacyResolution = /legad[oa]|inferid/i.test(normalizedReason);
+
+    if (input.sourceType === "Pedido") {
+      return {
+        originKind: "Pedido",
+        originLabel: "Pedido",
+        explanation: usesLegacyResolution
+          ? `${normalizedReason}. Parte do consumo foi resolvida a partir de nome legado do pedido.`
+          : normalizedReference
+            ? `${normalizedReason}. Referência operacional: ${normalizedReference}.`
+            : normalizedReason,
+        affectsCash: false,
+      };
+    }
+
+    if (
+      normalizedReference?.startsWith("inventory-item:create:") ||
+      normalizedReference?.startsWith("inventory-item:update:")
+    ) {
+      return {
+        originKind: "AjusteAutomatico",
+        originLabel: "Ajuste automático",
+        explanation: normalizedReason,
+        affectsCash: false,
+      };
+    }
+
+    if (input.type === "Entrada" && input.purchaseAmountCents != null) {
+      return {
+        originKind: "Compra",
+        originLabel: affectsCash ? "Compra real" : "Compra estimada",
+        explanation: affectsCash
+          ? `${normalizedReason}. Esta entrada também gerou saída no caixa como compra real.`
+          : `${normalizedReason}. Esta entrada atualiza custo e rendimento sem gerar lançamento financeiro.`,
+        affectsCash,
+      };
+    }
+
+    if (input.isSystemGenerated) {
+      return {
+        originKind: "Sistema",
+        originLabel: "Sistema",
+        explanation: normalizedReference
+          ? `${normalizedReason}. Referência interna: ${normalizedReference}.`
+          : normalizedReason,
+        affectsCash: false,
+      };
+    }
+
+    return {
+      originKind: "Manual",
+      originLabel: "Manual",
+      explanation: normalizedReference
+        ? `${normalizedReason}. Referência: ${normalizedReference}.`
+        : normalizedReason,
+      affectsCash: false,
     };
   }
 }

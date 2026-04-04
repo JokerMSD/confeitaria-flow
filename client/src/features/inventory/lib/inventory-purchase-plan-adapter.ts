@@ -34,6 +34,7 @@ export function adaptInventoryPurchasePlan(
         deliveryDate: source.deliveryDate,
         productName: source.productName,
         quantity: source.quantity,
+        usesLegacyRecipeResolution: source.usesLegacyRecipeResolution,
       })),
     })),
   };

@@ -48,6 +48,12 @@ interface RecipeCostNode {
   ingredientUsage: Map<string, number>;
 }
 
+export interface ResolvedOrderItemRecipe {
+  recipeId: string;
+  fillingRecipeIds: string[];
+  resolutionStrategy: "explicit" | "exact-match" | "legacy-name";
+}
+
 function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
 }
@@ -309,6 +315,7 @@ export class RecipesService {
     }
 
     const requirements = new Map<string, number>();
+    let usedLegacyResolution = false;
 
     for (const orderItem of orderItems) {
       const resolvedRecipe = orderItem.recipeId
@@ -319,12 +326,17 @@ export class RecipesService {
               orderItem.secondaryFillingRecipeId,
               orderItem.tertiaryFillingRecipeId,
             ].filter((value): value is string => Boolean(value)),
+            resolutionStrategy: "explicit" as const,
           }
         : await this.resolveLegacyOrderItemRecipes(orderItem.productName, executor);
 
       if (!resolvedRecipe?.recipeId) {
         continue;
       }
+
+      usedLegacyResolution =
+        usedLegacyResolution ||
+        resolvedRecipe.resolutionStrategy === "legacy-name";
 
       const exploded = await this.explodeRecipeToInventory(
         resolvedRecipe.recipeId,
@@ -411,7 +423,9 @@ export class RecipesService {
           itemId,
           type: "Saida",
           quantity: -quantity,
-          reason: `Consumo automatico do pedido ${order.orderNumber}`,
+          reason: usedLegacyResolution
+            ? `Consumo automatico do pedido ${order.orderNumber} com item legado inferido por nome`
+            : `Consumo automatico do pedido ${order.orderNumber}`,
           reference: order.orderNumber,
           sourceType: ORDER_CONSUMPTION_SOURCE,
           sourceId: order.id,
@@ -425,7 +439,7 @@ export class RecipesService {
   async resolveLegacyOrderItemRecipes(
     productName: string,
     executor?: Executor,
-  ): Promise<{ recipeId: string; fillingRecipeIds: string[] } | null> {
+  ): Promise<ResolvedOrderItemRecipe | null> {
     const normalizedProductName = normalizeRecipeName(productName);
 
     if (!normalizedProductName) {
@@ -448,6 +462,7 @@ export class RecipesService {
       return {
         recipeId: exactProductMatch.id,
         fillingRecipeIds: [],
+        resolutionStrategy: "exact-match",
       };
     }
 
@@ -484,6 +499,7 @@ export class RecipesService {
     return {
       recipeId: baseProductMatch.id,
       fillingRecipeIds,
+      resolutionStrategy: "legacy-name",
     };
   }
 

@@ -16,6 +16,7 @@ export interface InventoryMovementRowInsert {
   reference: string | null;
   purchaseAmountCents?: number | null;
   purchaseDiscountCents?: number | null;
+  purchasePaymentMethod?: string | null;
   purchaseEquivalentQuantity?: number | null;
   purchaseEquivalentUnit?: string | null;
   sourceType?: string | null;

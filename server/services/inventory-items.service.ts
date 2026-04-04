@@ -100,6 +100,18 @@ export class InventoryItemsService {
             ? null
             : Number(existing.recipeEquivalentQuantity)) ||
         normalized.recipeEquivalentUnit !== (existing.recipeEquivalentUnit ?? null);
+      const requiresExplicitRecalibration =
+        delta !== 0 || shouldRecalibratePurchaseMetrics;
+
+      if (requiresExplicitRecalibration && input.confirmRecalibration !== true) {
+        throw new HttpError(
+          400,
+          "Confirme a recalibracao manual antes de salvar alteracoes que mudam saldo, custo medio ou equivalencia do item.",
+        );
+      }
+
+      const recalibrationReason =
+        input.recalibrationReason?.trim() || "Recalibracao manual via edicao do item";
 
       if (delta !== 0) {
         const stockUpdated = await this.inventoryItemsRepository.applyQuantityDelta(
@@ -118,7 +130,7 @@ export class InventoryItemsService {
             itemId: id,
             type: "Ajuste",
             quantity: delta,
-            reason: "Ajuste automático do item",
+            reason: recalibrationReason,
             reference: `inventory-item:update:${id}`,
           },
           tx,
@@ -159,7 +171,8 @@ export class InventoryItemsService {
         );
       }
 
-      const row = delta !== 0 ? await this.inventoryItemsRepository.findById(id, tx) : updated;
+      const row =
+        delta !== 0 ? await this.inventoryItemsRepository.findById(id, tx) : updated;
 
       if (!row) {
         throw new HttpError(404, "Inventory item not found.");
