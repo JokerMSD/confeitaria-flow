@@ -10,6 +10,7 @@ import Home from "@/pages/Home";
 import Pedidos from "@/pages/Pedidos";
 import Fila from "@/pages/Fila";
 import Estoque from "@/pages/Estoque";
+import EstoqueImportacaoNota from "@/pages/EstoqueImportacaoNota";
 import Caixa from "@/pages/Caixa";
 import PedidoForm from "@/pages/PedidoForm";
 import CaixaForm from "@/pages/CaixaForm";
@@ -75,6 +76,7 @@ function AdminSwitch() {
       <Route path="/fila" component={Fila} />
       <Route path="/producao/previsao" component={PrevisaoProducao} />
       <Route path="/estoque" component={Estoque} />
+      <Route path="/estoque/importar-nota" component={EstoqueImportacaoNota} />
       <Route path="/estoque/novo" component={EstoqueForm} />
       <Route path="/estoque/:id/editar" component={EstoqueForm} />
       <Route path="/estoque/:id" component={EstoqueMovimentacao} />

@@ -1,9 +1,12 @@
 import type {
+  ConfirmInventoryReceiptImportInput,
   CreateInventoryItemInput,
   CreateInventoryMovementInput,
   InventoryItem,
   InventoryMovement,
   InventoryPurchasePlan,
+  InventoryReceiptImportAnalysis,
+  InventoryReceiptImportInput,
   ListInventoryItemsFilters,
   ListInventoryMovementsFilters,
   UpdateInventoryItemInput,
@@ -52,4 +55,23 @@ export interface InventoryMovementDetailResponse {
 
 export interface InventoryPurchasePlanResponse {
   data: InventoryPurchasePlan;
+}
+
+export interface AnalyzeInventoryReceiptRequest {
+  data: InventoryReceiptImportInput;
+}
+
+export interface AnalyzeInventoryReceiptResponse {
+  data: InventoryReceiptImportAnalysis;
+}
+
+export interface ConfirmInventoryReceiptImportRequest {
+  data: ConfirmInventoryReceiptImportInput;
+}
+
+export interface ConfirmInventoryReceiptImportResponse {
+  data: {
+    importedCount: number;
+    movementIds: string[];
+  };
 }

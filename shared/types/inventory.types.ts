@@ -122,3 +122,48 @@ export interface InventoryPurchasePlan {
   hasItemsWithoutCost: boolean;
   items: InventoryPurchasePlanItem[];
 }
+
+export interface InventoryReceiptImportInput {
+  fileName: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+  contentBase64: string;
+}
+
+export interface InventoryReceiptImportMatch {
+  itemId: string;
+  itemName: string;
+  itemUnit: InventoryItemUnit;
+  score: number;
+}
+
+export interface InventoryReceiptImportSuggestedLine {
+  lineId: string;
+  rawText: string;
+  normalizedDescription: string;
+  quantity: number;
+  totalAmountCents: number | null;
+  suggestedItemId: string | null;
+  matches: InventoryReceiptImportMatch[];
+}
+
+export interface InventoryReceiptImportAnalysis {
+  extractedText: string;
+  lines: InventoryReceiptImportSuggestedLine[];
+  skippedLineCount: number;
+}
+
+export interface ConfirmInventoryReceiptImportLineInput {
+  lineId: string;
+  itemId: string;
+  quantity: number;
+  totalAmountCents: number | null;
+  rawText: string;
+}
+
+export interface ConfirmInventoryReceiptImportInput {
+  fileName: string;
+  reference?: string | null;
+  registerCashExpense?: boolean;
+  paymentMethod?: PaymentMethod | null;
+  lines: ConfirmInventoryReceiptImportLineInput[];
+}

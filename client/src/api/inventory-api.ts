@@ -1,4 +1,8 @@
 import type {
+  AnalyzeInventoryReceiptRequest,
+  AnalyzeInventoryReceiptResponse,
+  ConfirmInventoryReceiptImportRequest,
+  ConfirmInventoryReceiptImportResponse,
   CreateInventoryItemRequest,
   DeleteInventoryItemResponse,
   InventoryItemDetailResponse,
@@ -87,4 +91,26 @@ export function createInventoryMovement(payload: CreateInventoryMovementRequest)
     method: "POST",
     body: payload,
   });
+}
+
+export function analyzeInventoryReceipt(payload: AnalyzeInventoryReceiptRequest) {
+  return httpClient<AnalyzeInventoryReceiptResponse>(
+    "/api/inventory-items/receipt-import/analyze",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
+}
+
+export function confirmInventoryReceiptImport(
+  payload: ConfirmInventoryReceiptImportRequest,
+) {
+  return httpClient<ConfirmInventoryReceiptImportResponse>(
+    "/api/inventory-items/receipt-import/confirm",
+    {
+      method: "POST",
+      body: payload,
+    },
+  );
 }

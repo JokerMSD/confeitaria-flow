@@ -148,3 +148,36 @@ export const listInventoryMovementsFiltersSchema = z.object({
 export const inventoryMovementIdParamsSchema = z.object({
   id: uuidSchema,
 });
+
+export const inventoryReceiptImportInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(180),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  contentBase64: z.string().trim().min(1).max(10_000_000),
+});
+
+export const confirmInventoryReceiptImportInputSchema = z.object({
+  fileName: z.string().trim().min(1).max(180),
+  reference: z.string().trim().max(180).nullable().optional(),
+  registerCashExpense: z.boolean().optional(),
+  paymentMethod: paymentMethodSchema.nullable().optional(),
+  lines: z
+    .array(
+      z.object({
+        lineId: z.string().trim().min(1).max(80),
+        itemId: uuidSchema,
+        quantity: z.number().finite().positive(),
+        totalAmountCents: centsSchema.nullable().optional(),
+        rawText: z.string().trim().min(1).max(500),
+      }),
+    )
+    .min(1)
+    .max(100),
+}).superRefine((value, ctx) => {
+  if (value.registerCashExpense && value.paymentMethod == null) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Inventory receipt import paymentMethod is required when registerCashExpense is true.",
+      path: ["paymentMethod"],
+    });
+  }
+});

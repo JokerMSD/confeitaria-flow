@@ -6,6 +6,7 @@ Contratos principais:
 - cadastro e edicao de itens de estoque
 - criacao de movimentacoes de estoque
 - leitura de movimentacoes para auditoria operacional
+- importacao assistida de nota com OCR, sugestao de item e confirmacao manual antes da entrada
 - integracoes automaticas com pedidos prontos/entregues e compras
 - confirmacao explicita de recalibracao manual ao editar saldo, custo ou equivalencia
 - rejeicao de edicao obsoleta por `updatedAt` para evitar sobrescrita silenciosa entre duas sessoes
@@ -21,6 +22,7 @@ Dependencias de dominio:
 - pedidos consomem ingredientes por receitas vinculadas
 - caixa registra apenas compras reais declaradas
 - planejamento de compra depende do saldo e custo medio
+- importacao por nota reaproveita o mesmo fluxo de `Entrada` e nao bypassa o ledger
 
 Riscos ativos:
 - qualquer mudanca em movimentacoes pode impactar custo, caixa e planejamento ao mesmo tempo
@@ -34,3 +36,4 @@ Proximos passos naturais:
 - rodar backfill de receitas legadas para reduzir heuristica por nome
 - evitar novos atalhos de UI que contornem o ledger
 - fechar qualquer ajuste de estoque sempre pelo backend
+- amadurecer a heuristica de OCR de nota conforme os padroes reais dos supermercados usados

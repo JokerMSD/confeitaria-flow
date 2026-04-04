@@ -8,6 +8,7 @@ import {
   Minus,
   PackageSearch,
   Plus,
+  ReceiptText,
   Search,
   ShoppingCart,
   Trash2,
@@ -209,12 +210,20 @@ export default function Estoque() {
             </div>
           </div>
 
-          <Link href="/estoque/novo">
-            <a className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md">
-              <Plus className="h-5 w-5" />
-              Novo Item
-            </a>
-          </Link>
+          <div className="flex shrink-0 gap-3">
+            <Link href="/estoque/importar-nota">
+              <a className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 py-2.5 font-medium text-foreground shadow-sm transition-all hover:bg-muted">
+                <ReceiptText className="h-5 w-5" />
+                Importar nota
+              </a>
+            </Link>
+            <Link href="/estoque/novo">
+              <a className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 font-medium text-primary-foreground shadow-sm transition-all hover:bg-primary/90 hover:shadow-md">
+                <Plus className="h-5 w-5" />
+                Novo Item
+              </a>
+            </Link>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">

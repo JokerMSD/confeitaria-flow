@@ -46,177 +46,186 @@ export class InventoryMovementsService {
   async create(input: CreateInventoryMovementInput) {
     const normalized = this.normalizeInput(input);
 
-    return withTransaction<InventoryMovement>(async (tx) => {
-      const item = await this.inventoryItemsRepository.findById(
-        normalized.itemId,
-        tx,
+    return withTransaction<InventoryMovement>((tx) =>
+      this.createNormalized(normalized, tx),
+    );
+  }
+
+  async createWithExecutor(input: CreateInventoryMovementInput, executor: any) {
+    const normalized = this.normalizeInput(input);
+    return this.createNormalized(normalized, executor);
+  }
+
+  private async createNormalized(normalized: ReturnType<InventoryMovementsService["normalizeInput"]>, tx: any) {
+    const item = await this.inventoryItemsRepository.findById(
+      normalized.itemId,
+      tx,
+    );
+
+    if (!item) {
+      throw new HttpError(404, "Inventory item not found.");
+    }
+
+    if (
+      normalized.purchaseEquivalentQuantity != null &&
+      (item.category !== "Ingrediente" ||
+        item.recipeEquivalentUnit == null ||
+        (item.unit !== "un" && item.unit !== "caixa"))
+    ) {
+      throw new HttpError(
+        400,
+        "Only unit-based ingredients with recipe equivalence can record purchase yield.",
       );
+    }
 
-      if (!item) {
-        throw new HttpError(404, "Inventory item not found.");
-      }
+    const delta = this.resolveDelta(item.currentQuantity, normalized.type, normalized.quantity);
+    const grossPurchaseAmountCents =
+      normalized.purchaseAmountCents != null && isUnitPurchase(item.unit)
+        ? Math.round(normalized.purchaseAmountCents * normalized.quantity)
+        : normalized.purchaseAmountCents;
+    const effectivePurchaseAmountCents =
+      grossPurchaseAmountCents != null
+        ? Math.max(0, grossPurchaseAmountCents - (normalized.purchaseDiscountCents ?? 0))
+        : null;
+    const purchaseCashAmountCents =
+      normalized.purchasePaymentMethod != null &&
+      effectivePurchaseAmountCents != null
+        ? effectivePurchaseAmountCents
+        : null;
 
-      if (
-        normalized.purchaseEquivalentQuantity != null &&
-        (item.category !== "Ingrediente" ||
-          item.recipeEquivalentUnit == null ||
-          (item.unit !== "un" && item.unit !== "caixa"))
-      ) {
-        throw new HttpError(
-          400,
-          "Only unit-based ingredients with recipe equivalence can record purchase yield.",
-        );
-      }
-
-      const delta = this.resolveDelta(item.currentQuantity, normalized.type, normalized.quantity);
-      const grossPurchaseAmountCents =
-        normalized.purchaseAmountCents != null && isUnitPurchase(item.unit)
-          ? Math.round(normalized.purchaseAmountCents * normalized.quantity)
-          : normalized.purchaseAmountCents;
-      const effectivePurchaseAmountCents =
-        grossPurchaseAmountCents != null
-          ? Math.max(0, grossPurchaseAmountCents - (normalized.purchaseDiscountCents ?? 0))
-          : null;
-      const purchaseCashAmountCents =
-        normalized.purchasePaymentMethod != null &&
-        effectivePurchaseAmountCents != null
-          ? effectivePurchaseAmountCents
-          : null;
-
-      if (
-        grossPurchaseAmountCents != null &&
-        effectivePurchaseAmountCents != null &&
-        effectivePurchaseAmountCents <= 0
-      ) {
-        throw new HttpError(
-          400,
-          "Inventory purchase total after discount must be greater than zero.",
-        );
-      }
-
-      if (delta === 0) {
-        throw new HttpError(400, "Inventory movement must change the item quantity.");
-      }
-
-      const updatedItem = await this.inventoryItemsRepository.applyQuantityDelta(
-        item.id,
-        delta,
-        new Date(),
-        tx,
+    if (
+      grossPurchaseAmountCents != null &&
+      effectivePurchaseAmountCents != null &&
+      effectivePurchaseAmountCents <= 0
+    ) {
+      throw new HttpError(
+        400,
+        "Inventory purchase total after discount must be greater than zero.",
       );
+    }
 
-      if (!updatedItem) {
-        throw new HttpError(400, "Inventory movement would make the stock negative.");
-      }
+    if (delta === 0) {
+      throw new HttpError(400, "Inventory movement must change the item quantity.");
+    }
 
-      const createdMovement = await this.inventoryMovementsRepository.create(
+    const updatedItem = await this.inventoryItemsRepository.applyQuantityDelta(
+      item.id,
+      delta,
+      new Date(),
+      tx,
+    );
+
+    if (!updatedItem) {
+      throw new HttpError(400, "Inventory movement would make the stock negative.");
+    }
+
+    const createdMovement = await this.inventoryMovementsRepository.create(
+      {
+        itemId: item.id,
+        type: normalized.type,
+        quantity: delta,
+        reason: normalized.reason,
+        reference: normalized.reference,
+        purchaseAmountCents: effectivePurchaseAmountCents,
+        purchaseDiscountCents: normalized.purchaseDiscountCents,
+        purchasePaymentMethod: normalized.purchasePaymentMethod,
+        purchaseEquivalentQuantity: normalized.purchaseEquivalentQuantity,
+        purchaseEquivalentUnit:
+          normalized.purchaseEquivalentQuantity != null
+            ? item.recipeEquivalentUnit ?? null
+            : null,
+        sourceType: null,
+        sourceId: null,
+        isSystemGenerated: false,
+      },
+      tx,
+    );
+
+    if (
+      normalized.type === "Entrada" &&
+      purchaseCashAmountCents != null &&
+      normalized.purchasePaymentMethod != null
+    ) {
+      await this.cashTransactionsService.registerInventoryPurchaseExpense(
         {
-          itemId: item.id,
-          type: normalized.type,
-          quantity: delta,
-          reason: normalized.reason,
-          reference: normalized.reference,
-          purchaseAmountCents: effectivePurchaseAmountCents,
-          purchaseDiscountCents: normalized.purchaseDiscountCents,
-          purchasePaymentMethod: normalized.purchasePaymentMethod,
-          purchaseEquivalentQuantity: normalized.purchaseEquivalentQuantity,
-          purchaseEquivalentUnit:
-            normalized.purchaseEquivalentQuantity != null
-              ? item.recipeEquivalentUnit ?? null
-              : null,
-          sourceType: null,
-          sourceId: null,
-          isSystemGenerated: false,
+          movementId: createdMovement.id,
+          itemName: item.name,
+          quantity: normalized.quantity,
+          unit: item.unit,
+          amountCents: purchaseCashAmountCents,
+          paymentMethod: normalized.purchasePaymentMethod,
         },
         tx,
       );
+    }
 
-      if (
-        normalized.type === "Entrada" &&
-        purchaseCashAmountCents != null &&
-        normalized.purchasePaymentMethod != null
-      ) {
-        await this.cashTransactionsService.registerInventoryPurchaseExpense(
-          {
-            movementId: createdMovement.id,
-            itemName: item.name,
-            quantity: normalized.quantity,
-            unit: item.unit,
-            amountCents: purchaseCashAmountCents,
-            paymentMethod: normalized.purchasePaymentMethod,
-          },
-          tx,
-        );
-      }
-
-      if (
-        item.category === "Ingrediente" &&
-        normalized.type === "Entrada" &&
-        (effectivePurchaseAmountCents != null ||
-          normalized.purchaseEquivalentQuantity != null)
-      ) {
-        const pricingAccumulatedQuantity =
-          effectivePurchaseAmountCents != null
-            ? (item.pricingAccumulatedQuantity == null
-                ? 0
-                : Number(item.pricingAccumulatedQuantity)) + normalized.quantity
-            : item.pricingAccumulatedQuantity == null
+    if (
+      item.category === "Ingrediente" &&
+      normalized.type === "Entrada" &&
+      (effectivePurchaseAmountCents != null ||
+        normalized.purchaseEquivalentQuantity != null)
+    ) {
+      const pricingAccumulatedQuantity =
+        effectivePurchaseAmountCents != null
+          ? (item.pricingAccumulatedQuantity == null
               ? 0
-              : Number(item.pricingAccumulatedQuantity);
-        const pricingAccumulatedCostCents =
-          effectivePurchaseAmountCents != null
-            ? (item.pricingAccumulatedCostCents == null
-                ? 0
-                : Number(item.pricingAccumulatedCostCents)) + effectivePurchaseAmountCents
-            : item.pricingAccumulatedCostCents == null
+              : Number(item.pricingAccumulatedQuantity)) + normalized.quantity
+          : item.pricingAccumulatedQuantity == null
+            ? 0
+            : Number(item.pricingAccumulatedQuantity);
+      const pricingAccumulatedCostCents =
+        effectivePurchaseAmountCents != null
+          ? (item.pricingAccumulatedCostCents == null
               ? 0
-              : Number(item.pricingAccumulatedCostCents);
+              : Number(item.pricingAccumulatedCostCents)) + effectivePurchaseAmountCents
+          : item.pricingAccumulatedCostCents == null
+            ? 0
+            : Number(item.pricingAccumulatedCostCents);
 
-        const equivalentAccumulatedBaseQuantity =
-          normalized.purchaseEquivalentQuantity != null
-            ? (item.equivalentAccumulatedBaseQuantity == null
-                ? 0
-                : Number(item.equivalentAccumulatedBaseQuantity)) + normalized.quantity
-            : item.equivalentAccumulatedBaseQuantity == null
+      const equivalentAccumulatedBaseQuantity =
+        normalized.purchaseEquivalentQuantity != null
+          ? (item.equivalentAccumulatedBaseQuantity == null
               ? 0
-              : Number(item.equivalentAccumulatedBaseQuantity);
-        const equivalentAccumulatedQuantity =
-          normalized.purchaseEquivalentQuantity != null
-            ? (item.equivalentAccumulatedQuantity == null
-                ? 0
-                : Number(item.equivalentAccumulatedQuantity)) +
-              normalized.purchaseEquivalentQuantity
-            : item.equivalentAccumulatedQuantity == null
+              : Number(item.equivalentAccumulatedBaseQuantity)) + normalized.quantity
+          : item.equivalentAccumulatedBaseQuantity == null
+            ? 0
+            : Number(item.equivalentAccumulatedBaseQuantity);
+      const equivalentAccumulatedQuantity =
+        normalized.purchaseEquivalentQuantity != null
+          ? (item.equivalentAccumulatedQuantity == null
               ? 0
-              : Number(item.equivalentAccumulatedQuantity);
+              : Number(item.equivalentAccumulatedQuantity)) +
+            normalized.purchaseEquivalentQuantity
+          : item.equivalentAccumulatedQuantity == null
+            ? 0
+            : Number(item.equivalentAccumulatedQuantity);
 
-        await this.inventoryItemsRepository.updatePurchaseMetrics(
-          item.id,
-          {
-            recipeEquivalentQuantity:
-              equivalentAccumulatedBaseQuantity > 0
-                ? equivalentAccumulatedQuantity / equivalentAccumulatedBaseQuantity
-                : item.recipeEquivalentQuantity == null
-                  ? null
-                  : Number(item.recipeEquivalentQuantity),
-            purchaseUnitCostCents:
-              pricingAccumulatedQuantity > 0
-                ? Math.round(pricingAccumulatedCostCents / pricingAccumulatedQuantity)
-                : item.purchaseUnitCostCents == null
-                  ? null
-                  : Number(item.purchaseUnitCostCents),
-            pricingAccumulatedQuantity,
-            pricingAccumulatedCostCents,
-            equivalentAccumulatedQuantity,
-            equivalentAccumulatedBaseQuantity,
-            updatedAt: new Date(),
-          },
-          tx,
-        );
-      }
+      await this.inventoryItemsRepository.updatePurchaseMetrics(
+        item.id,
+        {
+          recipeEquivalentQuantity:
+            equivalentAccumulatedBaseQuantity > 0
+              ? equivalentAccumulatedQuantity / equivalentAccumulatedBaseQuantity
+              : item.recipeEquivalentQuantity == null
+                ? null
+                : Number(item.recipeEquivalentQuantity),
+          purchaseUnitCostCents:
+            pricingAccumulatedQuantity > 0
+              ? Math.round(pricingAccumulatedCostCents / pricingAccumulatedQuantity)
+              : item.purchaseUnitCostCents == null
+                ? null
+                : Number(item.purchaseUnitCostCents),
+          pricingAccumulatedQuantity,
+          pricingAccumulatedCostCents,
+          equivalentAccumulatedQuantity,
+          equivalentAccumulatedBaseQuantity,
+          updatedAt: new Date(),
+        },
+        tx,
+      );
+    }
 
-      return this.mapInventoryMovement(createdMovement);
-    });
+    return this.mapInventoryMovement(createdMovement);
   }
 
   async createAutomaticAdjustment(
