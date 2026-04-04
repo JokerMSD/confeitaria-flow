@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { InventoryItemUnit } from "@shared/types";
 import {
   CalendarDays,
   ClipboardList,
@@ -21,6 +22,16 @@ import { Input } from "@/components/ui/input";
 import { useProductionForecast } from "@/features/production/hooks/use-production-forecast";
 import { cn, formatDate, getLocalDateKey } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
+
+function normalizeNearInteger(value: number) {
+  const rounded = Math.round(value);
+
+  if (Math.abs(value - rounded) < 0.001) {
+    return rounded;
+  }
+
+  return value;
+}
 
 function normalizeDisplayQuantity(quantity: number, unit: string) {
   if (unit === "g" && Math.abs(quantity) >= 1000) {
@@ -46,17 +57,51 @@ function getDisplayPrecision(unit: string, quantity: number) {
   return Math.abs(Math.round(quantity) - quantity) < 0.001 ? 0 : 3;
 }
 
-function formatQuantity(quantity: number, unit: string) {
+function formatBaseQuantity(quantity: number, unit: InventoryItemUnit) {
   const normalized = normalizeDisplayQuantity(quantity, unit);
   const fractionDigits = getDisplayPrecision(
     normalized.unit,
     normalized.quantity,
   );
 
-  return `${new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: fractionDigits,
-  }).format(normalized.quantity)} ${normalized.unit}`;
+  return {
+    value: new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: fractionDigits,
+    }).format(normalizeNearInteger(normalized.quantity)),
+    unit: normalized.unit as InventoryItemUnit,
+  };
+}
+
+function formatOperationalQuantity(
+  quantity: number,
+  unit: InventoryItemUnit,
+  recipeEquivalentQuantity?: number | null,
+  recipeEquivalentUnit?: InventoryItemUnit | null,
+) {
+  if (
+    (unit === "un" || unit === "caixa") &&
+    recipeEquivalentQuantity != null &&
+    recipeEquivalentQuantity > 0 &&
+    recipeEquivalentUnit != null
+  ) {
+    const converted = formatBaseQuantity(
+      quantity * recipeEquivalentQuantity,
+      recipeEquivalentUnit,
+    );
+    const original = formatBaseQuantity(quantity, unit);
+
+    return {
+      label: `${converted.value} ${converted.unit}`,
+      detail: `saldo real: ${original.value} ${original.unit}`,
+    };
+  }
+
+  const base = formatBaseQuantity(quantity, unit);
+  return {
+    label: `${base.value} ${base.unit}`,
+    detail: null,
+  };
 }
 
 function getStatusTone(status: string) {
@@ -479,17 +524,33 @@ export default function PrevisaoProducao() {
                   </p>
                   <div className="mt-2 space-y-2">
                     {highlight.items.length > 0 ? (
-                      highlight.items.map((item) => (
-                        <div
-                          key={`${highlight.label}-${item.id}`}
-                          className="flex items-center justify-between gap-3 text-sm"
-                        >
-                          <span className="text-foreground">{item.name}</span>
-                          <span className="font-semibold text-primary">
-                            {formatQuantity(item.quantity, item.unit)}
-                          </span>
-                        </div>
-                      ))
+                      highlight.items.map((item) => {
+                        const formatted = formatOperationalQuantity(
+                          item.quantity,
+                          item.unit,
+                          item.recipeEquivalentQuantity,
+                          item.recipeEquivalentUnit,
+                        );
+
+                        return (
+                          <div
+                            key={`${highlight.label}-${item.id}`}
+                            className="flex items-center justify-between gap-3 text-sm"
+                          >
+                            <span className="text-foreground">{item.name}</span>
+                            <div className="text-right">
+                              <span className="font-semibold text-primary">
+                                {formatted.label}
+                              </span>
+                              {formatted.detail ? (
+                                <div className="text-[11px] text-muted-foreground">
+                                  {formatted.detail}
+                                </div>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      })
                     ) : (
                       <p className="text-sm text-muted-foreground">
                         {highlight.empty}
@@ -524,7 +585,14 @@ export default function PrevisaoProducao() {
                     <div className="flex items-center justify-between gap-3">
                       <p className="font-medium text-foreground">{item.name}</p>
                       <span className="text-sm font-semibold text-primary">
-                        {formatQuantity(item.quantity, item.unit)}
+                        {
+                          formatOperationalQuantity(
+                            item.quantity,
+                            item.unit,
+                            item.recipeEquivalentQuantity,
+                            item.recipeEquivalentUnit,
+                          ).label
+                        }
                       </span>
                     </div>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
@@ -557,17 +625,32 @@ export default function PrevisaoProducao() {
                   Nenhum ingrediente previsto no periodo.
                 </p>
               ) : (
-                topIngredients.map((item) => (
-                  <div
-                    key={item.id}
-                    className="rounded-2xl border border-border/70 bg-background/80 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="font-medium text-foreground">{item.name}</p>
-                      <span className="text-sm font-semibold text-primary">
-                        {formatQuantity(item.quantity, item.unit)}
-                      </span>
-                    </div>
+                topIngredients.map((item) => {
+                  const formatted = formatOperationalQuantity(
+                    item.quantity,
+                    item.unit,
+                    item.recipeEquivalentQuantity,
+                    item.recipeEquivalentUnit,
+                  );
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl border border-border/70 bg-background/80 p-4"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="font-medium text-foreground">{item.name}</p>
+                        <div className="text-right">
+                          <span className="text-sm font-semibold text-primary">
+                            {formatted.label}
+                          </span>
+                          {formatted.detail ? (
+                            <div className="text-[11px] text-muted-foreground">
+                              {formatted.detail}
+                            </div>
+                          ) : null}
+                        </div>
+                      </div>
                     <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-[#6f3d2f] to-[#ef9fb3]"
@@ -579,8 +662,9 @@ export default function PrevisaoProducao() {
                         }}
                       />
                     </div>
-                  </div>
-                ))
+                    </div>
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -611,7 +695,14 @@ export default function PrevisaoProducao() {
                         </p>
                       </div>
                       <span className="text-sm font-semibold text-primary">
-                        {formatQuantity(item.quantity, item.unit)}
+                        {
+                          formatOperationalQuantity(
+                            item.quantity,
+                            item.unit,
+                            item.recipeEquivalentQuantity,
+                            item.recipeEquivalentUnit,
+                          ).label
+                        }
                       </span>
                     </div>
                   </div>
@@ -680,8 +771,34 @@ export default function PrevisaoProducao() {
                 </div>
               ) : (
                 <div className="grid gap-3 xl:grid-cols-2">
-                  {purchaseSuggestions?.items.slice(0, 8).map((item) => (
-                    <div
+                  {purchaseSuggestions?.items.slice(0, 8).map((item) => {
+                    const current = formatOperationalQuantity(
+                      item.currentQuantity,
+                      item.itemUnit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
+                    const required = formatOperationalQuantity(
+                      item.requiredQuantity,
+                      item.itemUnit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
+                    const deficit = formatOperationalQuantity(
+                      item.deficitQuantity,
+                      item.itemUnit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
+                    const suggested = formatOperationalQuantity(
+                      item.suggestedPurchaseQuantity,
+                      item.itemUnit,
+                      item.recipeEquivalentQuantity,
+                      item.recipeEquivalentUnit,
+                    );
+
+                    return (
+                      <div
                       key={item.itemId}
                       className="rounded-2xl border border-border/70 bg-background/80 p-4"
                     >
@@ -692,20 +809,14 @@ export default function PrevisaoProducao() {
                           </p>
                           <p className="mt-1 text-xs text-muted-foreground">
                             Em estoque:{" "}
-                            {formatQuantity(
-                              item.currentQuantity,
-                              item.itemUnit,
-                            )}{" "}
+                            {current.label}{" "}
                             • Necessario:{" "}
-                            {formatQuantity(
-                              item.requiredQuantity,
-                              item.itemUnit,
-                            )}
+                            {required.label}
                           </p>
                         </div>
                         <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
                           Falta{" "}
-                          {formatQuantity(item.deficitQuantity, item.itemUnit)}
+                          {deficit.label}
                         </span>
                       </div>
                       <div className="mt-4 flex items-center justify-between gap-3">
@@ -714,11 +825,13 @@ export default function PrevisaoProducao() {
                             Comprar
                           </p>
                           <p className="text-lg font-bold text-foreground">
-                            {formatQuantity(
-                              item.suggestedPurchaseQuantity,
-                              item.itemUnit,
-                            )}
+                            {suggested.label}
                           </p>
+                          {suggested.detail ? (
+                            <p className="mt-1 text-[11px] text-muted-foreground">
+                              {suggested.detail}
+                            </p>
+                          ) : null}
                         </div>
                         <div className="text-right">
                           <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -734,8 +847,9 @@ export default function PrevisaoProducao() {
                           </p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

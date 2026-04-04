@@ -7,12 +7,16 @@ export interface ProductionForecastAggregate {
   name: string;
   quantity: number;
   unit: InventoryItemUnit;
+  recipeEquivalentQuantity?: number | null;
+  recipeEquivalentUnit?: InventoryItemUnit | null;
 }
 
 export interface ProductionForecastPurchaseSuggestion {
   itemId: string;
   itemName: string;
   itemUnit: InventoryItemUnit;
+  recipeEquivalentQuantity?: number | null;
+  recipeEquivalentUnit?: InventoryItemUnit | null;
   currentQuantity: number;
   requiredQuantity: number;
   deficitQuantity: number;

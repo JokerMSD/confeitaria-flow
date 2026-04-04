@@ -45,6 +45,22 @@ function addAggregate(
   target.set(aggregate.id, { ...aggregate, quantity: roundQuantity(aggregate.quantity) });
 }
 
+function buildOperationalAggregate(
+  base: {
+    id: string;
+    name: string;
+    quantity: number;
+    unit: InventoryItem["unit"];
+  },
+  item?: InventoryItem | null,
+): ProductionForecastAggregate {
+  return {
+    ...base,
+    recipeEquivalentQuantity: item?.recipeEquivalentQuantity ?? null,
+    recipeEquivalentUnit: item?.recipeEquivalentUnit ?? null,
+  };
+}
+
 function isForecastSkippableError(error: unknown) {
   if (!(error instanceof Error)) {
     return false;
@@ -268,10 +284,15 @@ export class ProductionForecastService {
         );
 
         addAggregate(ingredientTotals, {
-          id: item.id,
-          name: item.name,
-          quantity: inventoryQuantity,
-          unit: item.unit,
+          ...buildOperationalAggregate(
+            {
+              id: item.id,
+              name: item.name,
+              quantity: inventoryQuantity,
+              unit: item.unit,
+            },
+            item,
+          ),
         });
         continue;
       }
@@ -416,6 +437,8 @@ export class ProductionForecastService {
         itemId: item.id,
         itemName: item.name,
         itemUnit: item.unit,
+        recipeEquivalentQuantity: item.recipeEquivalentQuantity,
+        recipeEquivalentUnit: item.recipeEquivalentUnit,
         currentQuantity: roundToThreeDecimals(item.currentQuantity),
         requiredQuantity,
         deficitQuantity,
