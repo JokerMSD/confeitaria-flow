@@ -3,28 +3,24 @@ import { Link, useLocation } from "wouter";
 import type { ListInventoryItemsFilters } from "@shared/types";
 import {
   AlertTriangle,
-  Calculator,
   Edit,
   Minus,
   PackageSearch,
   Plus,
   ReceiptText,
   Search,
-  ShoppingCart,
   Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
 import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-items";
-import { useInventoryPurchasePlan } from "@/features/inventory/hooks/use-inventory-purchase-plan";
 import { useDeleteInventoryItem } from "@/features/inventory/hooks/use-delete-inventory-item";
 import { useCreateInventoryMovement } from "@/features/inventory/hooks/use-create-inventory-movement";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
-import { adaptInventoryPurchasePlan } from "@/features/inventory/lib/inventory-purchase-plan-adapter";
 import { formatInventoryQuantity } from "@/features/inventory/lib/inventory-quantity-display";
 import { getQuantityStep } from "@/features/inventory/lib/inventory-input-helpers";
 
@@ -33,8 +29,12 @@ export default function Estoque() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("todas");
-  const [quickQuantities, setQuickQuantities] = useState<Record<string, string>>({});
-  const [pendingQuickItemId, setPendingQuickItemId] = useState<string | null>(null);
+  const [quickQuantities, setQuickQuantities] = useState<Record<string, string>>(
+    {},
+  );
+  const [pendingQuickItemId, setPendingQuickItemId] = useState<string | null>(
+    null,
+  );
 
   const categories = ["todas", "Produto Pronto", "Ingrediente", "Embalagem"];
 
@@ -54,7 +54,6 @@ export default function Estoque() {
   );
 
   const inventoryQuery = useInventoryItems(filters);
-  const purchasePlanQuery = useInventoryPurchasePlan();
   const deleteInventoryMutation = useDeleteInventoryItem();
   const createInventoryMovementMutation = useCreateInventoryMovement();
 
@@ -71,14 +70,6 @@ export default function Estoque() {
         return a.name.localeCompare(b.name);
       }),
     [inventory],
-  );
-
-  const purchasePlan = useMemo(
-    () =>
-      purchasePlanQuery.data?.data
-        ? adaptInventoryPurchasePlan(purchasePlanQuery.data.data)
-        : null,
-    [purchasePlanQuery.data],
   );
 
   const getQuickQuantityValue = (itemId: string) => quickQuantities[itemId] ?? "";
@@ -120,7 +111,7 @@ export default function Estoque() {
     try {
       await deleteInventoryMutation.mutateAsync(id);
       toast({
-        title: "Item excluído",
+        title: "Item excluido",
         description: "O item foi removido do estoque com sucesso.",
       });
     } catch (error) {
@@ -129,7 +120,7 @@ export default function Estoque() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Não foi possível excluir o item do estoque.",
+            : "Nao foi possivel excluir o item do estoque.",
         variant: "destructive",
       });
     }
@@ -144,7 +135,7 @@ export default function Estoque() {
 
     if (quantity == null) {
       toast({
-        title: "Quantidade inválida",
+        title: "Quantidade invalida",
         description: "Informe uma quantidade maior que zero.",
         variant: "destructive",
       });
@@ -177,7 +168,7 @@ export default function Estoque() {
         description:
           error instanceof ApiError
             ? error.message
-            : "Não foi possível atualizar o estoque rapidamente.",
+            : "Nao foi possivel atualizar o estoque rapidamente.",
         variant: "destructive",
       });
     } finally {
@@ -235,134 +226,6 @@ export default function Estoque() {
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-          <div className="border-b border-border/50 bg-muted/20 p-5 sm:p-6">
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h3 className="flex items-center gap-2 text-lg font-bold">
-                    <ShoppingCart className="h-5 w-5 text-primary" />
-                    Necessidade de Compra
-                  </h3>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    Calculado pelos pedidos ainda em produção: novo, confirmado e em produção.
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2 text-sm">
-                  <span className="rounded-full border bg-background px-3 py-1.5">
-                    Pedidos: {purchasePlanQuery.isLoading ? "..." : purchasePlan?.pendingOrderCount ?? 0}
-                  </span>
-                  <span className="rounded-full border bg-background px-3 py-1.5">
-                    Itens faltando: {purchasePlanQuery.isLoading ? "..." : purchasePlan?.shortageItemCount ?? 0}
-                  </span>
-                  <span className="rounded-full border bg-background px-3 py-1.5 font-semibold">
-                    Gasto estimado: {purchasePlanQuery.isLoading ? "..." : formatCurrency(purchasePlan?.estimatedPurchaseCost ?? 0)}
-                  </span>
-                </div>
-              </div>
-
-              {purchasePlanQuery.isLoading ? (
-                <div className="text-sm text-muted-foreground">
-                  Calculando necessidade de compra...
-                </div>
-              ) : purchasePlanQuery.isError ? (
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-muted-foreground">
-                    Não foi possível calcular a necessidade de compra.
-                  </p>
-                  <Button variant="outline" onClick={() => purchasePlanQuery.refetch()}>
-                    Tentar novamente
-                  </Button>
-                </div>
-              ) : !purchasePlan || purchasePlan.items.length === 0 ? (
-                <div className="text-sm text-muted-foreground">
-                  Nenhuma compra necessária para os pedidos ainda não finalizados.
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-                  {purchasePlan.items.map((planItem) => {
-                    const current = formatQuantity(
-                      planItem.currentQuantity,
-                      planItem.itemUnit,
-                      planItem.recipeEquivalentQuantity,
-                      planItem.recipeEquivalentUnit,
-                    );
-                    const required = formatQuantity(
-                      planItem.requiredQuantity,
-                      planItem.itemUnit,
-                      planItem.recipeEquivalentQuantity,
-                      planItem.recipeEquivalentUnit,
-                    );
-                    const suggested = formatQuantity(
-                      planItem.suggestedPurchaseQuantity,
-                      planItem.itemUnit,
-                      planItem.recipeEquivalentQuantity,
-                      planItem.recipeEquivalentUnit,
-                    );
-                    const deficit = formatQuantity(
-                      planItem.deficitQuantity,
-                      planItem.itemUnit,
-                      planItem.recipeEquivalentQuantity,
-                      planItem.recipeEquivalentUnit,
-                    );
-
-                    return (
-                      <div
-                        key={planItem.itemId}
-                        className="space-y-3 rounded-xl border border-border bg-background p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold">{planItem.itemName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              Estoque atual: {current.inlineLabel} {"\u2022"} Necessário: {required.inlineLabel}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-destructive">
-                              Comprar {suggested.inlineLabel}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Falta: {deficit.inlineLabel}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="flex items-center gap-1 text-muted-foreground">
-                            <Calculator className="h-4 w-4" />
-                            Gasto estimado
-                          </span>
-                          <span className="font-semibold">
-                            {planItem.estimatedPurchaseCost == null
-                              ? "Sem custo cadastrado"
-                              : formatCurrency(planItem.estimatedPurchaseCost)}
-                          </span>
-                        </div>
-
-                        <div className="space-y-1 text-xs text-muted-foreground">
-                          <p>Usado em {planItem.sourceCount} item(ns) de pedido.</p>
-                          <p className="line-clamp-2">
-                            {planItem.sources
-                              .slice(0, 3)
-                              .map((source) => `${source.orderNumber} • ${source.productName}`)
-                              .join(" | ")}
-                            {planItem.sources.length > 3 ? " | ..." : ""}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {purchasePlan?.hasItemsWithoutCost && (
-                <p className="text-xs text-amber-700">
-                  Alguns ingredientes sem custo cadastrado ficaram fora do gasto estimado.
-                </p>
-              )}
-            </div>
-          </div>
-
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="border-b border-border bg-muted/50 font-semibold text-muted-foreground">
@@ -373,10 +236,10 @@ export default function Estoque() {
                   </th>
                   <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Quantidade</th>
                   <th className="hidden px-4 py-3 text-right md:table-cell sm:px-6 sm:py-4">
-                    Mínimo
+                    Minimo
                   </th>
                   <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Status</th>
-                  <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Ações</th>
+                  <th className="px-4 py-3 text-right sm:px-6 sm:py-4">Acoes</th>
                 </tr>
               </thead>
 
@@ -393,7 +256,7 @@ export default function Estoque() {
                       colSpan={6}
                       className="space-y-3 px-6 py-12 text-center text-muted-foreground"
                     >
-                      <p>Não foi possível carregar o estoque.</p>
+                      <p>Nao foi possivel carregar o estoque.</p>
                       <Button variant="outline" onClick={() => inventoryQuery.refetch()}>
                         Tentar novamente
                       </Button>
