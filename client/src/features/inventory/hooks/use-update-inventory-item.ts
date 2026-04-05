@@ -1,8 +1,7 @@
 import type { UpdateInventoryItemRequest } from "@shared/types";
 import { useMutation } from "@tanstack/react-query";
 import { updateInventoryItem } from "@/api/inventory-api";
-import { queryClient } from "@/lib/queryClient";
-import { inventoryQueryKeys } from "../lib/inventory-query-keys";
+import { invalidateOperationalData } from "@/lib/operational-query";
 
 export function useUpdateInventoryItem() {
   return useMutation({
@@ -14,14 +13,9 @@ export function useUpdateInventoryItem() {
       payload: UpdateInventoryItemRequest;
     }) => updateInventoryItem(id, payload),
     onSuccess: async (_, variables) => {
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: inventoryQueryKeys.all,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: inventoryQueryKeys.detail(variables.id),
-        }),
-      ]);
+      await invalidateOperationalData({
+        inventoryItemId: variables.id,
+      });
     },
   });
 }

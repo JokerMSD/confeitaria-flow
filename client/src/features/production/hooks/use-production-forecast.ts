@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getProductionForecast } from "@/api/production-api";
+import { operationalQueryOptions } from "@/lib/operational-query";
 import { productionQueryKeys } from "../lib/production-query-keys";
 
 export function useProductionForecast(filters: {
@@ -10,5 +11,6 @@ export function useProductionForecast(filters: {
   return useQuery({
     queryKey: productionQueryKeys.forecast(filters),
     queryFn: () => getProductionForecast(filters),
+    ...operationalQueryOptions,
   });
 }

@@ -7,6 +7,7 @@ import {
   updateAccountProfile,
 } from "@/api/account-api";
 import { queryClient } from "@/lib/queryClient";
+import { operationalQueryOptions } from "@/lib/operational-query";
 import { authQueryKeys } from "@/features/auth/lib/auth-query-keys";
 import { accountQueryKeys } from "../lib/account-query-keys";
 
@@ -15,6 +16,7 @@ export function useAccountProfile(enabled = true) {
     queryKey: accountQueryKeys.profile(),
     queryFn: getAccountProfile,
     enabled,
+    ...operationalQueryOptions,
   });
 }
 
@@ -23,6 +25,7 @@ export function useAccountOrders(enabled = true) {
     queryKey: accountQueryKeys.orders(),
     queryFn: getAccountOrders,
     enabled,
+    ...operationalQueryOptions,
   });
 }
 

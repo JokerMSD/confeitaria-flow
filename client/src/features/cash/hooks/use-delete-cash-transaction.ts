@@ -1,15 +1,12 @@
 import { useMutation } from "@tanstack/react-query";
 import { deleteCashTransaction } from "@/api/cash-api";
-import { queryClient } from "@/lib/queryClient";
-import { cashQueryKeys } from "../lib/cash-query-keys";
+import { invalidateOperationalData } from "@/lib/operational-query";
 
 export function useDeleteCashTransaction() {
   return useMutation({
     mutationFn: deleteCashTransaction,
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: cashQueryKeys.all,
-      });
+      await invalidateOperationalData();
     },
   });
 }
