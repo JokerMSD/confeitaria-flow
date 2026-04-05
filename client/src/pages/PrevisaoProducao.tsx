@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CupSoda,
   Layers3,
+  MoonStar,
   PackageCheck,
   PackageSearch,
   Sparkles,
@@ -427,7 +428,7 @@ export default function PrevisaoProducao() {
           })}
         </section>
 
-        <section className="grid gap-4 xl:grid-cols-[1.25fr_0.95fr]">
+        <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr_0.9fr]">
           <Card className="overflow-hidden border-border/70 shadow-sm">
             <CardHeader className="border-b border-border/60 bg-muted/20">
               <CardTitle className="flex items-center gap-2">
@@ -501,6 +502,54 @@ export default function PrevisaoProducao() {
                       </div>
                     ))}
                   </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border-border/70 shadow-sm">
+            <CardHeader className="border-b border-border/60 bg-muted/20">
+              <CardTitle className="flex items-center gap-2">
+                <MoonStar className="h-5 w-5 text-primary" />
+                Cascas para produzir
+              </CardTitle>
+              <CardDescription>
+                Ovo de colher conta 1 metade. Ovo trufado conta 2 metades.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 p-5">
+              {(forecast?.shellRequirements ?? []).map((item) => (
+                <div
+                  key={item.sizeLabel}
+                  className="rounded-2xl border border-border/70 bg-background/80 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                        Casca {item.sizeLabel}
+                      </p>
+                      <p className="mt-2 font-display text-3xl font-bold text-foreground">
+                        {new Intl.NumberFormat("pt-BR", {
+                          maximumFractionDigits: 0,
+                        }).format(item.shellCount)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                        Ovo fechado
+                      </p>
+                      <p className="mt-2 text-lg font-semibold text-primary">
+                        {new Intl.NumberFormat("pt-BR", {
+                          minimumFractionDigits:
+                            Math.abs(item.closedEggEquivalent % 1) > 0.001 ? 1 : 0,
+                          maximumFractionDigits: 1,
+                        }).format(item.closedEggEquivalent)}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                    Quantidade de metades para deixar prontas neste tamanho.
+                  </p>
                 </div>
               ))}
             </CardContent>

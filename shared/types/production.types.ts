@@ -33,6 +33,12 @@ export interface ProductionForecastOrderReference {
   status: OrderStatus;
 }
 
+export interface ProductionForecastShellRequirement {
+  sizeLabel: "350g" | "500g" | "750g";
+  shellCount: number;
+  closedEggEquivalent: number;
+}
+
 export interface ProductionForecast {
   generatedAt: string;
   filters: {
@@ -61,6 +67,7 @@ export interface ProductionForecast {
     hasItemsWithoutCost: boolean;
     items: ProductionForecastPurchaseSuggestion[];
   };
+  shellRequirements: ProductionForecastShellRequirement[];
   orders: ProductionForecastOrderReference[];
 }
 

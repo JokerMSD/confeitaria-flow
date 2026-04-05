@@ -3,6 +3,7 @@ import type {
   ProductionForecast,
   ProductionForecastAggregate,
   ProductionForecastPurchaseSuggestion,
+  ProductionForecastShellRequirement,
   RecipeDetail,
 } from "@shared/types";
 import {
@@ -29,6 +30,38 @@ function normalizeLabel(value: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim();
+}
+
+function getShellRequirementFromRecipeName(
+  recipeName: string,
+): { sizeLabel: ProductionForecastShellRequirement["sizeLabel"]; shellCount: number } | null {
+  const normalized = normalizeLabel(recipeName);
+  const sizeMatch = normalized.match(/\b(350g|500g|750g)\b/);
+
+  if (!sizeMatch) {
+    return null;
+  }
+
+  const sizeLabel = sizeMatch[1] as ProductionForecastShellRequirement["sizeLabel"];
+
+  if (normalized.includes("ovo de colher")) {
+    return {
+      sizeLabel,
+      shellCount: 1,
+    };
+  }
+
+  if (
+    normalized.includes("ovo trufado") ||
+    normalized.includes("ovo de pascoa recheado")
+  ) {
+    return {
+      sizeLabel,
+      shellCount: 2,
+    };
+  }
+
+  return null;
 }
 
 function addAggregate(
@@ -90,6 +123,10 @@ export class ProductionForecastService {
     const recipeTotals = new Map<string, ProductionForecastAggregate>();
     const ingredientTotals = new Map<string, ProductionForecastAggregate>();
     const fillingTotals = new Map<string, ProductionForecastAggregate>();
+    const shellRequirements = new Map<
+      ProductionForecastShellRequirement["sizeLabel"],
+      ProductionForecastShellRequirement
+    >();
     const additionalTotals = new Map<
       string,
       ProductionForecastAggregate & { groupName: string }
@@ -143,6 +180,29 @@ export class ProductionForecastService {
 
         if (!resolvedRecipe?.recipeId) {
           continue;
+        }
+
+        const resolvedRecipeDetail = await this.getRecipe(resolvedRecipe.recipeId);
+        const shellRequirement = getShellRequirementFromRecipeName(
+          resolvedRecipeDetail.name,
+        );
+
+        if (shellRequirement) {
+          const current =
+            shellRequirements.get(shellRequirement.sizeLabel) ?? {
+              sizeLabel: shellRequirement.sizeLabel,
+              shellCount: 0,
+              closedEggEquivalent: 0,
+            };
+
+          current.shellCount = roundQuantity(
+            current.shellCount + row.quantity * shellRequirement.shellCount,
+          );
+          current.closedEggEquivalent = roundQuantity(
+            current.closedEggEquivalent +
+              (row.quantity * shellRequirement.shellCount) / 2,
+          );
+          shellRequirements.set(shellRequirement.sizeLabel, current);
         }
 
         await this.collectRecipeDemand(
@@ -238,6 +298,13 @@ export class ProductionForecastService {
         ),
       },
       purchaseSuggestions,
+      shellRequirements: (["350g", "500g", "750g"] as const).map((sizeLabel) =>
+        shellRequirements.get(sizeLabel) ?? {
+          sizeLabel,
+          shellCount: 0,
+          closedEggEquivalent: 0,
+        },
+      ),
       orders: Array.from(orders.values()).sort((a, b) =>
         a.deliveryDate === b.deliveryDate
           ? a.orderNumber.localeCompare(b.orderNumber)
