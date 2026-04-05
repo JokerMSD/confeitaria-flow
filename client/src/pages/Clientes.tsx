@@ -314,7 +314,7 @@ export default function Clientes() {
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 gap-4 2xl:grid-cols-2">
                   {customers.map((customer) => {
                     const fullName = getCustomerFullName(
                       customer.firstName,
@@ -324,9 +324,9 @@ export default function Clientes() {
                     return (
                       <article
                         key={customer.id}
-                        className="rounded-[1.6rem] border border-border/70 bg-background/55 p-5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
+                        className="flex h-full flex-col rounded-[1.6rem] border border-border/70 bg-background/55 p-5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
                       >
-                        <div className="space-y-5">
+                        <div className="flex h-full flex-col space-y-5">
                           <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
                             <div className="min-w-0 flex-1 space-y-4">
                               <div className="flex flex-wrap items-center gap-3">
@@ -390,7 +390,7 @@ export default function Clientes() {
                               </div>
                             </div>
 
-                            <div className="grid shrink-0 gap-3 sm:grid-cols-3 xl:w-full xl:max-w-[460px]">
+                            <div className="grid gap-3 sm:grid-cols-3 xl:w-full xl:max-w-[460px]">
                               <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                   Total gasto
@@ -418,7 +418,7 @@ export default function Clientes() {
                             </div>
                           </div>
 
-                          <div className="grid gap-3 border-t border-border/60 pt-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
+                          <div className="mt-auto grid gap-3 border-t border-border/60 pt-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
                             <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-3">
                               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                 Atualizado
