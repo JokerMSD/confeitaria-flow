@@ -2,14 +2,20 @@ import type {
   CustomerDetail,
   CustomerListItem,
   CreateCustomerInput,
+  ListCustomersFilters,
   UpdateCustomerInput,
 } from "@shared/types";
 import { httpClient } from "./http-client";
 
-export function listCustomers(search?: string) {
-  const query = search
-    ? `?${new URLSearchParams({ search }).toString()}`
-    : "";
+export function listCustomers(filters: ListCustomersFilters = {}) {
+  const params = new URLSearchParams();
+  if (filters.search) {
+    params.set("search", filters.search);
+  }
+  if (filters.sort) {
+    params.set("sort", filters.sort);
+  }
+  const query = params.size > 0 ? `?${params.toString()}` : "";
 
   return httpClient<{ data: CustomerListItem[] }>(`/api/customers${query}`);
 }

@@ -34,6 +34,13 @@ export interface CustomerDetail extends CustomerListItem {
 
 export interface ListCustomersFilters {
   search?: string;
+  sort?:
+    | "name-asc"
+    | "name-desc"
+    | "spent-desc"
+    | "spent-asc"
+    | "last-order-desc"
+    | "last-order-asc";
 }
 
 export interface CreateCustomerInput {

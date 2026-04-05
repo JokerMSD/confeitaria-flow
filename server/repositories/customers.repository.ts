@@ -28,11 +28,13 @@ export class CustomersRepository {
       );
     }
 
-    return executor
+    const rows = await executor
       .select()
       .from(customers)
       .where(and(...conditions))
       .orderBy(asc(customers.lastName), asc(customers.firstName));
+
+    return rows;
   }
 
   async findById(id: string, executor: Executor = getDb()) {

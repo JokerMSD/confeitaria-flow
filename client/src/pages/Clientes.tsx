@@ -11,6 +11,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  ArrowDownAZ,
   CalendarDays,
   Loader2,
   Mail,
@@ -18,9 +19,9 @@ import {
   Plus,
   Search,
   ShoppingBag,
+  Trash2,
   Truck,
   UserRound,
-  Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,14 @@ import { useDeleteCustomer } from "@/features/customers/hooks/use-delete-custome
 import { useOrders } from "@/features/orders/hooks/use-orders";
 import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter";
 import { useToast } from "@/hooks/use-toast";
+
+type CustomerSort =
+  | "name-asc"
+  | "name-desc"
+  | "spent-desc"
+  | "spent-asc"
+  | "last-order-desc"
+  | "last-order-asc";
 
 function getCustomerFullName(firstName: string, lastName: string) {
   return `${firstName} ${lastName}`.trim();
@@ -49,14 +58,16 @@ function StatCard({
 }) {
   return (
     <Card className="rounded-[1.8rem] border-border/70 bg-card/80 p-5 shadow-sm">
-      <div className="flex min-h-[112px] items-start justify-between gap-4">
+      <div className="flex min-h-[112px] flex-col justify-between gap-4 lg:min-h-0 lg:flex-row lg:items-start">
         <div className="min-w-0 space-y-2">
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             {label}
           </p>
-          <p className="text-sm leading-6 text-muted-foreground">{detail}</p>
+          <p className="max-w-[28ch] text-sm leading-6 text-muted-foreground">
+            {detail}
+          </p>
         </div>
-        <p className="shrink-0 text-right font-display text-4xl font-bold text-foreground">
+        <p className="shrink-0 text-left font-display text-4xl font-bold text-foreground lg:text-right">
           {value}
         </p>
       </div>
@@ -66,12 +77,13 @@ function StatCard({
 
 export default function Clientes() {
   const [search, setSearch] = useState("");
+  const [customerSort, setCustomerSort] = useState<CustomerSort>("name-asc");
   const [activeTab, setActiveTab] = useState<"clientes" | "pedidos">("clientes");
   const [customerPendingDelete, setCustomerPendingDelete] = useState<{
     id: string;
     fullName: string;
   } | null>(null);
-  const customersQuery = useCustomers(search);
+  const customersQuery = useCustomers({ search, sort: customerSort });
   const ordersQuery = useOrders({ search });
   const deleteCustomerMutation = useDeleteCustomer();
   const { toast } = useToast();
@@ -123,7 +135,7 @@ export default function Clientes() {
     try {
       await deleteCustomerMutation.mutateAsync(customerPendingDelete.id);
       toast({
-        title: "Cliente excluído",
+        title: "Cliente excluido",
         description: "O cadastro foi removido com sucesso.",
       });
       setCustomerPendingDelete(null);
@@ -131,7 +143,7 @@ export default function Clientes() {
       const message =
         error instanceof Error
           ? error.message
-          : "Não foi possível excluir o cliente agora.";
+          : "Nao foi possivel excluir o cliente agora.";
       toast({
         title: "Erro ao excluir cliente",
         description: message,
@@ -154,8 +166,8 @@ export default function Clientes() {
                   Clientes e pedidos
                 </h1>
                 <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
-                  Use a mesma área para navegar pela carteira de clientes e pela
-                  visão geral dos pedidos sem trocar de contexto.
+                  Use a mesma area para navegar pela carteira de clientes e pela
+                  visao geral dos pedidos sem trocar de contexto.
                 </p>
               </div>
             </div>
@@ -196,18 +208,38 @@ export default function Clientes() {
               </TabsTrigger>
             </TabsList>
 
-            <div className="relative w-full max-w-xl">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="h-12 rounded-full border-border/80 pl-11 pr-4"
-                placeholder={
-                  activeTab === "clientes"
-                    ? "Buscar por nome, telefone ou e-mail"
-                    : "Buscar por cliente ou número do pedido"
-                }
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-              />
+            <div className="flex w-full max-w-5xl flex-col gap-3 lg:flex-row lg:items-center lg:justify-end">
+              <div className="relative w-full lg:max-w-xl">
+                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="h-12 rounded-full border-border/80 pl-11 pr-4"
+                  placeholder={
+                    activeTab === "clientes"
+                      ? "Buscar por nome, telefone ou e-mail"
+                      : "Buscar por cliente ou numero do pedido"
+                  }
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                />
+              </div>
+
+              {activeTab === "clientes" ? (
+                <div className="relative w-full lg:w-[270px]">
+                  <ArrowDownAZ className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <select
+                    value={customerSort}
+                    onChange={(event) => setCustomerSort(event.target.value as CustomerSort)}
+                    className="h-12 w-full appearance-none rounded-full border border-border/80 bg-background pl-11 pr-4 text-sm text-foreground outline-none transition-colors hover:border-primary/35"
+                  >
+                    <option value="name-asc">Nome A - Z</option>
+                    <option value="name-desc">Nome Z - A</option>
+                    <option value="spent-desc">Maior gasto</option>
+                    <option value="spent-asc">Menor gasto</option>
+                    <option value="last-order-desc">Pedido mais recente</option>
+                    <option value="last-order-asc">Pedido mais antigo</option>
+                  </select>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -221,17 +253,17 @@ export default function Clientes() {
               <StatCard
                 label="Clientes ativos"
                 value={activeCustomers}
-                detail="Cadastros ativos e disponíveis para operação."
+                detail="Cadastros ativos e disponiveis para operacao."
               />
               <StatCard
                 label="Pedidos em aberto"
                 value={totalOpenOrders}
-                detail="Pedidos ainda pendentes de produção, entrega ou retirada."
+                detail="Pedidos ainda pendentes de producao, entrega ou retirada."
               />
               <StatCard
-                label="Receita histórica"
+                label="Receita historica"
                 value={formatCurrency(totalRevenue / 100)}
-                detail="Soma do histórico comercial dos clientes filtrados."
+                detail="Soma do historico comercial dos clientes filtrados."
               />
             </section>
 
@@ -248,8 +280,7 @@ export default function Clientes() {
                       Erro ao carregar clientes
                     </h2>
                     <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                      Não foi possível montar a visão comercial agora. Tente recarregar
-                      a lista.
+                      Nao foi possivel montar a visao comercial agora. Tente recarregar a lista.
                     </p>
                   </div>
                   <Button
@@ -270,8 +301,7 @@ export default function Clientes() {
                       Nenhum cliente encontrado
                     </h2>
                     <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                      Ajuste a busca ou crie um novo cadastro para começar a montar a
-                      base comercial.
+                      Ajuste a busca ou crie um novo cadastro para comecar a montar a base comercial.
                     </p>
                   </div>
                   <Link href="/clientes/novo">
@@ -296,134 +326,141 @@ export default function Clientes() {
                         key={customer.id}
                         className="rounded-[1.6rem] border border-border/70 bg-background/55 p-5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
                       >
-                        <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-                          <div className="min-w-0 flex-1 space-y-4">
-                            <div className="flex flex-wrap items-center gap-3">
-                              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                                <UserRound className="h-5 w-5" />
-                              </div>
-                              <div className="min-w-0">
-                                <h2 className="truncate text-xl font-semibold text-foreground">
-                                  {fullName}
-                                </h2>
-                                <div className="mt-1 flex flex-wrap gap-2">
-                                  <span
-                                    className={cn(
-                                      "rounded-full border px-3 py-1 text-xs font-semibold",
-                                      customer.isActive
-                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/30 dark:text-emerald-300"
-                                        : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-300",
-                                    )}
-                                  >
-                                    {customer.isActive ? "Ativo" : "Inativo"}
-                                  </span>
-                                  {customer.openOrderCount > 0 ? (
-                                    <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                                      {customer.openOrderCount} pedido(s) em aberto
+                        <div className="space-y-5">
+                          <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.4fr)_minmax(380px,0.9fr)]">
+                            <div className="min-w-0 space-y-4">
+                              <div className="flex flex-wrap items-center gap-3">
+                                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                                  <UserRound className="h-5 w-5" />
+                                </div>
+                                <div className="min-w-0">
+                                  <h2 className="truncate text-xl font-semibold text-foreground">
+                                    {fullName}
+                                  </h2>
+                                  <div className="mt-1 flex flex-wrap gap-2">
+                                    <span
+                                      className={cn(
+                                        "rounded-full border px-3 py-1 text-xs font-semibold",
+                                        customer.isActive
+                                          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/30 dark:text-emerald-300"
+                                          : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800/70 dark:bg-amber-950/30 dark:text-amber-300",
+                                      )}
+                                    >
+                                      {customer.isActive ? "Ativo" : "Inativo"}
                                     </span>
-                                  ) : null}
+                                    {customer.openOrderCount > 0 ? (
+                                      <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                        {customer.openOrderCount} pedido(s) em aberto
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid gap-3 lg:grid-cols-3">
+                                <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Mail className="h-4 w-4" />
+                                    <span>E-mail</span>
+                                  </div>
+                                  <p className="mt-2 break-all font-medium text-foreground">
+                                    {customer.email}
+                                  </p>
+                                </div>
+                                <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Phone className="h-4 w-4" />
+                                    <span>Telefone</span>
+                                  </div>
+                                  <p className="mt-2 font-medium text-foreground">
+                                    {customer.phone ?? "Nao informado"}
+                                  </p>
+                                </div>
+                                <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <ShoppingBag className="h-4 w-4" />
+                                    <span>Ultimo pedido</span>
+                                  </div>
+                                  <p className="mt-2 font-medium text-foreground">
+                                    {customer.lastOrderDate
+                                      ? formatDate(customer.lastOrderDate)
+                                      : "Sem historico"}
+                                  </p>
                                 </div>
                               </div>
                             </div>
 
-                            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Mail className="h-4 w-4" />
-                                  <span>E-mail</span>
-                                </div>
-                                <p className="mt-2 break-all font-medium text-foreground">
-                                  {customer.email}
+                            <div className="grid gap-3 lg:grid-cols-3">
+                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                  Total gasto
+                                </p>
+                                <p className="mt-2 text-2xl font-bold text-foreground">
+                                  {formatCurrency(customer.totalSpentCents / 100)}
                                 </p>
                               </div>
-                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Phone className="h-4 w-4" />
-                                  <span>Telefone</span>
-                                </div>
-                                <p className="mt-2 font-medium text-foreground">
-                                  {customer.phone ?? "Não informado"}
+                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                  Pedidos
+                                </p>
+                                <p className="mt-2 text-2xl font-bold text-foreground">
+                                  {customer.orderCount}
                                 </p>
                               </div>
-                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <ShoppingBag className="h-4 w-4" />
-                                  <span>Último pedido</span>
-                                </div>
-                                <p className="mt-2 font-medium text-foreground">
-                                  {customer.lastOrderDate
-                                    ? formatDate(customer.lastOrderDate)
-                                    : "Sem histórico"}
+                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                  Em aberto
+                                </p>
+                                <p className="mt-2 text-2xl font-bold text-foreground">
+                                  {customer.openOrderCount}
                                 </p>
                               </div>
                             </div>
                           </div>
 
-                          <div className="grid min-w-full gap-3 sm:grid-cols-3 xl:min-w-[430px]">
-                            <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                          <div className="grid gap-3 border-t border-border/60 pt-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
+                            <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
                               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                                Total gasto
+                                Atualizado
                               </p>
-                              <p className="mt-2 text-2xl font-bold text-foreground">
-                                {formatCurrency(customer.totalSpentCents / 100)}
+                              <p className="mt-2 font-medium text-foreground">
+                                {formatDate(customer.updatedAt)}
                               </p>
                             </div>
-                            <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
-                              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                                Pedidos
-                              </p>
-                              <p className="mt-2 text-2xl font-bold text-foreground">
-                                {customer.orderCount}
-                              </p>
+                            <div className="flex flex-wrap gap-2 lg:justify-end">
+                              <Link href={`/clientes/${customer.id}`}>
+                                <a>
+                                  <Button variant="outline" className="rounded-full">
+                                    Ver detalhes
+                                  </Button>
+                                </a>
+                              </Link>
+                              <Link href={`/clientes/${customer.id}/editar`}>
+                                <a>
+                                  <Button variant="ghost" className="rounded-full">
+                                    Editar cadastro
+                                  </Button>
+                                </a>
+                              </Link>
+                              <Button
+                                variant="ghost"
+                                className="rounded-full text-destructive hover:text-destructive"
+                                onClick={() =>
+                                  setCustomerPendingDelete({
+                                    id: customer.id,
+                                    fullName,
+                                  })
+                                }
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Excluir
+                              </Button>
+                              <Link href={`/pedidos/novo?customerId=${customer.id}`}>
+                                <a>
+                                  <Button className="rounded-full">Novo pedido</Button>
+                                </a>
+                              </Link>
                             </div>
-                            <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
-                              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                                Em aberto
-                              </p>
-                              <p className="mt-2 text-2xl font-bold text-foreground">
-                                {customer.openOrderCount}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <p className="text-sm text-muted-foreground">
-                            Atualizado em {formatDate(customer.updatedAt)}
-                          </p>
-                          <div className="flex flex-wrap gap-2">
-                            <Link href={`/clientes/${customer.id}`}>
-                              <a>
-                                <Button variant="outline" className="rounded-full">
-                                  Ver detalhes
-                                </Button>
-                              </a>
-                            </Link>
-                            <Link href={`/clientes/${customer.id}/editar`}>
-                              <a>
-                                <Button variant="ghost" className="rounded-full">
-                                  Editar cadastro
-                                </Button>
-                              </a>
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              className="rounded-full text-destructive hover:text-destructive"
-                              onClick={() =>
-                                setCustomerPendingDelete({
-                                  id: customer.id,
-                                  fullName,
-                                })
-                              }
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Excluir
-                            </Button>
-                            <Link href={`/pedidos/novo?customerId=${customer.id}`}>
-                              <a>
-                                <Button className="rounded-full">Novo pedido</Button>
-                              </a>
-                            </Link>
                           </div>
                         </div>
                       </article>
@@ -444,7 +481,7 @@ export default function Clientes() {
               <StatCard
                 label="Pedidos ativos"
                 value={pendingOrders}
-                detail="Pedidos ainda em operação antes da conclusão ou cancelamento."
+                detail="Pedidos ainda em operacao antes da conclusao ou cancelamento."
               />
               <StatCard
                 label="Para hoje"
@@ -454,7 +491,7 @@ export default function Clientes() {
               <StatCard
                 label="Pagos"
                 value={paidOrders}
-                detail="Pedidos já quitados dentro do recorte atual."
+                detail="Pedidos ja quitados dentro do recorte atual."
               />
             </section>
 
@@ -471,7 +508,7 @@ export default function Clientes() {
                       Erro ao carregar pedidos
                     </h2>
                     <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                      Não foi possível montar a visão geral dos pedidos agora.
+                      Nao foi possivel montar a visao geral dos pedidos agora.
                     </p>
                   </div>
                   <Button
@@ -492,8 +529,7 @@ export default function Clientes() {
                       Nenhum pedido encontrado
                     </h2>
                     <p className="max-w-md text-sm leading-6 text-muted-foreground">
-                      Ajuste a busca ou registre um novo pedido para começar a visão
-                      geral.
+                      Ajuste a busca ou registre um novo pedido para comecar a visao geral.
                     </p>
                   </div>
                 </div>
@@ -528,7 +564,7 @@ export default function Clientes() {
                               </div>
                               <p className="mt-2 font-medium text-foreground">
                                 {formatDate(order.deliveryDate)}
-                                {order.deliveryTime ? ` às ${order.deliveryTime}` : ""}
+                                {order.deliveryTime ? ` as ${order.deliveryTime}` : ""}
                               </p>
                             </div>
                             <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
@@ -546,7 +582,7 @@ export default function Clientes() {
                                 <span>Contato</span>
                               </div>
                               <p className="mt-2 font-medium text-foreground">
-                                {order.phone || "Não informado"}
+                                {order.phone || "Nao informado"}
                               </p>
                             </div>
                             <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
@@ -632,8 +668,8 @@ export default function Clientes() {
               <AlertDialogTitle>Excluir cliente</AlertDialogTitle>
               <AlertDialogDescription>
                 {customerPendingDelete
-                  ? `Você está prestes a excluir ${customerPendingDelete.fullName}. O cliente só pode ser removido quando não tiver pedidos nem conta vinculada.`
-                  : "Confirme a exclusão do cliente."}
+                  ? `Voce esta prestes a excluir ${customerPendingDelete.fullName}. O cliente so pode ser removido quando nao tiver pedidos nem conta vinculada.`
+                  : "Confirme a exclusao do cliente."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>

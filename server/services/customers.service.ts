@@ -16,8 +16,7 @@ export class CustomersService {
   async list(filters: ListCustomersFilters = {}): Promise<CustomerListItem[]> {
     await this.customerOrderSyncService.syncMissingCustomersFromOrders();
     const customers = await this.customersRepository.list(filters);
-
-    return Promise.all(
+    const items = await Promise.all(
       customers.map(async (customer: any) => {
         const stats = await this.customersRepository.getStats(customer.id);
 
@@ -39,6 +38,8 @@ export class CustomersService {
         };
       }),
     );
+
+    return this.sortList(items, filters.sort);
   }
 
   async getById(id: string): Promise<CustomerDetail> {
@@ -162,5 +163,71 @@ export class CustomersService {
     }
 
     await this.customersRepository.softDelete(id, new Date());
+  }
+
+  private sortList(
+    items: CustomerListItem[],
+    sort: ListCustomersFilters["sort"] = "name-asc",
+  ) {
+    const collator = new Intl.Collator("pt-BR", {
+      sensitivity: "base",
+      numeric: true,
+    });
+
+    const sorted = [...items];
+
+    sorted.sort((left, right) => {
+      switch (sort) {
+        case "name-desc":
+          return collator.compare(
+            `${right.firstName} ${right.lastName}`.trim(),
+            `${left.firstName} ${left.lastName}`.trim(),
+          );
+        case "spent-desc":
+          return (
+            right.totalSpentCents - left.totalSpentCents ||
+            collator.compare(
+              `${left.firstName} ${left.lastName}`.trim(),
+              `${right.firstName} ${right.lastName}`.trim(),
+            )
+          );
+        case "spent-asc":
+          return (
+            left.totalSpentCents - right.totalSpentCents ||
+            collator.compare(
+              `${left.firstName} ${left.lastName}`.trim(),
+              `${right.firstName} ${right.lastName}`.trim(),
+            )
+          );
+        case "last-order-desc":
+          return (
+            String(right.lastOrderDate ?? "").localeCompare(
+              String(left.lastOrderDate ?? ""),
+            ) ||
+            collator.compare(
+              `${left.firstName} ${left.lastName}`.trim(),
+              `${right.firstName} ${right.lastName}`.trim(),
+            )
+          );
+        case "last-order-asc":
+          return (
+            String(left.lastOrderDate ?? "").localeCompare(
+              String(right.lastOrderDate ?? ""),
+            ) ||
+            collator.compare(
+              `${left.firstName} ${left.lastName}`.trim(),
+              `${right.firstName} ${right.lastName}`.trim(),
+            )
+          );
+        case "name-asc":
+        default:
+          return collator.compare(
+            `${left.firstName} ${left.lastName}`.trim(),
+            `${right.firstName} ${right.lastName}`.trim(),
+          );
+      }
+    });
+
+    return sorted;
   }
 }

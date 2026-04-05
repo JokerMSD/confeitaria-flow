@@ -224,7 +224,9 @@ export default function PedidoForm() {
 
   const orderQuery = useOrder(orderId);
   const customerPrefillQuery = useCustomer(customerIdFromQuery);
-  const customersQuery = useCustomers(customerSearch || undefined);
+  const customersQuery = useCustomers({
+    search: customerSearch || undefined,
+  });
   const productRecipesQuery = useRecipes({ kind: "ProdutoVenda" });
   const fillingRecipesQuery = useRecipes({ kind: "Preparacao" });
   const selectedProductDetailQuery = useRecipe(newItemRecipeId || undefined);
