@@ -9,7 +9,7 @@ function normalizeName(value: string) {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/\bovo de pascoa recheado\b/g, "ovo trufado")
-    .replace(/\b(ovo de colher|ovo trufado)\s+(350|500)\b/g, "$1 $2g")
+    .replace(/\b(ovo de colher|ovo trufado)\s+(350|500|750)\b/g, "$1 $2g")
     .replace(/\s+/g, " ")
     .trim();
 }

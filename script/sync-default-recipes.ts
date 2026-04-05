@@ -263,6 +263,19 @@ const recipeSeeds: RecipeSeed[] = [
     ],
   },
   {
+    name: "Ovo de colher 750g",
+    kind: "ProdutoVenda",
+    outputQuantity: 1,
+    outputUnit: "un",
+    markupPercent: 100,
+    salePriceCents: 7490,
+    notes: "Peso nominal 750g. Casca estimada 150g e recheio estimado 600g.",
+    components: [
+      { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 150, quantityUnit: "g" },
+      { componentType: "Receita", name: "Recheio simples", quantity: 600, quantityUnit: "g" },
+    ],
+  },
+  {
     name: "Ovo Trufado 350g",
     kind: "ProdutoVenda",
     outputQuantity: 1,
