@@ -9,7 +9,10 @@ vite.config.ts.*
 .env.*
 !.env.example
 !client/.env.example
-.agents
+.agents/
+.codex/
+.codex-temp/
+.github/agents/
 AGENTS.md
 skills-lock.json
 drizzle-kit
