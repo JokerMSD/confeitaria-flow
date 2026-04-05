@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from "react";
-import { Link, useParams } from "wouter";
+import { Link, useLocation, useParams } from "wouter";
 import {
+  AlertTriangle,
   ArrowLeft,
   Loader2,
   Mail,
@@ -10,13 +11,27 @@ import {
   Plus,
   ReceiptText,
   ShoppingBag,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useCustomer } from "@/features/customers/hooks/use-customer";
+import { useDeleteCustomer } from "@/features/customers/hooks/use-delete-customer";
+import { useToast } from "@/hooks/use-toast";
 
 function getCustomerFullName(firstName: string, lastName: string) {
   return `${firstName} ${lastName}`.trim();
@@ -166,8 +181,11 @@ function OrderCard({
 
 export default function Cliente() {
   const params = useParams<{ id: string }>();
+  const [, setLocation] = useLocation();
   const id = params.id ?? "";
   const { data, isLoading, isError } = useCustomer(id);
+  const deleteCustomerMutation = useDeleteCustomer();
+  const { toast } = useToast();
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -188,6 +206,31 @@ export default function Cliente() {
       ) ?? [],
     [customer],
   );
+
+  const handleDeleteCustomer = async () => {
+    if (!customer) {
+      return;
+    }
+
+    try {
+      await deleteCustomerMutation.mutateAsync(customer.id);
+      toast({
+        title: "Cliente excluído",
+        description: "O cadastro foi removido com sucesso.",
+      });
+      setLocation("/clientes");
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o cliente agora.";
+      toast({
+        title: "Erro ao excluir cliente",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <AppLayout title="Cliente">
@@ -262,6 +305,46 @@ export default function Cliente() {
                     </Button>
                   </a>
                 </Link>
+                <AlertDialog>
+                  <Button
+                    variant="ghost"
+                    className="w-full rounded-full text-destructive hover:text-destructive sm:w-auto"
+                    asChild
+                  >
+                    <AlertDialogTrigger>
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir cliente
+                    </AlertDialogTrigger>
+                  </Button>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir cliente</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        O cadastro só pode ser removido quando não houver pedidos nem
+                        conta de usuário vinculada.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <div className="flex items-start gap-3 rounded-2xl border border-border/70 bg-muted/20 p-4 text-sm text-muted-foreground">
+                      <AlertTriangle className="mt-0.5 h-4 w-4 text-primary" />
+                      <p>
+                        Se este cliente já tiver histórico comercial, a exclusão será
+                        recusada para preservar os vínculos operacionais.
+                      </p>
+                    </div>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={handleDeleteCustomer}
+                        disabled={deleteCustomerMutation.isPending}
+                      >
+                        {deleteCustomerMutation.isPending
+                          ? "Excluindo..."
+                          : "Excluir cliente"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             ) : null}
           </div>

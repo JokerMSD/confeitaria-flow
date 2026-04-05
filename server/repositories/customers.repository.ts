@@ -1,6 +1,6 @@
 import { and, asc, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { customers, orders } from "@shared/schema";
+import { customers, orders, users } from "@shared/schema";
 import type { InsertCustomer, Customer } from "@shared/schema";
 import type { ListCustomersFilters } from "@shared/types";
 
@@ -122,5 +122,16 @@ export class CustomersRepository {
       .from(orders)
       .where(eq(orders.customerId, id))
       .orderBy(desc(orders.orderDate), desc(orders.createdAt));
+  }
+
+  async countLinkedUsers(id: string, executor: Executor = getDb()) {
+    const [row] = await executor
+      .select({
+        total: sql<number>`count(${users.id})`,
+      })
+      .from(users)
+      .where(and(eq(users.customerId, id), isNull(users.deletedAt)));
+
+    return toSafeNumber(row?.total);
   }
 }

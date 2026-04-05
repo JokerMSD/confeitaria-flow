@@ -137,6 +137,30 @@ export class CustomersService {
   }
 
   async delete(id: string): Promise<void> {
+    const customer = await this.customersRepository.findById(id);
+
+    if (!customer) {
+      throw new HttpError(404, "Cliente não encontrado.");
+    }
+
+    const stats = await this.customersRepository.getStats(id);
+
+    if (stats.orderCount > 0) {
+      throw new HttpError(
+        400,
+        "Este cliente possui pedidos vinculados e não pode ser excluído.",
+      );
+    }
+
+    const linkedUsers = await this.customersRepository.countLinkedUsers(id);
+
+    if (linkedUsers > 0) {
+      throw new HttpError(
+        400,
+        "Este cliente está vinculado a uma conta de usuário e não pode ser excluído.",
+      );
+    }
+
     await this.customersRepository.softDelete(id, new Date());
   }
 }

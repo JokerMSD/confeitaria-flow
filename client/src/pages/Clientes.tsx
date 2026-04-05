@@ -1,6 +1,16 @@
 import { useMemo, useState } from "react";
 import { Link } from "wouter";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   CalendarDays,
   Loader2,
   Mail,
@@ -10,6 +20,7 @@ import {
   ShoppingBag,
   Truck,
   UserRound,
+  Trash2,
 } from "lucide-react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -18,8 +29,10 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { useCustomers } from "@/features/customers/hooks/use-customers";
+import { useDeleteCustomer } from "@/features/customers/hooks/use-delete-customer";
 import { useOrders } from "@/features/orders/hooks/use-orders";
 import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter";
+import { useToast } from "@/hooks/use-toast";
 
 function getCustomerFullName(firstName: string, lastName: string) {
   return `${firstName} ${lastName}`.trim();
@@ -54,8 +67,14 @@ function StatCard({
 export default function Clientes() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"clientes" | "pedidos">("clientes");
+  const [customerPendingDelete, setCustomerPendingDelete] = useState<{
+    id: string;
+    fullName: string;
+  } | null>(null);
   const customersQuery = useCustomers(search);
   const ordersQuery = useOrders({ search });
+  const deleteCustomerMutation = useDeleteCustomer();
+  const { toast } = useToast();
 
   const customers = useMemo(
     () => customersQuery.data?.data ?? [],
@@ -95,6 +114,31 @@ export default function Clientes() {
       ).length,
     [orders],
   );
+
+  const handleConfirmDeleteCustomer = async () => {
+    if (!customerPendingDelete) {
+      return;
+    }
+
+    try {
+      await deleteCustomerMutation.mutateAsync(customerPendingDelete.id);
+      toast({
+        title: "Cliente excluído",
+        description: "O cadastro foi removido com sucesso.",
+      });
+      setCustomerPendingDelete(null);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível excluir o cliente agora.";
+      toast({
+        title: "Erro ao excluir cliente",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <AppLayout title="Clientes">
@@ -362,6 +406,19 @@ export default function Clientes() {
                                 </Button>
                               </a>
                             </Link>
+                            <Button
+                              variant="ghost"
+                              className="rounded-full text-destructive hover:text-destructive"
+                              onClick={() =>
+                                setCustomerPendingDelete({
+                                  id: customer.id,
+                                  fullName,
+                                })
+                              }
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Excluir
+                            </Button>
                             <Link href={`/pedidos/novo?customerId=${customer.id}`}>
                               <a>
                                 <Button className="rounded-full">Novo pedido</Button>
@@ -561,6 +618,36 @@ export default function Clientes() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <AlertDialog
+          open={customerPendingDelete != null}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCustomerPendingDelete(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Excluir cliente</AlertDialogTitle>
+              <AlertDialogDescription>
+                {customerPendingDelete
+                  ? `Você está prestes a excluir ${customerPendingDelete.fullName}. O cliente só pode ser removido quando não tiver pedidos nem conta vinculada.`
+                  : "Confirme a exclusão do cliente."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={handleConfirmDeleteCustomer}
+                disabled={deleteCustomerMutation.isPending}
+              >
+                {deleteCustomerMutation.isPending ? "Excluindo..." : "Excluir cliente"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AppLayout>
   );
