@@ -1,5 +1,5 @@
 import type { InventoryItemUnit } from "./inventory.types";
-import type { OrderStatus } from "./order-item.types";
+import type { DeliveryMode, OrderStatus, PaymentStatus } from "./order-item.types";
 import type { ProductAdditionalGroupDetail } from "./product-additional.types";
 import type { AppliedDiscountCoupon } from "./discount-coupon.types";
 
@@ -30,7 +30,13 @@ export interface ProductionForecastOrderReference {
   orderNumber: string;
   customerName: string;
   deliveryDate: string;
+  deliveryTime?: string | null;
+  deliveryMode: DeliveryMode;
   status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  itemCount: number;
+  subtotalAmountCents: number;
+  productPreview: string[];
 }
 
 export interface ProductionForecastShellRequirement {

@@ -21,7 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useProductionForecast } from "@/features/production/hooks/use-production-forecast";
-import { cn, formatDate, getLocalDateKey } from "@/lib/utils";
+import { cn, formatCurrency, formatDate, getLocalDateKey } from "@/lib/utils";
 import { ApiError } from "@/api/http-client";
 
 function normalizeNearInteger(value: number) {
@@ -114,6 +114,21 @@ function getStatusTone(status: string) {
     default:
       return "border-border bg-muted/30 text-muted-foreground";
   }
+}
+
+function getPaymentTone(status: string) {
+  switch (status) {
+    case "Pago":
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
+    case "Parcial":
+      return "border-amber-500/30 bg-amber-500/10 text-amber-200";
+    default:
+      return "border-rose-500/30 bg-rose-500/10 text-rose-200";
+  }
+}
+
+function getTimeLabel(value?: string | null) {
+  return value?.slice(0, 5) ?? "Sem horario";
 }
 
 function buildDateRangeLabel(dateFrom?: string, dateTo?: string) {
@@ -481,23 +496,64 @@ export default function PrevisaoProducao() {
                         key={order.orderId}
                         className="rounded-2xl border border-border/70 bg-background/80 p-4"
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div>
-                            <p className="font-semibold text-foreground">
-                              {order.orderNumber}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
+                        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-foreground">
+                                {order.orderNumber}
+                              </p>
+                              <span className="rounded-full border border-border/70 bg-muted/20 px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                                {order.deliveryMode}
+                              </span>
+                              <span className="rounded-full border border-border/70 bg-muted/20 px-2.5 py-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+                                {getTimeLabel(order.deliveryTime)}
+                              </span>
+                            </div>
+                            <p className="mt-2 text-base font-medium text-foreground">
                               {order.customerName}
                             </p>
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                              <span className="rounded-full border border-border/70 bg-muted/20 px-3 py-1 text-muted-foreground">
+                                {order.itemCount} item(ns)
+                              </span>
+                              <span className="rounded-full border border-border/70 bg-muted/20 px-3 py-1 text-muted-foreground">
+                                {formatCurrency(order.subtotalAmountCents / 100)}
+                              </span>
+                            </div>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {order.productPreview.slice(0, 3).map((product) => (
+                                <span
+                                  key={`${order.orderId}-${product}`}
+                                  className="rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-xs text-foreground/85"
+                                >
+                                  {product}
+                                </span>
+                              ))}
+                              {order.productPreview.length > 3 ? (
+                                <span className="rounded-full border border-border/70 bg-muted/20 px-3 py-1 text-xs text-muted-foreground">
+                                  +{order.productPreview.length - 3} item(ns)
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
-                          <span
-                            className={cn(
-                              "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
-                              getStatusTone(order.status),
-                            )}
-                          >
-                            {order.status}
-                          </span>
+                          <div className="flex flex-wrap gap-2 lg:max-w-[18rem] lg:justify-end">
+                            <span
+                              className={cn(
+                                "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                                getStatusTone(order.status),
+                              )}
+                            >
+                              {order.status}
+                            </span>
+                            <span
+                              className={cn(
+                                "rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                                getPaymentTone(order.paymentStatus),
+                              )}
+                            >
+                              {order.paymentStatus}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     ))}

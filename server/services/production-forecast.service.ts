@@ -222,8 +222,22 @@ export class ProductionForecastService {
           orderNumber: row.orderNumber,
           customerName: row.customerName,
           deliveryDate: row.deliveryDate,
+          deliveryTime: row.deliveryTime,
+          deliveryMode: row.deliveryMode,
           status: row.status,
+          paymentStatus: row.paymentStatus,
+          itemCount: Number(row.itemCount ?? 0),
+          subtotalAmountCents: Number(row.subtotalAmountCents ?? 0),
+          productPreview: [],
         });
+
+        const orderReference = orders.get(row.orderId)!;
+        if (
+          row.productName &&
+          !orderReference.productPreview.includes(row.productName)
+        ) {
+          orderReference.productPreview.push(row.productName);
+        }
 
         const itemAdditionals = additionalsByOrderItemId.get(row.itemId) ?? [];
 
