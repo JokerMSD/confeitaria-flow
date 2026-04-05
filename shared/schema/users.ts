@@ -21,6 +21,10 @@ export const users = pgTable("users", {
   role: varchar("role", { length: 16 }).notNull().default("operador"),
   customerId: uuid("customer_id"),
   photoUrl: text("photo_url"),
+  emailVerifiedAt: timestamp("email_verified_at", {
+    withTimezone: true,
+    mode: "date",
+  }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
@@ -39,6 +43,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
   customerId: true,
   photoUrl: true,
+  emailVerifiedAt: true,
   isActive: true,
 });
 

@@ -23,6 +23,8 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       "product_additional_groups",
       "product_additional_options",
       "order_item_additionals",
+      "email_verification_tokens",
+      "checkout_account_requests",
     ]),
     columnsByTable: new Map([
       [
@@ -129,7 +131,29 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "role",
           "customer_id",
           "photo_url",
+          "email_verified_at",
           "is_active",
+        ]),
+      ],
+      [
+        "email_verification_tokens",
+        new Set([
+          "user_id",
+          "token_hash",
+          "purpose",
+          "expires_at",
+          "consumed_at",
+        ]),
+      ],
+      [
+        "checkout_account_requests",
+        new Set([
+          "order_id",
+          "email",
+          "full_name",
+          "customer_id",
+          "password_hash",
+          "processed_at",
         ]),
       ],
     ]),
@@ -163,6 +187,8 @@ test("schema guard reports pending migrations for missing recent tables and colu
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
+    "email_verification_tokens",
+    "checkout_account_requests",
   ]);
   assert.ok(
     result.missingColumns.some(
@@ -201,5 +227,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0022_phase22_recipe_media_variation.sql",
     "0023_phase23_order_discounts_and_coupons.sql",
     "0024_phase24_mercado_pago_checkout.sql",
+    "0026_phase26_public_registration_and_email_verification.sql",
   ]);
 });

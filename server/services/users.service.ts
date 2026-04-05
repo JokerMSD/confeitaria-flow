@@ -45,6 +45,7 @@ export class UsersService {
       role: row.role as UserRole,
       customerId: row.customerId ?? null,
       photoUrl: row.photoUrl ?? null,
+      emailVerifiedAt: row.emailVerifiedAt?.toISOString?.() ?? null,
       isActive: row.isActive,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
@@ -61,7 +62,7 @@ export class UsersService {
     const user = await this.usersRepository.findById(id);
 
     if (!user) {
-      throw new HttpError(404, "Usuário não encontrado.");
+      throw new HttpError(404, "Usuario nao encontrado.");
     }
 
     return this.mapUserItem(user);
@@ -74,14 +75,14 @@ export class UsersService {
 
     const existingEmail = await this.usersRepository.findByEmail(normalizedEmail);
     if (existingEmail) {
-      throw new HttpError(400, "E-mail já em uso.");
+      throw new HttpError(400, "E-mail ja em uso.");
     }
 
     const existingUsername = await this.usersRepository.findByUsername(
       normalizedUsername,
     );
     if (existingUsername) {
-      throw new HttpError(400, "Nome de usuário já em uso.");
+      throw new HttpError(400, "Nome de usuario ja em uso.");
     }
 
     const hashed = await hashPassword(input.password);
@@ -100,6 +101,7 @@ export class UsersService {
       role: input.role,
       customerId: linkedCustomerId,
       photoUrl: input.photoUrl?.trim() || null,
+      emailVerifiedAt: new Date(),
       isActive: input.isActive ?? true,
     });
 
@@ -109,7 +111,7 @@ export class UsersService {
   async update(id: string, input: UpdateUserInput): Promise<UserItem> {
     const user = await this.usersRepository.findById(id);
     if (!user) {
-      throw new HttpError(404, "Usuário não encontrado.");
+      throw new HttpError(404, "Usuario nao encontrado.");
     }
 
     const nextEmail = input.email?.trim().toLowerCase() ?? user.email;
@@ -120,7 +122,7 @@ export class UsersService {
     if (nextEmail !== user.email) {
       const existingEmail = await this.usersRepository.findByEmail(nextEmail);
       if (existingEmail && existingEmail.id !== id) {
-        throw new HttpError(400, "E-mail já em uso.");
+        throw new HttpError(400, "E-mail ja em uso.");
       }
     }
 
@@ -129,7 +131,7 @@ export class UsersService {
         nextUsername,
       );
       if (existingUsername && existingUsername.id !== id) {
-        throw new HttpError(400, "Nome de usuário já em uso.");
+        throw new HttpError(400, "Nome de usuario ja em uso.");
       }
     }
 
@@ -149,6 +151,10 @@ export class UsersService {
       }),
       photoUrl:
         input.photoUrl !== undefined ? input.photoUrl?.trim() || null : user.photoUrl,
+      emailVerifiedAt:
+        input.role && input.role !== "user"
+          ? new Date()
+          : user.emailVerifiedAt ?? null,
       isActive: input.isActive ?? user.isActive,
     };
 
@@ -163,7 +169,7 @@ export class UsersService {
   async setActiveStatus(id: string, isActive: boolean): Promise<UserItem> {
     const user = await this.usersRepository.findById(id);
     if (!user) {
-      throw new HttpError(404, "Usuário não encontrado.");
+      throw new HttpError(404, "Usuario nao encontrado.");
     }
 
     const updated = isActive
@@ -173,7 +179,7 @@ export class UsersService {
     if (!updated) {
       throw new HttpError(
         404,
-        "Usuário não encontrado ou não pode ser atualizado.",
+        "Usuario nao encontrado ou nao pode ser atualizado.",
       );
     }
 
@@ -184,12 +190,16 @@ export class UsersService {
     const lookup = await this.usersRepository.findByEmailOrUsername(emailOrUsername);
 
     if (!lookup || !lookup.isActive) {
-      throw new HttpError(401, "Usuário ou senha inválidos.");
+      throw new HttpError(401, "Usuario ou senha invalidos.");
+    }
+
+    if (lookup.role === "user" && !lookup.emailVerifiedAt) {
+      throw new HttpError(403, "Confirme seu e-mail antes de entrar na sua conta.");
     }
 
     const valid = await verifyPassword(password, lookup.password);
     if (!valid) {
-      throw new HttpError(401, "Usuário ou senha inválidos.");
+      throw new HttpError(401, "Usuario ou senha invalidos.");
     }
 
     return {
@@ -239,6 +249,7 @@ export class UsersService {
       role,
       customerId,
       photoUrl: authUser.photoUrl ?? null,
+      emailVerifiedAt: new Date(),
       isActive: true,
     });
 
@@ -275,6 +286,7 @@ export class UsersService {
             input.photoUrl !== undefined
               ? input.photoUrl ?? null
               : existing.photoUrl ?? null,
+          emailVerifiedAt: existing.emailVerifiedAt ?? new Date(),
           isActive: true,
         })
       : await this.usersRepository.create({
@@ -285,6 +297,7 @@ export class UsersService {
           role: input.role,
           customerId,
           photoUrl: input.photoUrl ?? null,
+          emailVerifiedAt: new Date(),
           isActive: true,
         });
 
@@ -300,6 +313,34 @@ export class UsersService {
       customerId: user.customerId ?? null,
       photoUrl: user.photoUrl ?? null,
     };
+  }
+
+  async createVerifiedPendingPublicUser(input: {
+    email: string;
+    fullName: string;
+    passwordHash: string;
+    customerId?: string | null;
+  }) {
+    const email = input.email.trim().toLowerCase();
+    const fullName = input.fullName.trim() || email;
+    const customerId = await this.resolveLinkedCustomerId({
+      role: "user",
+      customerId: input.customerId ?? null,
+      fullName,
+      email,
+    });
+
+    return this.usersRepository.create({
+      username: await this.generateUniqueUsername(fullName, email),
+      email,
+      fullName,
+      password: input.passwordHash,
+      role: "user",
+      customerId,
+      photoUrl: null,
+      emailVerifiedAt: null,
+      isActive: true,
+    });
   }
 
   async getAuthenticatedUserProfile(authUser: AuthUser) {

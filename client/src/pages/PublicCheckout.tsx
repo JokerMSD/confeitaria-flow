@@ -75,6 +75,9 @@ export default function PublicCheckout() {
     payerIdentificationType: "CPF" as "CPF" | "CNPJ",
     payerIdentificationNumber: "",
     notes: "",
+    createAccount: false,
+    accountPassword: "",
+    accountPasswordConfirm: "",
   });
   const availabilityQuery = usePublicStoreAvailability({
     deliveryMode: form.deliveryMode,
@@ -262,6 +265,33 @@ export default function PublicCheckout() {
       return;
     }
 
+    if (form.createAccount && !form.customerEmail.trim()) {
+      toast({
+        title: "E-mail obrigatorio",
+        description: "Informe um e-mail para criar sua conta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (form.createAccount && form.accountPassword.length < 8) {
+      toast({
+        title: "Senha muito curta",
+        description: "Use pelo menos 8 caracteres para criar a conta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (form.createAccount && form.accountPassword !== form.accountPasswordConfirm) {
+      toast({
+        title: "Senha nao confere",
+        description: "A confirmacao da senha precisa ser igual a senha da conta.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (
       form.paymentMethod === "MercadoPagoCartao" &&
       !form.payerIdentificationNumber.trim()
@@ -354,6 +384,11 @@ export default function PublicCheckout() {
           mercadoPagoCard:
             form.paymentMethod === "MercadoPagoCartao" ? mercadoPagoCard : null,
           notes: form.notes.trim() || null,
+          accountRegistration: form.createAccount
+            ? {
+                password: form.accountPassword,
+              }
+            : null,
           items: cart.items.map((item) => ({
             recipeId: item.recipeId,
             quantity: item.quantity,
@@ -411,6 +446,11 @@ export default function PublicCheckout() {
             {success.paymentInstructions ? (
               <div className="rounded-[1.75rem] border border-border/70 bg-background/60 p-4 text-sm leading-6 text-muted-foreground">
                 {success.paymentInstructions}
+              </div>
+            ) : null}
+            {success.accountMessage ? (
+              <div className="rounded-[1.75rem] border border-primary/20 bg-primary/10 p-4 text-sm leading-6 text-muted-foreground">
+                {success.accountMessage}
               </div>
             ) : null}
             <Link href="/loja/catalogo">
@@ -471,6 +511,65 @@ export default function PublicCheckout() {
                   }
                   className="h-12 rounded-2xl md:col-span-2"
                 />
+              </div>
+
+              <div className="space-y-4 rounded-[1.8rem] border border-border/70 bg-background/60 p-4">
+                <label className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.createAccount}
+                    onChange={(event) =>
+                      setForm((current) => ({
+                        ...current,
+                        createAccount: event.target.checked,
+                        accountPassword: event.target.checked
+                          ? current.accountPassword
+                          : "",
+                        accountPasswordConfirm: event.target.checked
+                          ? current.accountPasswordConfirm
+                          : "",
+                      }))
+                    }
+                    className="mt-1 h-4 w-4 rounded border-border"
+                  />
+                  <span>
+                    <span className="block font-semibold text-foreground">
+                      Criar conta para acompanhar pedidos
+                    </span>
+                    <span className="block text-sm leading-6 text-muted-foreground">
+                      No checkout, a conta so e criada depois que o pagamento for aprovado.
+                    </span>
+                  </span>
+                </label>
+
+                {form.createAccount ? (
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <Input
+                      placeholder="Senha da nova conta"
+                      type="password"
+                      value={form.accountPassword}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          accountPassword: event.target.value,
+                        }))
+                      }
+                      className="h-12 rounded-2xl"
+                    />
+                    <Input
+                      placeholder="Confirmar senha"
+                      type="password"
+                      value={form.accountPasswordConfirm}
+                      onChange={(event) =>
+                        setForm((current) => ({
+                          ...current,
+                          accountPasswordConfirm: event.target.value,
+                        }))
+                      }
+                      className="h-12 rounded-2xl"
+                    />
+                  </div>
+                ) : null}
               </div>
 
               <div className="space-y-3">

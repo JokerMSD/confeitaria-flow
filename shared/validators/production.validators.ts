@@ -47,6 +47,12 @@ export const publicCheckoutInputSchema = z
     customerName: z.string().trim().min(1).max(160),
     customerPhone: z.string().trim().max(40).nullable().optional(),
     customerEmail: z.string().trim().email().max(320).nullable().optional(),
+    accountRegistration: z
+      .object({
+        password: z.string().min(8).max(128),
+      })
+      .nullable()
+      .optional(),
     deliveryMode: deliveryModeSchema,
     deliveryDate: operationalDateSchema,
     deliveryTime: deliveryTimeSchema.nullable().optional(),
@@ -94,6 +100,14 @@ export const publicCheckoutInputSchema = z
           message: "Dados do cartao sao obrigatorios para o checkout transparente.",
         });
       }
+    }
+
+    if (value.accountRegistration && !value.customerEmail?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["customerEmail"],
+        message: "E-mail e obrigatorio para criar uma conta.",
+      });
     }
   });
 

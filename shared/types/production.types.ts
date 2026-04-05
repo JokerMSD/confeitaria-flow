@@ -137,6 +137,9 @@ export interface PublicCheckoutInput {
   customerName: string;
   customerPhone?: string | null;
   customerEmail?: string | null;
+  accountRegistration?: {
+    password: string;
+  } | null;
   deliveryMode: "Entrega" | "Retirada";
   deliveryDate: string;
   deliveryTime?: string | null;
@@ -193,6 +196,7 @@ export interface PublicCheckoutResponse {
     appliedCoupon: AppliedDiscountCoupon | null;
     subtotalAmountCents: number;
     paymentInstructions: string | null;
+    accountMessage: string | null;
   };
 }
 

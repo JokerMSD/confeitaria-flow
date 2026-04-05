@@ -34,6 +34,7 @@ import PublicCatalog from "@/pages/PublicCatalog";
 import PublicProductDetail from "@/pages/PublicProductDetail";
 import PublicCart from "@/pages/PublicCart";
 import PublicCheckout from "@/pages/PublicCheckout";
+import VerificarEmail from "@/pages/VerificarEmail";
 import MinhaConta from "@/pages/MinhaConta";
 import { useAuthSession } from "@/features/auth/hooks/use-auth-session";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
@@ -48,6 +49,7 @@ function isPublicFacingPath(path: string) {
   return (
     path === "/" ||
     path === "/login" ||
+    path === "/verificar-email" ||
     path === "/conta" ||
     path.startsWith("/loja") ||
     path.startsWith("/conta/")
@@ -64,6 +66,7 @@ function PublicFacingSwitch({ includeLogin }: { includeLogin: boolean }) {
       <Route path="/loja/carrinho" component={PublicCart} />
       <Route path="/loja/checkout" component={PublicCheckout} />
       <Route path="/conta" component={MinhaConta} />
+      <Route path="/verificar-email" component={VerificarEmail} />
       {includeLogin ? <Route path="/login" component={Login} /> : null}
       <Route component={NotFound} />
     </Switch>

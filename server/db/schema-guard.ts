@@ -31,6 +31,8 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
+    "email_verification_tokens",
+    "checkout_account_requests",
   ],
   columnsByTable: {
     orders: [
@@ -105,7 +107,23 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "role",
       "customer_id",
       "photo_url",
+      "email_verified_at",
       "is_active",
+    ],
+    email_verification_tokens: [
+      "user_id",
+      "token_hash",
+      "purpose",
+      "expires_at",
+      "consumed_at",
+    ],
+    checkout_account_requests: [
+      "order_id",
+      "email",
+      "full_name",
+      "customer_id",
+      "password_hash",
+      "processed_at",
     ],
   },
 };
@@ -191,6 +209,33 @@ const migrationHints: Record<string, string> = {
   "users.is_active": "0016_phase16_customers_and_users.sql",
   "users.customer_id": "0017_phase17_user_accounts.sql",
   "users.photo_url": "0017_phase17_user_accounts.sql",
+  "users.email_verified_at": "0026_phase26_public_registration_and_email_verification.sql",
+  email_verification_tokens:
+    "0026_phase26_public_registration_and_email_verification.sql",
+  checkout_account_requests:
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "email_verification_tokens.user_id":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "email_verification_tokens.token_hash":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "email_verification_tokens.purpose":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "email_verification_tokens.expires_at":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "email_verification_tokens.consumed_at":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "checkout_account_requests.order_id":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "checkout_account_requests.email":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "checkout_account_requests.full_name":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "checkout_account_requests.customer_id":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "checkout_account_requests.password_hash":
+    "0026_phase26_public_registration_and_email_verification.sql",
+  "checkout_account_requests.processed_at":
+    "0026_phase26_public_registration_and_email_verification.sql",
 };
 
 export function validateSchemaSnapshot(

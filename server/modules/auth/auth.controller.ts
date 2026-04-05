@@ -31,6 +31,21 @@ export class AuthController {
     res.json({ data: user });
   }
 
+  async register(req: Request, res: Response) {
+    const result = await this.authService.register(req.body.data);
+    res.status(201).json({ data: result });
+  }
+
+  async verifyEmail(req: Request, res: Response) {
+    const result = await this.authService.verifyEmail(req.body.data);
+    res.json({ data: { ok: true, email: result.email } });
+  }
+
+  async resendVerificationEmail(req: Request, res: Response) {
+    const result = await this.authService.resendVerificationEmail(req.body.data);
+    res.json({ data: { ok: true, email: result.email } });
+  }
+
   async me(req: Request, res: Response) {
     if (!req.session.user) {
       res.status(401).json({ message: "Not authenticated." });

@@ -12,6 +12,7 @@ import type {
 import { HttpError } from "../utils/http-error";
 import { getTodayOperationalDate } from "../utils/operational-date";
 import { CustomerOrderSyncService } from "./customer-order-sync.service";
+import { CheckoutAccountRequestsService } from "./checkout-account-requests.service";
 import { DiscountCouponsService } from "./discount-coupons.service";
 import { MercadoPagoService } from "./mercado-pago.service";
 import { OrdersService } from "./orders.service";
@@ -170,6 +171,8 @@ export class PublicStoreService {
   private readonly recipesService = new RecipesService();
   private readonly ordersService = new OrdersService();
   private readonly customerOrderSyncService = new CustomerOrderSyncService();
+  private readonly checkoutAccountRequestsService =
+    new CheckoutAccountRequestsService();
   private readonly discountCouponsService = new DiscountCouponsService();
   private readonly mercadoPagoService = new MercadoPagoService();
   private readonly productAdditionalsService = new ProductAdditionalsService();
@@ -339,6 +342,8 @@ export class PublicStoreService {
       return this.checkoutWithMercadoPago(input);
     }
 
+    await this.assertCheckoutAccountCanBeCreated(input);
+
     const pricingPreview = await this.buildCheckoutPreview({
       deliveryMode: input.deliveryMode,
       deliveryFeeCents: input.deliveryFeeCents ?? 0,
@@ -383,6 +388,13 @@ export class PublicStoreService {
       })),
     });
 
+    const accountMessage = await this.prepareCheckoutAccountRequestIfNeeded({
+      input,
+      orderId: order.id,
+      customerId: customer.id,
+      fullyPaidAt: order.paymentStatus === "Pago",
+    });
+
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,
@@ -398,12 +410,15 @@ export class PublicStoreService {
       subtotalAmountCents: order.subtotalAmountCents,
       paymentInstructions:
         "Pedido recebido. Envie o comprovante do Pix manual para confirmar o pagamento com a confeitaria.",
+      accountMessage,
     };
   }
 
   async checkoutWithMercadoPago(
     input: PublicCheckoutInput,
   ): Promise<PublicCheckoutResponse["data"]> {
+    await this.assertCheckoutAccountCanBeCreated(input);
+
     if (!input.customerEmail?.trim()) {
       throw new HttpError(400, "Informe um e-mail para pagar com cartao.");
     }
@@ -512,6 +527,13 @@ export class PublicStoreService {
       })),
     });
 
+    const accountMessage = await this.prepareCheckoutAccountRequestIfNeeded({
+      input,
+      orderId: order.id,
+      customerId: customer.id,
+      fullyPaidAt: order.paymentStatus === "Pago",
+    });
+
     return {
       orderId: order.id,
       orderNumber: order.orderNumber,
@@ -529,6 +551,7 @@ export class PublicStoreService {
         normalizedPaymentStatus === "approved"
           ? "Pagamento aprovado. Seu pedido ja entrou no fluxo da confeitaria."
           : "Pagamento enviado para analise. Avisaremos se o cartao precisar de nova confirmacao.",
+      accountMessage,
     };
   }
 
@@ -576,6 +599,62 @@ export class PublicStoreService {
           }
         : null,
     };
+  }
+
+  private async assertCheckoutAccountCanBeCreated(input: PublicCheckoutInput) {
+    if (!input.accountRegistration || !input.customerEmail?.trim()) {
+      return;
+    }
+
+    await this.checkoutAccountRequestsService.assertEmailAvailable(
+      input.customerEmail,
+    );
+  }
+
+  private async prepareCheckoutAccountRequestIfNeeded(input: {
+    input: PublicCheckoutInput;
+    orderId: string;
+    customerId: string | null;
+    fullyPaidAt: boolean;
+  }) {
+    if (!input.input.accountRegistration) {
+      return null;
+    }
+
+    if (!input.input.customerEmail?.trim()) {
+      throw new HttpError(
+        400,
+        "Informe um e-mail para criar a conta junto com o pedido.",
+      );
+    }
+
+    await this.checkoutAccountRequestsService.prepareForOrder({
+      orderId: input.orderId,
+      email: input.input.customerEmail.trim(),
+      fullName: input.input.customerName.trim(),
+      customerId: input.customerId,
+      password: input.input.accountRegistration.password,
+    });
+
+    if (input.fullyPaidAt) {
+      try {
+        await this.checkoutAccountRequestsService.processApprovedOrder({
+          orderId: input.orderId,
+          customerId: input.customerId,
+        });
+
+        return "Pagamento aprovado. Enviamos o link para ativar sua conta no e-mail informado.";
+      } catch (error) {
+        console.error(
+          `[checkout-account] Failed to create verified account flow for order ${input.orderId}`,
+          error,
+        );
+
+        return "Pagamento aprovado. Seu pedido foi criado, mas o e-mail de ativacao da conta ainda nao saiu. Tente pedir novo envio na tela de login.";
+      }
+    }
+
+    return "Assim que o pagamento for confirmado, enviaremos um e-mail para ativar sua conta.";
   }
 
   private async resolveCheckoutItems(inputItems: PublicCheckoutInput["items"]) {

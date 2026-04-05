@@ -24,6 +24,7 @@ import { withTransaction } from "../db/transaction";
 import { formatOrderNumber } from "../utils/order-number";
 import { HttpError } from "../utils/http-error";
 import { CashTransactionsService } from "./cash-transactions.service";
+import { CheckoutAccountRequestsService } from "./checkout-account-requests.service";
 import { OrderRecipeConsumptionService } from "./order-recipe-consumption.service";
 import { RecipesService } from "./recipes.service";
 import { ProductAdditionalsService } from "./product-additionals.service";
@@ -124,6 +125,8 @@ export class OrdersService {
   private readonly orderItemAdditionalsRepository =
     new OrderItemAdditionalsRepository();
   private readonly cashTransactionsService = new CashTransactionsService();
+  private readonly checkoutAccountRequestsService =
+    new CheckoutAccountRequestsService();
   private readonly orderRecipeConsumptionService =
     new OrderRecipeConsumptionService();
   private readonly recipesService = new RecipesService();
@@ -317,7 +320,7 @@ export class OrdersService {
   async create(input: CreateOrderInput) {
     const normalized = await this.normalizeOrderInput(input);
 
-    return withTransaction<OrderDetail>(async (tx) => {
+    const order = await withTransaction<OrderDetail>(async (tx) => {
       await this.recipesService.assertOrderRecipesAreSellable(
         normalized.items
           .map((item) => item.recipeId)
@@ -464,12 +467,15 @@ export class OrdersService {
         additionals,
       );
     });
+
+    await this.processApprovedCheckoutAccount(order);
+    return order;
   }
 
   async update(id: string, input: UpdateOrderInput) {
     const normalized = await this.normalizeOrderInput(input);
 
-    return withTransaction<OrderDetail>(async (tx) => {
+    const order = await withTransaction<OrderDetail>(async (tx) => {
       const existing = await this.ordersRepository.findById(id, tx);
 
       if (!existing) {
@@ -633,6 +639,9 @@ export class OrdersService {
         );
       return this.mapOrderDetail(updatedOrder, updatedItems, additionals);
     });
+
+    await this.processApprovedCheckoutAccount(order);
+    return order;
   }
 
   async confirm(id: string) {
@@ -849,7 +858,7 @@ export class OrdersService {
     providerStatusDetail: string | null;
     paymentMethod: "CartaoCredito";
   }) {
-    return withTransaction<OrderDetail | null>(async (tx) => {
+    const order = await withTransaction<OrderDetail | null>(async (tx) => {
       const existing = input.orderId
         ? await this.ordersRepository.findById(input.orderId, tx)
         : await this.ordersRepository.findByPaymentProviderPaymentId(
@@ -912,6 +921,30 @@ export class OrdersService {
 
       return this.mapOrderDetail(updatedOrder, items, additionals);
     });
+
+    if (order) {
+      await this.processApprovedCheckoutAccount(order);
+    }
+
+    return order;
+  }
+
+  private async processApprovedCheckoutAccount(order: OrderDetail) {
+    if (!order.customerId || order.paymentStatus !== "Pago") {
+      return;
+    }
+
+    try {
+      await this.checkoutAccountRequestsService.processApprovedOrder({
+        orderId: order.id,
+        customerId: order.customerId,
+      });
+    } catch (error) {
+      console.error(
+        `[checkout-account] Failed to process approved order ${order.orderNumber}`,
+        error,
+      );
+    }
   }
 
   private async normalizeOrderInput(

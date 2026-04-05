@@ -1,6 +1,14 @@
-import type { AuthUser, LoginInput } from "@shared/types";
+import type {
+  AuthUser,
+  LoginInput,
+  RegisterInput,
+  ResendVerificationEmailInput,
+  VerifyEmailInput,
+} from "@shared/types";
 import { HttpError } from "../../utils/http-error";
 import { UsersService } from "../../services/users.service";
+import { EmailVerificationService } from "../../services/email-verification.service";
+import { hashPassword } from "../../utils/password";
 
 interface ConfiguredAuthUser extends AuthUser {
   password: string;
@@ -58,6 +66,7 @@ function parseAuthUsers(): ConfiguredAuthUser[] {
 
 export class AuthService {
   private readonly usersService = new UsersService();
+  private readonly emailVerificationService = new EmailVerificationService();
   private readonly users = parseAuthUsers();
 
   async login(input: LoginInput): Promise<AuthUser> {
@@ -102,6 +111,69 @@ export class AuthService {
         photoUrl: configuredUser.photoUrl ?? null,
       };
     }
+  }
+
+  async register(input: RegisterInput) {
+    const fullName = input.fullName.trim();
+    const email = input.email.trim().toLowerCase();
+    const password = input.password;
+
+    if (!fullName || !email || !password) {
+      throw new HttpError(400, "Nome, e-mail e senha sao obrigatorios.");
+    }
+
+    const existingUser = await this.usersService.getAuthenticatedUserProfile({
+      email,
+      name: fullName,
+      role: "user",
+    });
+
+    if (existingUser) {
+      if (existingUser.emailVerifiedAt) {
+        throw new HttpError(
+          400,
+          "Ja existe uma conta com este e-mail. Use o login para entrar.",
+        );
+      }
+
+      await this.emailVerificationService.resendForEmail(email);
+
+      return {
+        email,
+        verificationRequired: true as const,
+        message:
+          "Ja existe um cadastro pendente para este e-mail. Enviamos um novo link de verificacao.",
+      };
+    }
+
+    const user = await this.usersService.createVerifiedPendingPublicUser({
+      email,
+      fullName,
+      passwordHash: await hashPassword(password),
+      customerId: null,
+    });
+
+    await this.emailVerificationService.createAndSendForUser({
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      purpose: "signup",
+    });
+
+    return {
+      email: user.email,
+      verificationRequired: true as const,
+      message:
+        "Cadastro criado. Enviamos um link para confirmar seu e-mail antes do primeiro login.",
+    };
+  }
+
+  async verifyEmail(input: VerifyEmailInput) {
+    return this.emailVerificationService.confirmToken(input.token);
+  }
+
+  async resendVerificationEmail(input: ResendVerificationEmailInput) {
+    return this.emailVerificationService.resendForEmail(input.email);
   }
 
   private async resolvePersistedCandidate(email: string) {

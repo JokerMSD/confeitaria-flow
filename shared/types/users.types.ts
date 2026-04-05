@@ -8,6 +8,7 @@ export interface UserItem {
   role: UserRole;
   customerId?: string | null;
   photoUrl?: string | null;
+  emailVerifiedAt?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -22,6 +23,7 @@ export interface CreateUserInput {
   role: UserRole;
   customerId?: string | null;
   photoUrl?: string | null;
+  emailVerifiedAt?: string | null;
   isActive?: boolean;
 }
 
