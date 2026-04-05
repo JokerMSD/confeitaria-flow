@@ -234,10 +234,10 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 609,
     outputUnit: "g",
     markupPercent: 100,
-    notes: "Base recheio com biscoito recheado.",
+    notes: "Base recheio com 1 unidade de biscoito recheado 90g.",
     components: [
       { componentType: "Receita", name: "Base recheio", quantity: 519, quantityUnit: "g" },
-      { componentType: "Ingrediente", name: "Bisc. Rancheiro recheado 90g", quantity: 90, quantityUnit: "g" },
+      { componentType: "Ingrediente", name: "Bisc. Rancheiro recheado 90g", quantity: 1, quantityUnit: "un" },
     ],
   },
   {
