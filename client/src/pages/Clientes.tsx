@@ -327,7 +327,7 @@ export default function Clientes() {
                         className="flex h-full flex-col rounded-[1.6rem] border border-border/70 bg-background/55 p-5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
                       >
                         <div className="flex h-full flex-col space-y-5">
-                          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                          <div className="flex flex-col gap-4">
                             <div className="min-w-0 flex-1 space-y-4">
                               <div className="flex flex-wrap items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
@@ -357,7 +357,7 @@ export default function Clientes() {
                                 </div>
                               </div>
 
-                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                              <div className="grid gap-3 md:grid-cols-2">
                                 <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-3">
                                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <Mail className="h-4 w-4" />
@@ -390,7 +390,7 @@ export default function Clientes() {
                               </div>
                             </div>
 
-                            <div className="grid gap-3 sm:grid-cols-3 xl:w-full xl:max-w-[460px]">
+                            <div className="grid gap-3 sm:grid-cols-3">
                               <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                   Total gasto
