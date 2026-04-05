@@ -327,8 +327,8 @@ export default function Clientes() {
                         className="rounded-[1.6rem] border border-border/70 bg-background/55 p-5 transition-all hover:-translate-y-0.5 hover:shadow-sm"
                       >
                         <div className="space-y-5">
-                          <div className="grid gap-4 2xl:grid-cols-[minmax(0,1.4fr)_minmax(380px,0.9fr)]">
-                            <div className="min-w-0 space-y-4">
+                          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                            <div className="min-w-0 flex-1 space-y-4">
                               <div className="flex flex-wrap items-center gap-3">
                                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                                   <UserRound className="h-5 w-5" />
@@ -357,8 +357,8 @@ export default function Clientes() {
                                 </div>
                               </div>
 
-                              <div className="grid gap-3 lg:grid-cols-3">
-                                <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                                <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-3">
                                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <Mail className="h-4 w-4" />
                                     <span>E-mail</span>
@@ -367,7 +367,7 @@ export default function Clientes() {
                                     {customer.email}
                                   </p>
                                 </div>
-                                <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                                <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-3">
                                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <Phone className="h-4 w-4" />
                                     <span>Telefone</span>
@@ -376,7 +376,7 @@ export default function Clientes() {
                                     {customer.phone ?? "Nao informado"}
                                   </p>
                                 </div>
-                                <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                                <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-3">
                                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                     <ShoppingBag className="h-4 w-4" />
                                     <span>Ultimo pedido</span>
@@ -390,16 +390,16 @@ export default function Clientes() {
                               </div>
                             </div>
 
-                            <div className="grid gap-3 lg:grid-cols-3">
-                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                            <div className="grid shrink-0 gap-3 sm:grid-cols-3 xl:w-full xl:max-w-[460px]">
+                              <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                   Total gasto
                                 </p>
-                                <p className="mt-2 text-2xl font-bold text-foreground">
+                                <p className="mt-2 break-words text-2xl font-bold text-foreground">
                                   {formatCurrency(customer.totalSpentCents / 100)}
                                 </p>
                               </div>
-                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                              <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                   Pedidos
                                 </p>
@@ -407,7 +407,7 @@ export default function Clientes() {
                                   {customer.orderCount}
                                 </p>
                               </div>
-                              <div className="rounded-2xl border border-border/70 bg-card px-4 py-4">
+                              <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-4">
                                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                   Em aberto
                                 </p>
@@ -419,7 +419,7 @@ export default function Clientes() {
                           </div>
 
                           <div className="grid gap-3 border-t border-border/60 pt-4 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
-                            <div className="rounded-2xl border border-border/70 bg-card px-4 py-3">
+                            <div className="min-w-0 rounded-2xl border border-border/70 bg-card px-4 py-3">
                               <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
                                 Atualizado
                               </p>
