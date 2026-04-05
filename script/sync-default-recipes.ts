@@ -247,10 +247,10 @@ const recipeSeeds: RecipeSeed[] = [
     outputUnit: "un",
     markupPercent: 100,
     salePriceCents: 3990,
-    notes: "Peso nominal 350g. Recheio padrao vinculado a Recheio simples.",
+    notes: "Peso nominal 350g. Recheio padrao vinculado a Base recheio.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 55, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 295, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 295, quantityUnit: "g" },
     ],
   },
   {
@@ -260,10 +260,10 @@ const recipeSeeds: RecipeSeed[] = [
     outputUnit: "un",
     markupPercent: 100,
     salePriceCents: 4990,
-    notes: "Peso nominal 500g. Casca 100g e recheio 400g.",
+    notes: "Peso nominal 500g. Casca 100g e recheio premium de 400g.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 100, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 400, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 400, quantityUnit: "g" },
     ],
   },
   {
@@ -273,10 +273,10 @@ const recipeSeeds: RecipeSeed[] = [
     outputUnit: "un",
     markupPercent: 100,
     salePriceCents: 7490,
-    notes: "Peso nominal 750g. Casca estimada 150g e recheio estimado 600g.",
+    notes: "Peso nominal 750g. Casca estimada 150g e recheio premium estimado 600g.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 150, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 600, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 600, quantityUnit: "g" },
     ],
   },
   {
@@ -289,7 +289,7 @@ const recipeSeeds: RecipeSeed[] = [
     notes: "Peso comercial 350g. Componentes informados somam 330g.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 210, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 120, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 120, quantityUnit: "g" },
     ],
   },
   {
@@ -302,7 +302,7 @@ const recipeSeeds: RecipeSeed[] = [
     notes: "Peso comercial 350g. Componentes informados somam 315g.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 200, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 115, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 115, quantityUnit: "g" },
     ],
   },
   {
@@ -312,10 +312,10 @@ const recipeSeeds: RecipeSeed[] = [
     outputUnit: "un",
     markupPercent: 100,
     salePriceCents: 3930,
-    notes: "Peso nominal 500g. Recheio padrao vinculado a Recheio simples.",
+    notes: "Peso nominal 500g. Recheio padrao vinculado a Base recheio.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 100, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 400, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 400, quantityUnit: "g" },
     ],
   },
   {
@@ -325,10 +325,10 @@ const recipeSeeds: RecipeSeed[] = [
     outputUnit: "un",
     markupPercent: 100,
     salePriceCents: 300,
-    notes: "Peso nominal 20g. Recheio padrao vinculado a Recheio simples.",
+    notes: "Peso nominal 20g. Recheio padrao vinculado a Base recheio.",
     components: [
       { componentType: "Ingrediente", name: "Chocolate 1kg", quantity: 15, quantityUnit: "g" },
-      { componentType: "Receita", name: "Recheio simples", quantity: 5, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 5, quantityUnit: "g" },
     ],
   },
   {
