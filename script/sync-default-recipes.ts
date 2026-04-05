@@ -50,14 +50,18 @@ const ingredientSeeds: IngredientSeed[] = [
     recipeEquivalentUnit: "g",
   },
   {
-    name: "leite condensado 350g",
+    name: "leite condensado 395g",
     unit: "un",
-    recipeEquivalentQuantity: 350,
+    recipeEquivalentQuantity: 395,
     recipeEquivalentUnit: "g",
   },
   {
-    name: "Suco Tang",
+    name: "Suco Morango",
     unit: "un",
+  },
+  {
+    name: "Creme caseario de maracuja",
+    unit: "g",
   },
   {
     name: "Leite ninho 750g",
@@ -109,11 +113,11 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 519,
     outputUnit: "g",
     markupPercent: 100,
-    notes: "Porcao base de 519g.",
+    notes: "Receita simples com suco morango.",
     components: [
       { componentType: "Ingrediente", name: "Creme de Leite 200g", quantity: 2, quantityUnit: "un" },
-      { componentType: "Ingrediente", name: "leite condensado 350g", quantity: 1, quantityUnit: "un" },
-      { componentType: "Ingrediente", name: "Suco Tang", quantity: 1, quantityUnit: "un" },
+      { componentType: "Ingrediente", name: "leite condensado 395g", quantity: 1, quantityUnit: "un" },
+      { componentType: "Ingrediente", name: "Suco Morango", quantity: 1, quantityUnit: "un" },
     ],
   },
   {
@@ -125,7 +129,7 @@ const recipeSeeds: RecipeSeed[] = [
     notes: "Base recheio de 519g.",
     components: [
       { componentType: "Ingrediente", name: "Creme de Leite 200g", quantity: 2, quantityUnit: "un" },
-      { componentType: "Ingrediente", name: "leite condensado 350g", quantity: 1, quantityUnit: "un" },
+      { componentType: "Ingrediente", name: "leite condensado 395g", quantity: 1, quantityUnit: "un" },
       { componentType: "Ingrediente", name: "Manteiga 500g", quantity: 5, quantityUnit: "g" },
     ],
   },
@@ -135,7 +139,7 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 519,
     outputUnit: "g",
     markupPercent: 100,
-    notes: "Variacao usando Recheio simples.",
+    notes: "Receita simples com suco morango.",
     components: [
       { componentType: "Receita", name: "Recheio simples", quantity: 519, quantityUnit: "g" },
     ],
@@ -143,12 +147,13 @@ const recipeSeeds: RecipeSeed[] = [
   {
     name: "Maracuja",
     kind: "Preparacao",
-    outputQuantity: 519,
+    outputQuantity: 619,
     outputUnit: "g",
     markupPercent: 100,
-    notes: "Variacao usando Recheio simples.",
+    notes: "Base recheio com creme caseario de maracuja.",
     components: [
-      { componentType: "Receita", name: "Recheio simples", quantity: 519, quantityUnit: "g" },
+      { componentType: "Receita", name: "Base recheio", quantity: 519, quantityUnit: "g" },
+      { componentType: "Ingrediente", name: "Creme caseario de maracuja", quantity: 100, quantityUnit: "g" },
     ],
   },
   {
@@ -205,10 +210,9 @@ const recipeSeeds: RecipeSeed[] = [
     outputQuantity: 519,
     outputUnit: "g",
     markupPercent: 100,
-    notes: "Assumido 5ml de essencia de menta.",
+    notes: "Receita simples com suco morango.",
     components: [
-      { componentType: "Receita", name: "Base recheio", quantity: 519, quantityUnit: "g" },
-      { componentType: "Ingrediente", name: "Essencia de menta 30ml", quantity: 5, quantityUnit: "ml" },
+      { componentType: "Receita", name: "Recheio simples", quantity: 519, quantityUnit: "g" },
     ],
   },
   {
