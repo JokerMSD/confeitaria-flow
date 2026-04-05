@@ -75,6 +75,14 @@ export default function Dashboard() {
 
     return adaptOrderListToCards(ordersQuery.data.data);
   }, [ordersQuery.data]);
+  const nonCancelledOrders = useMemo(
+    () => orderCards.filter((order) => order.status !== "Cancelado"),
+    [orderCards],
+  );
+  const cancelledOrders = useMemo(
+    () => orderCards.filter((order) => order.status === "Cancelado").length,
+    [orderCards],
+  );
 
   const inventoryItems = useMemo(
     () => adaptInventoryItemsToList(inventoryQuery.data?.data ?? []),
@@ -101,33 +109,24 @@ export default function Dashboard() {
 
   const pedidosHoje = useMemo(
     () =>
-      orderCards.filter(
-        (order) =>
-          order.deliveryDate === todayStr &&
-          order.status !== "Cancelado" &&
-          order.status !== "Entregue",
+      nonCancelledOrders.filter(
+        (order) => order.deliveryDate === todayStr && order.status !== "Entregue",
       ).length,
-    [orderCards, todayStr],
+    [nonCancelledOrders, todayStr],
   );
 
   const pedidosAtrasados = useMemo(
     () =>
-      orderCards.filter(
-        (order) =>
-          order.deliveryDate < todayStr &&
-          order.status !== "Cancelado" &&
-          order.status !== "Entregue",
+      nonCancelledOrders.filter(
+        (order) => order.deliveryDate < todayStr && order.status !== "Entregue",
       ).length,
-    [orderCards, todayStr],
+    [nonCancelledOrders, todayStr],
   );
 
   const pedidosPendentesPagamento = useMemo(
     () =>
-      orderCards.filter(
-        (order) =>
-          order.paymentStatus !== "Pago" && order.status !== "Cancelado",
-      ).length,
-    [orderCards],
+      nonCancelledOrders.filter((order) => order.paymentStatus !== "Pago").length,
+    [nonCancelledOrders],
   );
 
   const estoqueBaixoItens = useMemo(
@@ -137,10 +136,8 @@ export default function Dashboard() {
 
   const proximosFila = useMemo(
     () =>
-      [...orderCards]
-        .filter(
-          (order) => order.status !== "Cancelado" && order.status !== "Entregue",
-        )
+      [...nonCancelledOrders]
+        .filter((order) => order.status !== "Entregue")
         .sort((a, b) => {
           const dateA = new Date(
             `${a.deliveryDate}T${a.deliveryTime || "23:59"}`,
@@ -151,7 +148,7 @@ export default function Dashboard() {
           return dateA.getTime() - dateB.getTime();
         })
         .slice(0, 5),
-    [orderCards],
+    [nonCancelledOrders],
   );
 
   const dashboardSummary = dashboardSummaryQuery.data?.data ?? null;
@@ -207,7 +204,7 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
           <Card className="glass-card border-l-4 border-l-warning">
             <CardContent className="p-4 md:p-6 flex flex-col gap-2">
               <div className="flex items-center justify-between text-muted-foreground">
@@ -230,6 +227,20 @@ export default function Dashboard() {
               </div>
               <div className="text-3xl font-display font-bold text-destructive">
                 {ordersQuery.isLoading ? "..." : pedidosAtrasados}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card border-l-4 border-l-rose-500">
+            <CardContent className="p-4 md:p-6 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="text-sm font-medium text-rose-400">
+                  Cancelados
+                </span>
+                <PackageMinus className="w-5 h-5 text-rose-400" />
+              </div>
+              <div className="text-3xl font-display font-bold text-rose-400">
+                {ordersQuery.isLoading ? "..." : cancelledOrders}
               </div>
             </CardContent>
           </Card>

@@ -96,6 +96,14 @@ export default function Clientes() {
     () => adaptOrderListToCards(ordersQuery.data?.data ?? []),
     [ordersQuery.data],
   );
+  const nonCancelledOrders = useMemo(
+    () => orders.filter((order) => order.status !== "Cancelado"),
+    [orders],
+  );
+  const cancelledOrders = useMemo(
+    () => orders.filter((order) => order.status === "Cancelado").length,
+    [orders],
+  );
 
   const totalOpenOrders = useMemo(
     () => customers.reduce((sum, customer) => sum + customer.openOrderCount, 0),
@@ -112,19 +120,17 @@ export default function Clientes() {
 
   const todayOrders = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
-    return orders.filter((order) => order.deliveryDate === today).length;
-  }, [orders]);
+    return nonCancelledOrders.filter((order) => order.deliveryDate === today).length;
+  }, [nonCancelledOrders]);
   const paidOrders = useMemo(
-    () => orders.filter((order) => order.paymentStatus === "Pago").length,
-    [orders],
+    () =>
+      nonCancelledOrders.filter((order) => order.paymentStatus === "Pago").length,
+    [nonCancelledOrders],
   );
   const pendingOrders = useMemo(
     () =>
-      orders.filter(
-        (order) =>
-          order.status !== "Entregue" && order.status !== "Cancelado",
-      ).length,
-    [orders],
+      nonCancelledOrders.filter((order) => order.status !== "Entregue").length,
+    [nonCancelledOrders],
   );
 
   const handleConfirmDeleteCustomer = async () => {
@@ -472,11 +478,11 @@ export default function Clientes() {
           </TabsContent>
 
           <TabsContent value="pedidos" className="space-y-6">
-            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               <StatCard
                 label="Pedidos no filtro"
-                value={orders.length}
-                detail="Leitura geral dos pedidos retornados pela busca."
+                value={nonCancelledOrders.length}
+                detail="Leitura geral dos pedidos ativos e concluidos no filtro."
               />
               <StatCard
                 label="Pedidos ativos"
@@ -487,6 +493,11 @@ export default function Clientes() {
                 label="Para hoje"
                 value={todayOrders}
                 detail="Pedidos com entrega ou retirada prevista para hoje."
+              />
+              <StatCard
+                label="Cancelados"
+                value={cancelledOrders}
+                detail="Pedidos cancelados no recorte atual, fora das metricas principais."
               />
               <StatCard
                 label="Pagos"
