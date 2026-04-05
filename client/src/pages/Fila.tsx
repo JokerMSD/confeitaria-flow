@@ -31,9 +31,19 @@ import type {
 } from "@/features/orders/types/order-ui";
 
 type QueueFilter = "todos" | "acao" | "prontos" | "nao-pagos";
+type QueueSort =
+  | "horario-asc"
+  | "horario-desc"
+  | "nome-az"
+  | "nome-za"
+  | "maior-valor"
+  | "menor-valor"
+  | "mais-atualizados"
+  | "mais-antigos";
 type QuickStatus = "Confirmado" | "EmProducao" | "Pronto" | "Entregue";
 const QUEUE_FILTER_STORAGE_KEY = "queue-filter";
 const QUEUE_DATE_STORAGE_KEY = "queue-date";
+const QUEUE_SORT_STORAGE_KEY = "queue-sort";
 
 function addDays(date: Date, days: number) {
   const next = new Date(date);
@@ -189,6 +199,35 @@ function getActionsForStatus(order: Pick<OrderQueueCardItem, "status" | "deliver
   }
 }
 
+function getOrderDateTimeValue(order: OrderQueueCardItem) {
+  const time = order.deliveryTime ?? "00:00";
+  return new Date(`${order.deliveryDate}T${time}:00`).getTime();
+}
+
+function sortQueueOrders(orders: OrderQueueCardItem[], sort: QueueSort) {
+  return [...orders].sort((a, b) => {
+    switch (sort) {
+      case "horario-desc":
+        return getOrderDateTimeValue(b) - getOrderDateTimeValue(a);
+      case "nome-az":
+        return a.customerName.localeCompare(b.customerName, "pt-BR");
+      case "nome-za":
+        return b.customerName.localeCompare(a.customerName, "pt-BR");
+      case "maior-valor":
+        return b.totalAmount - a.totalAmount;
+      case "menor-valor":
+        return a.totalAmount - b.totalAmount;
+      case "mais-atualizados":
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      case "mais-antigos":
+        return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+      case "horario-asc":
+      default:
+        return getOrderDateTimeValue(a) - getOrderDateTimeValue(b);
+    }
+  });
+}
+
 function getActionClass(tone: "primary" | "secondary" | "success") {
   switch (tone) {
     case "secondary":
@@ -241,11 +280,19 @@ function QueueStatCard({
         tone === "default" && "border-border bg-card/75",
       )}
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-        {title}
-      </p>
-      <p className="mt-3 text-4xl font-display font-bold text-foreground">{value}</p>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {title}
+          </p>
+          <p className="mt-2 max-w-[18rem] text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+        <p className="shrink-0 text-right font-display text-4xl font-bold text-foreground">
+          {value}
+        </p>
+      </div>
     </div>
   );
 }
@@ -423,6 +470,28 @@ export default function Fila() {
 
     return "todos";
   });
+  const [queueSort, setQueueSort] = useState<QueueSort>(() => {
+    if (typeof window === "undefined") {
+      return "horario-asc";
+    }
+
+    const storedSort = window.sessionStorage.getItem(QUEUE_SORT_STORAGE_KEY);
+
+    if (
+      storedSort === "horario-asc" ||
+      storedSort === "horario-desc" ||
+      storedSort === "nome-az" ||
+      storedSort === "nome-za" ||
+      storedSort === "maior-valor" ||
+      storedSort === "menor-valor" ||
+      storedSort === "mais-atualizados" ||
+      storedSort === "mais-antigos"
+    ) {
+      return storedSort;
+    }
+
+    return "horario-asc";
+  });
   const todayKey = toOperationalDateKey(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(() => {
     if (typeof window === "undefined") {
@@ -453,7 +522,7 @@ export default function Fila() {
   const filteredOrders = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return orders.filter((order) => {
+    const matchingOrders = orders.filter((order) => {
       if (!orderMatchesFilter(order, queueFilter)) {
         return false;
       }
@@ -468,7 +537,9 @@ export default function Fila() {
 
       return buildSearchableText(order).includes(normalizedSearch);
     });
-  }, [orders, queueFilter, searchTerm, selectedDate]);
+
+    return sortQueueOrders(matchingOrders, queueSort);
+  }, [orders, queueFilter, queueSort, searchTerm, selectedDate]);
 
   const overdueOrders = useMemo(
     () => filteredOrders.filter((order) => order.deliveryDate < todayKey),
@@ -512,6 +583,14 @@ export default function Fila() {
 
     window.sessionStorage.setItem(QUEUE_FILTER_STORAGE_KEY, queueFilter);
   }, [queueFilter]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    window.sessionStorage.setItem(QUEUE_SORT_STORAGE_KEY, queueSort);
+  }, [queueSort]);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -580,14 +659,30 @@ export default function Fila() {
             </div>
 
             <div className="space-y-3">
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Buscar por cliente, pedido ou item..."
-                  className="h-12 w-full rounded-full border border-border bg-background pl-11 pr-4 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-primary"
-                />
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,1fr)_240px]">
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Buscar por cliente, pedido ou item..."
+                    className="h-12 w-full rounded-full border border-border bg-background pl-11 pr-4 text-sm text-foreground shadow-sm outline-none placeholder:text-muted-foreground focus:border-primary"
+                  />
+                </div>
+                <select
+                  value={queueSort}
+                  onChange={(event) => setQueueSort(event.target.value as QueueSort)}
+                  className="h-12 rounded-full border border-border bg-background px-4 text-sm text-foreground shadow-sm outline-none focus:border-primary"
+                >
+                  <option value="horario-asc">Horario mais cedo</option>
+                  <option value="horario-desc">Horario mais tarde</option>
+                  <option value="nome-az">Cliente A - Z</option>
+                  <option value="nome-za">Cliente Z - A</option>
+                  <option value="maior-valor">Maior valor</option>
+                  <option value="menor-valor">Menor valor</option>
+                  <option value="mais-atualizados">Atualizados agora</option>
+                  <option value="mais-antigos">Atualizados antes</option>
+                </select>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -899,9 +994,9 @@ export default function Fila() {
                       <p className="mt-1 text-sm leading-6 text-muted-foreground">
                         {overdueOrders.length} pedido(s) ainda aberto(s) antes de hoje.
                       </p>
-                      <div className="mt-4 space-y-2">
-                        {overdueOrders.slice(0, 5).map((order) => (
-                          <button
+                        <div className="mt-4 space-y-2">
+                          {overdueOrders.slice(0, 5).map((order) => (
+                            <button
                             key={order.id}
                             type="button"
                             className="flex w-full items-center justify-between rounded-2xl border border-destructive/20 bg-background px-4 py-3 text-left"
