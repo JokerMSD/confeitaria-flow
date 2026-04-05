@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { orderItems, orders } from "@shared/schema";
 import type {
   ListOrdersFilters,
+  OrdersDashboardSummaryFilters,
   OrderStatus,
   PaymentMethod,
   PaymentStatus,
@@ -80,6 +81,20 @@ export interface OrderPaymentSyncUpdate {
   remainingAmountCents: number;
   fullyPaidAt: Date | null;
   updatedAt: Date;
+}
+
+export interface OrderDashboardProductRow {
+  recipeId: string | null;
+  productName: string;
+  quantitySold: number;
+  orderCount: number;
+  revenueCents: number;
+}
+
+export interface OrderDashboardDeliveryModeRow {
+  deliveryMode: "Entrega" | "Retirada";
+  orderCount: number;
+  revenueCents: number;
 }
 
 export class OrdersRepository {
@@ -318,6 +333,114 @@ export class OrdersRepository {
       soldAmountCents: toSafeNumber(summary?.soldAmountCents),
       receivedAmountCents: toSafeNumber(summary?.receivedAmountCents),
       receivableAmountCents: toSafeNumber(summary?.receivableAmountCents),
+    };
+  }
+
+  async listDashboardProductRows(
+    filters: OrdersDashboardSummaryFilters = {},
+    executor: Executor = getDb(),
+  ): Promise<OrderDashboardProductRow[]> {
+    const conditions = [
+      isNull(orders.deletedAt),
+      notInArray(orders.status, ["Cancelado"]),
+    ];
+
+    if (filters.dateFrom) {
+      conditions.push(sql`${orders.orderDate} >= ${filters.dateFrom}`);
+    }
+
+    if (filters.dateTo) {
+      conditions.push(sql`${orders.orderDate} <= ${filters.dateTo}`);
+    }
+
+    const rows = await executor
+      .select({
+        recipeId: orderItems.recipeId,
+        productName: orderItems.productName,
+        quantitySold: sql<number>`coalesce(sum(${orderItems.quantity}), 0)`,
+        orderCount: sql<number>`count(distinct ${orders.id})`,
+        revenueCents: sql<number>`coalesce(sum(${orderItems.lineTotalCents}), 0)`,
+      })
+      .from(orderItems)
+      .innerJoin(orders, eq(orders.id, orderItems.orderId))
+      .where(and(...conditions))
+      .groupBy(orderItems.recipeId, orderItems.productName)
+      .orderBy(sql`coalesce(sum(${orderItems.lineTotalCents}), 0) desc`);
+
+    return rows.map((row: any) => ({
+      recipeId: row.recipeId ?? null,
+      productName: row.productName,
+      quantitySold: toSafeNumber(row.quantitySold),
+      orderCount: toSafeNumber(row.orderCount),
+      revenueCents: toSafeNumber(row.revenueCents),
+    }));
+  }
+
+  async getDashboardDeliveryModeRows(
+    filters: OrdersDashboardSummaryFilters = {},
+    executor: Executor = getDb(),
+  ): Promise<OrderDashboardDeliveryModeRow[]> {
+    const conditions = [
+      isNull(orders.deletedAt),
+      notInArray(orders.status, ["Cancelado"]),
+    ];
+
+    if (filters.dateFrom) {
+      conditions.push(sql`${orders.orderDate} >= ${filters.dateFrom}`);
+    }
+
+    if (filters.dateTo) {
+      conditions.push(sql`${orders.orderDate} <= ${filters.dateTo}`);
+    }
+
+    const rows = await executor
+      .select({
+        deliveryMode: orders.deliveryMode,
+        orderCount: sql<number>`count(*)`,
+        revenueCents: sql<number>`coalesce(sum(${orders.subtotalAmountCents}), 0)`,
+      })
+      .from(orders)
+      .where(and(...conditions))
+      .groupBy(orders.deliveryMode)
+      .orderBy(sql`coalesce(sum(${orders.subtotalAmountCents}), 0) desc`);
+
+    return rows.map((row: any) => ({
+      deliveryMode: row.deliveryMode,
+      orderCount: toSafeNumber(row.orderCount),
+      revenueCents: toSafeNumber(row.revenueCents),
+    }));
+  }
+
+  async getDashboardOrderTotals(
+    filters: OrdersDashboardSummaryFilters = {},
+    executor: Executor = getDb(),
+  ) {
+    const conditions = [
+      isNull(orders.deletedAt),
+      notInArray(orders.status, ["Cancelado"]),
+    ];
+
+    if (filters.dateFrom) {
+      conditions.push(sql`${orders.orderDate} >= ${filters.dateFrom}`);
+    }
+
+    if (filters.dateTo) {
+      conditions.push(sql`${orders.orderDate} <= ${filters.dateTo}`);
+    }
+
+    const [summary] = await executor
+      .select({
+        ordersCount: sql<number>`count(*)`,
+        itemLinesCount: sql<number>`coalesce(sum(${orders.itemCount}), 0)`,
+        revenueCents: sql<number>`coalesce(sum(${orders.subtotalAmountCents}), 0)`,
+      })
+      .from(orders)
+      .where(and(...conditions));
+
+    return {
+      ordersCount: toSafeNumber(summary?.ordersCount),
+      itemLinesCount: toSafeNumber(summary?.itemLinesCount),
+      revenueCents: toSafeNumber(summary?.revenueCents),
     };
   }
 

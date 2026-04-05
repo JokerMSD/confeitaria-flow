@@ -1,24 +1,35 @@
 ﻿import { useMemo } from "react";
 import { Link } from "wouter";
 import {
+  BarChart3,
   CalendarDays,
   ChevronRight,
   Clock,
   DollarSign,
+  PieChart as PieChartIcon,
   PackageMinus,
+  ShoppingBag,
+  Sparkles,
   TrendingDown,
   TrendingUp,
 } from "lucide-react";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, XAxis, YAxis } from "recharts";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 import { useCashTransactions } from "@/features/cash/hooks/use-cash-transactions";
+import { useOrdersDashboardSummary } from "@/features/orders/hooks/use-orders-dashboard-summary";
 import { useOrders } from "@/features/orders/hooks/use-orders";
 import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter";
 import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-items";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
 import type { UiOrderStatus } from "@/features/orders/types/order-ui";
-import { cn, formatCurrency, getTodayLocalDateKey } from "@/lib/utils";
+import { cn, formatCurrency, getLocalDateKey, getTodayLocalDateKey } from "@/lib/utils";
 
 function getStatusColor(status: UiOrderStatus) {
   switch (status) {
@@ -41,7 +52,16 @@ function getStatusColor(status: UiOrderStatus) {
 
 export default function Dashboard() {
   const todayStr = getTodayLocalDateKey();
+  const dashboardDateFrom = useMemo(() => {
+    const baseDate = new Date();
+    baseDate.setDate(baseDate.getDate() - 29);
+    return getLocalDateKey(baseDate);
+  }, []);
   const ordersQuery = useOrders();
+  const dashboardSummaryQuery = useOrdersDashboardSummary({
+    dateFrom: dashboardDateFrom,
+    dateTo: todayStr,
+  });
   const cashQuery = useCashTransactions({
     dateFrom: todayStr,
     dateTo: todayStr,
@@ -132,6 +152,40 @@ export default function Dashboard() {
         })
         .slice(0, 5),
     [orderCards],
+  );
+
+  const dashboardSummary = dashboardSummaryQuery.data?.data ?? null;
+
+  const topSellingProducts = useMemo(
+    () =>
+      [...(dashboardSummary?.products ?? [])]
+        .sort((a, b) => b.quantitySold - a.quantitySold)
+        .slice(0, 6)
+        .map((product) => ({
+          ...product,
+          shortName:
+            product.productName.length > 20
+              ? `${product.productName.slice(0, 20)}...`
+              : product.productName,
+        })),
+    [dashboardSummary],
+  );
+
+  const deliveryModeChartData = useMemo(
+    () =>
+      (dashboardSummary?.deliveryModes ?? []).map((item) => ({
+        ...item,
+        label: item.deliveryMode === "Entrega" ? "Entrega" : "Retirada",
+      })),
+    [dashboardSummary],
+  );
+
+  const soldItemsRanking = useMemo(
+    () =>
+      [...(dashboardSummary?.products ?? [])]
+        .sort((a, b) => b.quantitySold - a.quantitySold)
+        .slice(0, 8),
+    [dashboardSummary],
   );
 
   return (
@@ -253,6 +307,315 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <Card className="glass-card border-l-4 border-l-pink-400">
+            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="text-sm font-medium">Produto mais vendido</span>
+                <ShoppingBag className="w-5 h-5 text-pink-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xl font-display font-bold leading-tight">
+                  {dashboardSummaryQuery.isLoading
+                    ? "..."
+                    : dashboardSummary?.highlights.topSellingProduct?.productName ??
+                      "Sem vendas"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {dashboardSummary?.highlights.topSellingProduct?.quantitySold ?? 0}{" "}
+                  unidade(s) vendidas nos ultimos 30 dias
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card border-l-4 border-l-amber-400">
+            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="text-sm font-medium">Produto mais lucrativo</span>
+                <Sparkles className="w-5 h-5 text-amber-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xl font-display font-bold leading-tight">
+                  {dashboardSummaryQuery.isLoading
+                    ? "..."
+                    : dashboardSummary?.highlights.mostProfitableProduct?.productName ??
+                      "Sem base suficiente"}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Lucro estimado:{" "}
+                  {formatCurrency(
+                    (dashboardSummary?.highlights.mostProfitableProduct
+                      ?.estimatedProfitCents ?? 0) / 100,
+                  )}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card border-l-4 border-l-primary">
+            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="text-sm font-medium">Itens vendidos</span>
+                <BarChart3 className="w-5 h-5 text-primary" />
+              </div>
+              <p className="text-3xl font-display font-bold">
+                {dashboardSummaryQuery.isLoading
+                  ? "..."
+                  : dashboardSummary?.totals.unitsSold ?? 0}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Quantidade total de unidades vendidas no recorte.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card border-l-4 border-l-emerald-400">
+            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span className="text-sm font-medium">Lucro estimado</span>
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+              </div>
+              <p className="text-3xl font-display font-bold text-emerald-400">
+                {dashboardSummaryQuery.isLoading
+                  ? "..."
+                  : formatCurrency(
+                      (dashboardSummary?.totals.estimatedProfitCents ?? 0) / 100,
+                    )}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Baseado em custo atual das receitas com custo conhecido.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <Card className="glass-card xl:col-span-2">
+            <CardHeader className="pb-2 border-b border-border/50">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-primary" />
+                Quantidade vendida por item
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Produtos mais vendidos nos ultimos 30 dias.
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {dashboardSummaryQuery.isError ? (
+                <p className="text-sm text-muted-foreground">
+                  Nao foi possivel carregar as metricas comerciais.
+                </p>
+              ) : topSellingProducts.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Ainda nao ha vendas suficientes para montar o grafico.
+                </p>
+              ) : (
+                <ChartContainer
+                  className="h-[320px] w-full"
+                  config={{
+                    quantitySold: {
+                      label: "Quantidade vendida",
+                      color: "var(--primary)",
+                    },
+                  }}
+                >
+                  <BarChart data={topSellingProducts} margin={{ left: 8, right: 16 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="shortName"
+                      tickLine={false}
+                      axisLine={false}
+                      interval={0}
+                      angle={-18}
+                      textAnchor="end"
+                      height={72}
+                    />
+                    <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                    <ChartTooltip
+                      cursor={false}
+                      content={
+                        <ChartTooltipContent
+                          formatter={(value, _name, item) => (
+                            <div className="flex w-full items-center justify-between gap-3">
+                              <span className="text-muted-foreground">
+                                {String(item.payload.productName)}
+                              </span>
+                              <span className="font-mono font-medium text-foreground">
+                                {Number(value)} un
+                              </span>
+                            </div>
+                          )}
+                        />
+                      }
+                    />
+                    <Bar
+                      dataKey="quantitySold"
+                      radius={[10, 10, 0, 0]}
+                      fill="var(--color-quantitySold)"
+                    />
+                  </BarChart>
+                </ChartContainer>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="glass-card">
+            <CardHeader className="pb-2 border-b border-border/50">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <PieChartIcon className="w-5 h-5 text-primary" />
+                Entrega x retirada
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Distribuicao do faturamento no mesmo recorte.
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              {dashboardSummaryQuery.isError ? (
+                <p className="text-sm text-muted-foreground">
+                  Nao foi possivel carregar o grafico.
+                </p>
+              ) : deliveryModeChartData.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Sem pedidos suficientes para comparar os modos.
+                </p>
+              ) : (
+                <>
+                  <ChartContainer
+                    className="mx-auto h-[260px] w-full max-w-[320px]"
+                    config={{
+                      Entrega: { label: "Entrega", color: "#f08cb3" },
+                      Retirada: { label: "Retirada", color: "#7c5cff" },
+                    }}
+                  >
+                    <PieChart>
+                      <ChartTooltip
+                        content={
+                          <ChartTooltipContent
+                            nameKey="label"
+                            formatter={(value, _name, item) => (
+                              <div className="flex w-full items-center justify-between gap-3">
+                                <span className="text-muted-foreground">
+                                  {String(item.payload.label)}
+                                </span>
+                                <span className="font-mono font-medium text-foreground">
+                                  {formatCurrency(Number(value) / 100)}
+                                </span>
+                              </div>
+                            )}
+                          />
+                        }
+                      />
+                      <Pie
+                        data={deliveryModeChartData}
+                        dataKey="revenueCents"
+                        nameKey="label"
+                        innerRadius={64}
+                        outerRadius={94}
+                        strokeWidth={4}
+                      >
+                        {deliveryModeChartData.map((item) => (
+                          <Cell
+                            key={item.deliveryMode}
+                            fill={
+                              item.deliveryMode === "Entrega"
+                                ? "var(--color-Entrega)"
+                                : "var(--color-Retirada)"
+                            }
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ChartContainer>
+                  <div className="mt-4 space-y-2">
+                    {deliveryModeChartData.map((item) => (
+                      <div
+                        key={item.deliveryMode}
+                        className="flex items-center justify-between rounded-xl border border-border/50 px-4 py-3"
+                      >
+                        <div>
+                          <p className="font-medium">{item.label}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {item.orderCount} pedido(s)
+                          </p>
+                        </div>
+                        <p className="font-semibold">
+                          {formatCurrency(item.revenueCents / 100)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card className="glass-card">
+          <CardHeader className="pb-2 border-b border-border/50">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <ShoppingBag className="w-5 h-5 text-primary" />
+              Quantidade vendida de cada item
+            </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Ranking comercial com faturamento e lucro estimado por produto.
+            </p>
+          </CardHeader>
+          <CardContent className="p-0">
+            {dashboardSummaryQuery.isError ? (
+              <div className="p-6 text-sm text-muted-foreground">
+                Nao foi possivel carregar o ranking comercial.
+              </div>
+            ) : soldItemsRanking.length === 0 ? (
+              <div className="p-6 text-sm text-muted-foreground">
+                Nenhum item vendido no recorte atual.
+              </div>
+            ) : (
+              <div className="divide-y divide-border/50">
+                {soldItemsRanking.map((item, index) => (
+                  <div
+                    key={`${item.recipeId ?? item.productName}-${index}`}
+                    className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.6fr)_120px_140px_160px]"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground truncate">
+                        {item.productName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {item.orderCount} pedido(s) com este item
+                      </p>
+                    </div>
+                    <div className="text-sm md:text-right">
+                      <p className="font-semibold">{item.quantitySold} un</p>
+                      <p className="text-muted-foreground">vendidas</p>
+                    </div>
+                    <div className="text-sm md:text-right">
+                      <p className="font-semibold">
+                        {formatCurrency(item.revenueCents / 100)}
+                      </p>
+                      <p className="text-muted-foreground">faturamento</p>
+                    </div>
+                    <div className="text-sm md:text-right">
+                      <p className="font-semibold">
+                        {item.estimatedProfitCents == null
+                          ? "Sem base"
+                          : formatCurrency(item.estimatedProfitCents / 100)}
+                      </p>
+                      <p className="text-muted-foreground">lucro estimado</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(dashboardSummary?.totals.productsWithoutEstimatedCostCount ?? 0) > 0 && (
+              <div className="border-t border-border/50 px-5 py-3 text-xs text-muted-foreground">
+                {dashboardSummary?.totals.productsWithoutEstimatedCostCount} produto(s)
+                ficaram sem lucro estimado por falta de custo confiavel na receita.
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="glass-card lg:col-span-2 flex flex-col">

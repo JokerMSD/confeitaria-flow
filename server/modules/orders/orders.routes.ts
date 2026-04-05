@@ -2,6 +2,7 @@ import type { Express } from "express";
 import {
   createOrderInputSchema,
   listOrdersFiltersSchema,
+  ordersDashboardSummaryFiltersSchema,
   orderIdParamsSchema,
   updateOrderStatusInputSchema,
   updateOrderInputSchema,
@@ -19,6 +20,11 @@ export function registerOrdersRoutes(app: Express) {
   app.get("/api/orders", validateRequest(listOrdersFiltersSchema, "query"), controller.list.bind(controller));
   app.get("/api/orders/lookup", controller.lookup.bind(controller));
   app.get("/api/orders/queue", controller.queue.bind(controller));
+  app.get(
+    "/api/orders/dashboard-summary",
+    validateRequest(ordersDashboardSummaryFiltersSchema, "query"),
+    controller.dashboardSummary.bind(controller),
+  );
   app.get("/api/orders/:id", validateRequest(orderIdParamsSchema, "params"), controller.detail.bind(controller));
   app.post("/api/orders", validateRequest(orderBodySchema, "body"), controller.create.bind(controller));
   app.put(

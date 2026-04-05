@@ -4,6 +4,8 @@ import type {
   ListOrdersFilters,
   ListOrdersResponse,
   OrderDetailResponse,
+  OrdersDashboardSummaryFilters,
+  OrdersDashboardSummaryResponse,
   OrdersLookupResponse,
   OrdersQueueResponse,
   UpdateOrderStatusRequest,
@@ -23,6 +25,20 @@ function buildOrdersQuery(filters: ListOrdersFilters = {}) {
   return query ? `/api/orders?${query}` : "/api/orders";
 }
 
+function buildOrdersDashboardSummaryQuery(
+  filters: OrdersDashboardSummaryFilters = {},
+) {
+  const params = new URLSearchParams();
+
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+
+  const query = params.toString();
+  return query
+    ? `/api/orders/dashboard-summary?${query}`
+    : "/api/orders/dashboard-summary";
+}
+
 export function listOrders(filters: ListOrdersFilters = {}) {
   return httpClient<ListOrdersResponse>(buildOrdersQuery(filters));
 }
@@ -37,6 +53,14 @@ export function getOrdersQueue() {
 
 export function getOrdersLookup() {
   return httpClient<OrdersLookupResponse>("/api/orders/lookup");
+}
+
+export function getOrdersDashboardSummary(
+  filters: OrdersDashboardSummaryFilters = {},
+) {
+  return httpClient<OrdersDashboardSummaryResponse>(
+    buildOrdersDashboardSummaryQuery(filters),
+  );
 }
 
 export function createOrder(payload: CreateOrderRequest) {

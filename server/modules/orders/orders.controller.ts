@@ -22,6 +22,14 @@ export class OrdersController {
     res.json({ data });
   }
 
+  async dashboardSummary(req: Request, res: Response) {
+    const data = await this.ordersService.getDashboardSummary(req.query as any);
+    res.json({
+      data,
+      filters: req.query,
+    });
+  }
+
   async detail(req: Request, res: Response) {
     const data = await this.ordersService.getById(String(req.params.id));
     res.json({ data });

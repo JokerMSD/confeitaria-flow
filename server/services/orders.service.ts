@@ -1,6 +1,8 @@
 import type {
   CreateOrderInput,
   OrderDiscount,
+  OrdersDashboardSummary,
+  OrdersDashboardSummaryFilters,
   ListOrdersFilters,
   OrderDetail,
   OrderLookupItem,
@@ -28,6 +30,24 @@ import { ProductAdditionalsService } from "./product-additionals.service";
 
 function toIsoString(value: Date | null) {
   return value ? value.toISOString() : null;
+}
+
+function formatDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDefaultDashboardPeriod() {
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+  startDate.setDate(startDate.getDate() - 29);
+
+  return {
+    dateFrom: formatDateKey(startDate),
+    dateTo: formatDateKey(endDate),
+  };
 }
 
 function assertOrderConcurrency(
@@ -112,6 +132,110 @@ export class OrdersService {
   async list(filters: ListOrdersFilters) {
     const rows = await this.ordersRepository.list(filters);
     return rows.map((row: any) => this.mapOrderListItem(row));
+  }
+
+  async getDashboardSummary(
+    filters: OrdersDashboardSummaryFilters = {},
+  ): Promise<OrdersDashboardSummary> {
+    const period = {
+      ...getDefaultDashboardPeriod(),
+      ...filters,
+    };
+
+    const [productRows, deliveryModes, orderTotals] = await Promise.all([
+      this.ordersRepository.listDashboardProductRows(period),
+      this.ordersRepository.getDashboardDeliveryModeRows(period),
+      this.ordersRepository.getDashboardOrderTotals(period),
+    ]);
+
+    const productMetrics = await Promise.all(
+      productRows.map(async (row) => {
+        if (!row.recipeId) {
+          return {
+            ...row,
+            estimatedCostCents: null,
+            estimatedProfitCents: null,
+            hasEstimatedCost: false,
+          };
+        }
+
+        try {
+          const recipe = await this.recipesService.getById(row.recipeId);
+          const estimatedCostCents = recipe.unitCostCents * row.quantitySold;
+          return {
+            ...row,
+            estimatedCostCents,
+            estimatedProfitCents: row.revenueCents - estimatedCostCents,
+            hasEstimatedCost: true,
+          };
+        } catch (error) {
+          console.warn(
+            `[orders-dashboard] Unable to resolve estimated cost for ${row.productName} (${row.recipeId})`,
+            error,
+          );
+
+          return {
+            ...row,
+            estimatedCostCents: null,
+            estimatedProfitCents: null,
+            hasEstimatedCost: false,
+          };
+        }
+      }),
+    );
+
+    const topSellingProduct =
+      [...productMetrics].sort((a, b) => b.quantitySold - a.quantitySold)[0] ?? null;
+    const mostProfitableProduct =
+      [...productMetrics]
+        .filter((item) => item.estimatedProfitCents != null)
+        .sort(
+          (a, b) =>
+            (b.estimatedProfitCents ?? 0) - (a.estimatedProfitCents ?? 0),
+        )[0] ?? null;
+
+    const unitsSold = productMetrics.reduce(
+      (sum, item) => sum + item.quantitySold,
+      0,
+    );
+    const estimatedProfitCents = productMetrics.reduce(
+      (sum, item) => sum + (item.estimatedProfitCents ?? 0),
+      0,
+    );
+    const productsWithoutEstimatedCostCount = productMetrics.filter(
+      (item) => !item.hasEstimatedCost,
+    ).length;
+
+    return {
+      period,
+      totals: {
+        ordersCount: orderTotals.ordersCount,
+        itemLinesCount: orderTotals.itemLinesCount,
+        unitsSold,
+        revenueCents: orderTotals.revenueCents,
+        estimatedProfitCents,
+        productsWithoutEstimatedCostCount,
+      },
+      highlights: {
+        topSellingProduct: topSellingProduct
+          ? {
+              productName: topSellingProduct.productName,
+              quantitySold: topSellingProduct.quantitySold,
+              revenueCents: topSellingProduct.revenueCents,
+            }
+          : null,
+        mostProfitableProduct: mostProfitableProduct
+          ? {
+              productName: mostProfitableProduct.productName,
+              estimatedProfitCents:
+                mostProfitableProduct.estimatedProfitCents ?? null,
+              revenueCents: mostProfitableProduct.revenueCents,
+            }
+          : null,
+      },
+      products: productMetrics,
+      deliveryModes,
+    };
   }
 
   async listQueue() {

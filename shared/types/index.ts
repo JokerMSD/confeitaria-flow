@@ -8,6 +8,8 @@ export * from "./discount-coupon.types";
 export * from "./inventory-api.types";
 export * from "./inventory.types";
 export * from "./order-api.types";
+export * from "./order-dashboard-api.types";
+export * from "./order-dashboard.types";
 export * from "./order-item.types";
 export * from "./order-lookup.types";
 export * from "./order-queue.types";

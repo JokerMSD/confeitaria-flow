@@ -1,4 +1,4 @@
-import type { ListOrdersFilters } from "@shared/types";
+import type { ListOrdersFilters, OrdersDashboardSummaryFilters } from "@shared/types";
 
 export const orderQueryKeys = {
   all: ["orders"] as const,
@@ -6,5 +6,6 @@ export const orderQueryKeys = {
   detail: (id: string) => ["orders", "detail", id] as const,
   lookup: () => ["orders", "lookup"] as const,
   queue: () => ["orders", "queue"] as const,
-  dashboardSummary: () => ["orders", "dashboard-summary"] as const,
+  dashboardSummary: (filters: OrdersDashboardSummaryFilters = {}) =>
+    ["orders", "dashboard-summary", filters] as const,
 };
