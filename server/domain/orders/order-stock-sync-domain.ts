@@ -13,15 +13,22 @@ function normalizeItemToken(value: string | null | undefined) {
   return value?.trim() || null;
 }
 
-function buildOrderItemStockKey(item: StockAwareOrderItem) {
-  return JSON.stringify({
-    recipeId: normalizeItemToken(item.recipeId),
-    fillingRecipeId: normalizeItemToken(item.fillingRecipeId),
-    secondaryFillingRecipeId: normalizeItemToken(item.secondaryFillingRecipeId),
-    tertiaryFillingRecipeId: normalizeItemToken(item.tertiaryFillingRecipeId),
-    quantity: item.quantity,
-    productName: normalizeItemToken(item.productName),
-  });
+function haveComparableReferencesChanged(
+  previousValue: string | null | undefined,
+  nextValue: string | null | undefined,
+) {
+  const previousNormalized = normalizeItemToken(previousValue);
+  const nextNormalized = normalizeItemToken(nextValue);
+
+  if (previousNormalized === nextNormalized) {
+    return false;
+  }
+
+  if (!previousNormalized || !nextNormalized) {
+    return false;
+  }
+
+  return true;
 }
 
 function hasStockRelevantItemChanges(
@@ -34,7 +41,37 @@ function hasStockRelevantItemChanges(
 
   return previousItems.some((item, index) => {
     const nextItem = nextItems[index];
-    return buildOrderItemStockKey(item) !== buildOrderItemStockKey(nextItem);
+
+    if (!nextItem) {
+      return true;
+    }
+
+    if (item.quantity !== nextItem.quantity) {
+      return true;
+    }
+
+    const previousProductName = normalizeItemToken(item.productName);
+    const nextProductName = normalizeItemToken(nextItem.productName);
+
+    if (previousProductName !== nextProductName) {
+      return true;
+    }
+
+    return (
+      haveComparableReferencesChanged(item.recipeId, nextItem.recipeId) ||
+      haveComparableReferencesChanged(
+        item.fillingRecipeId,
+        nextItem.fillingRecipeId,
+      ) ||
+      haveComparableReferencesChanged(
+        item.secondaryFillingRecipeId,
+        nextItem.secondaryFillingRecipeId,
+      ) ||
+      haveComparableReferencesChanged(
+        item.tertiaryFillingRecipeId,
+        nextItem.tertiaryFillingRecipeId,
+      )
+    );
   });
 }
 

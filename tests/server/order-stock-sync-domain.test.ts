@@ -80,3 +80,31 @@ test("order stock sync reruns legacy items when inferred product changes", () =>
     true,
   );
 });
+
+test("order stock sync ignores metadata enrichment when consumed item identity is unchanged", () => {
+  assert.equal(
+    shouldResyncOrderStock({
+      previousStatus: "Pronto",
+      nextStatus: "Entregue",
+      previousItems: [
+        {
+          recipeId: null,
+          fillingRecipeId: null,
+          quantity: 1,
+          productName: "Ovo de colher 750g - Coco / Leite Ninho / Amendoim",
+        },
+      ],
+      nextItems: [
+        {
+          recipeId: "recipe-1",
+          fillingRecipeId: "filling-1",
+          secondaryFillingRecipeId: "filling-2",
+          tertiaryFillingRecipeId: "filling-3",
+          quantity: 1,
+          productName: "Ovo de colher 750g - Coco / Leite Ninho / Amendoim",
+        },
+      ],
+    }),
+    false,
+  );
+});
