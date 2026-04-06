@@ -60,8 +60,8 @@ const ingredientSeeds: IngredientSeed[] = [
     unit: "un",
   },
   {
-    name: "Creme caseario de maracuja",
-    unit: "g",
+    name: "Maracujá",
+    unit: "un",
   },
   {
     name: "Leite ninho 750g",
@@ -145,6 +145,17 @@ const recipeSeeds: RecipeSeed[] = [
     ],
   },
   {
+    name: "Creme caseario de maracuja",
+    kind: "Preparacao",
+    outputQuantity: 100,
+    outputUnit: "g",
+    markupPercent: 100,
+    notes: "Preparacao caseira de maracuja usada apenas como complemento do sabor Maracuja.",
+    components: [
+      { componentType: "Ingrediente", name: "Maracujá", quantity: 1, quantityUnit: "un" },
+    ],
+  },
+  {
     name: "Maracuja",
     kind: "Preparacao",
     outputQuantity: 619,
@@ -153,7 +164,7 @@ const recipeSeeds: RecipeSeed[] = [
     notes: "Base recheio com creme caseario de maracuja.",
     components: [
       { componentType: "Receita", name: "Base recheio", quantity: 519, quantityUnit: "g" },
-      { componentType: "Ingrediente", name: "Creme caseario de maracuja", quantity: 100, quantityUnit: "g" },
+      { componentType: "Receita", name: "Creme caseario de maracuja", quantity: 100, quantityUnit: "g" },
     ],
   },
   {
