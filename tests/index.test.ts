@@ -11,3 +11,5 @@ import "./server/recipe-domain.test";
 import "./server/order-stock-sync-domain.test";
 import "./server/purchase-plan-domain.test";
 import "./server/receipt-import-domain.test";
+import "./server/mercado-pago-order-domain.test";
+import "./server/mercado-pago.service.test";

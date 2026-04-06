@@ -55,6 +55,8 @@ function sanitizeDigits(value: string) {
 function resolveMercadoPagoConfig() {
   const publicKey = process.env.MERCADO_PAGO_PUBLIC_KEY?.trim() || null;
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN?.trim() || null;
+  const testPayerEmail =
+    process.env.MERCADO_PAGO_TEST_PAYER_EMAIL?.trim().toLowerCase() || null;
   const appOrigin = process.env.APP_ORIGIN?.trim() || null;
   const apiPublicOrigin =
     process.env.API_PUBLIC_ORIGIN?.trim() ||
@@ -66,6 +68,7 @@ function resolveMercadoPagoConfig() {
     enabled,
     publicKey,
     accessToken,
+    testPayerEmail,
     notificationUrl:
       enabled && (apiPublicOrigin || appOrigin)
         ? `${(apiPublicOrigin || appOrigin)?.replace(/\/$/, "")}/api/public/store/payments/mercado-pago/webhook`
@@ -175,6 +178,7 @@ export class MercadoPagoService {
   async createCardOrder(input: MercadoPagoCardOrderInput) {
     const config = this.assertConfigured();
     const amount = Number((input.amountCents / 100).toFixed(2));
+    const payerEmail = config.testPayerEmail || input.payer.email.trim();
 
     const response = await fetch("https://api.mercadopago.com/v1/orders", {
       method: "POST",
@@ -192,7 +196,7 @@ export class MercadoPagoService {
         description: input.description,
         notification_url: config.notificationUrl ?? undefined,
         payer: {
-          email: input.payer.email.trim(),
+          email: payerEmail,
           entity_type: "individual",
           first_name: input.payer.firstName.trim(),
           last_name: input.payer.lastName.trim(),
@@ -234,12 +238,16 @@ export class MercadoPagoService {
       | null;
 
     if (!response.ok) {
+      const friendlyMessage = buildFriendlyMercadoPagoMessage(
+        payload as MercadoPagoApiErrorResponse | null,
+        "Nao foi possivel processar o pagamento com cartao.",
+      );
+
       throw new HttpError(
         400,
-        buildFriendlyMercadoPagoMessage(
-          payload as MercadoPagoApiErrorResponse | null,
-          "Nao foi possivel processar o pagamento com cartao.",
-        ),
+        friendlyMessage.includes("invalid for sandbox")
+          ? "O checkout esta usando credenciais de teste do Mercado Pago. Configure MERCADO_PAGO_TEST_PAYER_EMAIL com um comprador @testuser.com para validar pagamentos nesse ambiente."
+          : friendlyMessage,
       );
     }
 

@@ -11,6 +11,7 @@ import type {
 } from "@shared/types";
 import { HttpError } from "../utils/http-error";
 import { getTodayOperationalDate } from "../utils/operational-date";
+import { resolveMercadoPagoPaymentStatus } from "../domain/orders/mercado-pago-order-domain";
 import { CustomerOrderSyncService } from "./customer-order-sync.service";
 import { CheckoutAccountRequestsService } from "./checkout-account-requests.service";
 import { DiscountCouponsService } from "./discount-coupons.service";
@@ -475,18 +476,21 @@ export class PublicStoreService {
       })),
     });
 
-    const normalizedPaymentStatus = paymentOrder.status?.toLowerCase() ?? null;
-    if (normalizedPaymentStatus === "rejected" || normalizedPaymentStatus === "cancelled") {
+    const paymentResolution = resolveMercadoPagoPaymentStatus({
+      status: paymentOrder.status,
+      statusDetail: paymentOrder.statusDetail,
+    });
+
+    if (paymentResolution.isRejected) {
       throw new HttpError(
         400,
         "O pagamento com cartao foi recusado. Revise os dados e tente novamente.",
       );
     }
 
-    const paidAmountCents =
-      normalizedPaymentStatus === "approved"
-        ? pricingPreview.subtotalAmountCents
-        : 0;
+    const paidAmountCents = paymentResolution.isPaid
+      ? pricingPreview.subtotalAmountCents
+      : 0;
 
     const order = await this.ordersService.create({
       customerId: customer.id,
@@ -548,7 +552,7 @@ export class PublicStoreService {
       appliedCoupon: pricingPreview.appliedCoupon,
       subtotalAmountCents: order.subtotalAmountCents,
       paymentInstructions:
-        normalizedPaymentStatus === "approved"
+        paymentResolution.isPaid
           ? "Pagamento aprovado. Seu pedido ja entrou no fluxo da confeitaria."
           : "Pagamento enviado para analise. Avisaremos se o cartao precisar de nova confirmacao.",
       accountMessage,

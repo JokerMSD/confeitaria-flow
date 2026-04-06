@@ -13,6 +13,7 @@ import type {
   UpdateOrderInput,
 } from "@shared/types";
 import { shouldResyncOrderStock } from "../domain/orders/order-stock-sync-domain";
+import { resolveMercadoPagoPaymentStatus } from "../domain/orders/mercado-pago-order-domain";
 import {
   buildManualOrderDiscount,
   calculateDiscountAmountCents,
@@ -99,12 +100,22 @@ function calculateFullyPaidAt(
 }
 
 function mapExternalPaymentToOrderState(
+  provider: string,
   subtotalAmountCents: number,
   status: string | null | undefined,
+  statusDetail: string | null | undefined,
   previousFullyPaidAt?: Date | null,
 ) {
-  const normalizedStatus = status?.trim().toLowerCase() ?? null;
-  const paidAmountCents = normalizedStatus === "approved" ? subtotalAmountCents : 0;
+  const normalizedProvider = provider.trim().toLowerCase();
+  const paymentResolution =
+    normalizedProvider === "mercadopago"
+      ? resolveMercadoPagoPaymentStatus({ status, statusDetail })
+      : {
+          isPaid: status?.trim().toLowerCase() === "approved",
+          isRejected: false,
+          isPending: true,
+        };
+  const paidAmountCents = paymentResolution.isPaid ? subtotalAmountCents : 0;
 
   return {
     paidAmountCents,
@@ -114,7 +125,7 @@ function mapExternalPaymentToOrderState(
       subtotalAmountCents,
       paidAmountCents,
       previousFullyPaidAt ?? null,
-      normalizedStatus === "approved" ? new Date() : undefined,
+      paymentResolution.isPaid ? new Date() : undefined,
     ),
   };
 }
@@ -883,8 +894,10 @@ export class OrdersService {
       }
 
       const paymentState = mapExternalPaymentToOrderState(
+        input.provider,
         existing.subtotalAmountCents,
         input.providerStatus,
+        input.providerStatusDetail,
         existing.fullyPaidAt ?? null,
       );
 
