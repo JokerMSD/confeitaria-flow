@@ -4,6 +4,7 @@ import {
   ChefHat,
   Home,
   LogOut,
+  MoreHorizontal,
   PackageSearch,
   Images,
   Settings,
@@ -22,6 +23,13 @@ import { queryClient } from "@/lib/queryClient";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { resolveMediaUrl } from "@/lib/resolve-media-url";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
@@ -142,24 +150,32 @@ export function Sidebar() {
 export function BottomNav() {
   const [location] = useLocation();
 
-  const navItems = [
+  const primaryNavItems = [
     { href: "/", label: "Inicio", icon: Home },
     { href: "/fila", label: "Fila", icon: Home },
     { href: "/producao/previsao", label: "Producao", icon: ChefHat },
     { href: "/clientes", label: "Clientes", icon: User },
+    { href: "/conta", label: "Conta", icon: Settings },
+  ];
+
+  const secondaryNavItems = [
     { href: "/receitas", label: "Receitas", icon: BookOpen },
     { href: "/catalogo", label: "Catalogo", icon: Store },
     { href: "/catalogo/midias", label: "Midias", icon: Images },
     { href: "/cupons", label: "Cupons", icon: TicketPercent },
     { href: "/estoque", label: "Estoque", icon: PackageSearch },
     { href: "/caixa", label: "Caixa", icon: Wallet },
-    { href: "/conta", label: "Conta", icon: Settings },
   ];
+
+  const isMoreActive = secondaryNavItems.some(
+    (item) =>
+      location === item.href || (item.href !== "/" && location.startsWith(item.href)),
+  );
 
   return (
     <nav className="bottom-nav-glass fixed bottom-0 left-0 right-0 z-50 pb-safe md:hidden">
-      <div className="flex items-center justify-between gap-1 px-2 py-2">
-        {navItems.map((item) => {
+      <div className="grid grid-cols-6 gap-1 px-2 py-2">
+        {primaryNavItems.map((item) => {
           const isActive =
             location === item.href ||
             (item.href !== "/" && location.startsWith(item.href));
@@ -168,7 +184,7 @@ export function BottomNav() {
             <Link key={item.href} href={item.href}>
               <a
                 className={cn(
-                  "flex h-14 min-w-0 flex-1 flex-col items-center justify-center rounded-2xl transition-all",
+                  "flex h-16 min-w-0 flex-col items-center justify-center rounded-2xl px-1 transition-all",
                   isActive
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
@@ -190,7 +206,7 @@ export function BottomNav() {
                 </div>
                 <span
                   className={cn(
-                    "mt-1 max-w-full truncate px-1 text-[9px] font-medium transition-all duration-300",
+                    "mt-1 max-w-full truncate text-[10px] font-medium transition-all duration-300",
                     isActive ? "font-semibold opacity-100" : "opacity-80",
                   )}
                 >
@@ -200,6 +216,67 @@ export function BottomNav() {
             </Link>
           );
         })}
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "flex h-16 min-w-0 flex-col items-center justify-center rounded-2xl px-1 transition-all",
+                isMoreActive
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-label="Abrir mais opcoes"
+            >
+              <div
+                className={cn(
+                  "rounded-xl p-1.5 transition-all duration-300",
+                  isMoreActive ? "bg-primary/10" : "bg-transparent",
+                )}
+              >
+                <MoreHorizontal
+                  className={cn(
+                    "h-5 w-5 transition-transform duration-300",
+                    isMoreActive ? "scale-110" : "scale-100",
+                  )}
+                  strokeWidth={isMoreActive ? 2.5 : 2}
+                />
+              </div>
+              <span
+                className={cn(
+                  "mt-1 max-w-full truncate text-[10px] font-medium transition-all duration-300",
+                  isMoreActive ? "font-semibold opacity-100" : "opacity-80",
+                )}
+              >
+                Mais
+              </span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="mb-2 w-56 rounded-2xl">
+            {secondaryNavItems.map((item) => {
+              const isActive =
+                location === item.href ||
+                (item.href !== "/" && location.startsWith(item.href));
+
+              return (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href}>
+                    <a
+                      className={cn(
+                        "flex items-center gap-3 rounded-xl px-3 py-2",
+                        isActive && "bg-primary/10 text-primary",
+                      )}
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.label}</span>
+                    </a>
+                  </Link>
+                </DropdownMenuItem>
+              );
+            })}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </nav>
   );
@@ -243,27 +320,53 @@ export function MobileHeader({ title }: { title: string }) {
             Universo Doce
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <ThemeToggle compact className="rounded-full border-border bg-card px-3" />
-          <Link href="/conta">
-            <a className="rounded-full border border-border bg-card p-1.5 shadow-sm">
-              <Avatar className="h-8 w-8 border border-border">
-                <AvatarImage src={resolveMediaUrl(user?.photoUrl)} />
-                <AvatarFallback>
-                  {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-            </a>
-          </Link>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-destructive shadow-sm transition-colors hover:bg-destructive/10"
-            aria-label="Sair da conta"
-            title="Sair"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle
+            compact
+            className="h-10 w-10 rounded-full border-border bg-card px-0 shadow-sm"
+          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="rounded-full border border-border bg-card p-1.5 shadow-sm"
+                aria-label="Abrir menu da conta"
+              >
+                <Avatar className="h-8 w-8 border border-border">
+                  <AvatarImage src={resolveMediaUrl(user?.photoUrl)} />
+                  <AvatarFallback>
+                    {(user?.name?.slice(0, 2) ?? "AD").toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 rounded-2xl">
+              <div className="px-3 py-2">
+                <p className="truncate text-sm font-semibold text-foreground">
+                  {user?.name ?? "Usuario"}
+                </p>
+                <p className="truncate text-xs text-muted-foreground">
+                  {user?.email ?? "usuario@docegestao.com"}
+                </p>
+              </div>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/conta">
+                  <a className="flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    Minha conta
+                  </a>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
