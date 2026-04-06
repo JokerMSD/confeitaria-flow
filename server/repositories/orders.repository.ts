@@ -319,7 +319,10 @@ export class OrdersRepository {
   }
 
   async getFinancialSummaryByDate(date?: string, executor: Executor = getDb()) {
-    const conditions = [isNull(orders.deletedAt)];
+    const conditions = [
+      isNull(orders.deletedAt),
+      notInArray(orders.status, ["Cancelado"]),
+    ];
 
     if (date) {
       conditions.push(eq(orders.orderDate, date));

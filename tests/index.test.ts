@@ -8,5 +8,6 @@ import "./server/api-smoke.test";
 import "./server/runtime-migrations.test";
 import "./server/schema-guard.test";
 import "./server/recipe-domain.test";
+import "./server/order-stock-sync-domain.test";
 import "./server/purchase-plan-domain.test";
 import "./server/receipt-import-domain.test";

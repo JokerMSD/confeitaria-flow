@@ -12,7 +12,7 @@ import type {
   PaymentStatus,
   UpdateOrderInput,
 } from "@shared/types";
-import { shouldConsumeOrderStock } from "../domain/recipes/recipe-domain";
+import { shouldResyncOrderStock } from "../domain/orders/order-stock-sync-domain";
 import {
   buildManualOrderDiscount,
   calculateDiscountAmountCents,
@@ -117,6 +117,26 @@ function mapExternalPaymentToOrderState(
       normalizedStatus === "approved" ? new Date() : undefined,
     ),
   };
+}
+
+function toOrderConsumptionItems(
+  items: Array<{
+    recipeId: string | null;
+    fillingRecipeId?: string | null;
+    secondaryFillingRecipeId?: string | null;
+    tertiaryFillingRecipeId?: string | null;
+    quantity: number;
+    productName?: string | null;
+  }>,
+) {
+  return items.map((item) => ({
+    recipeId: item.recipeId ?? null,
+    fillingRecipeId: item.fillingRecipeId ?? null,
+    secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+    tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+    quantity: item.quantity,
+    productName: item.productName ?? "",
+  }));
 }
 
 export class OrdersService {
@@ -438,14 +458,7 @@ export class OrdersService {
           orderId: createdOrder.id,
           orderNumber: createdOrder.orderNumber,
           status: createdOrder.status,
-          items: createdItems.map((item: any) => ({
-            recipeId: item.recipeId ?? null,
-            fillingRecipeId: item.fillingRecipeId ?? null,
-            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-            quantity: item.quantity,
-            productName: item.productName,
-          })),
+          items: toOrderConsumptionItems(createdItems),
         },
         tx,
       );
@@ -554,10 +567,14 @@ export class OrdersService {
         throw new HttpError(404, "Order not found.");
       }
 
-      const existingItems = await this.orderItemsRepository.listByOrderId(
-        id,
-        tx,
-      );
+      const existingItems = await this.orderItemsRepository.listByOrderId(id, tx);
+      const shouldSyncStock = shouldResyncOrderStock({
+        previousStatus: existing.status,
+        nextStatus: updatedOrder.status,
+        previousItems: toOrderConsumptionItems(existingItems),
+        nextItems: toOrderConsumptionItems(normalized.items),
+      });
+
       await this.orderItemAdditionalsRepository.deleteByOrderItemIds(
         existingItems.map((item: any) => item.id),
         tx,
@@ -615,22 +632,17 @@ export class OrdersService {
         tx,
       );
 
-      await this.orderRecipeConsumptionService.syncOrderConsumption(
-        {
-          orderId: updatedOrder.id,
-          orderNumber: updatedOrder.orderNumber,
-          status: updatedOrder.status,
-          items: updatedItems.map((item: any) => ({
-            recipeId: item.recipeId ?? null,
-            fillingRecipeId: item.fillingRecipeId ?? null,
-            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-            quantity: item.quantity,
-            productName: item.productName,
-          })),
-        },
-        tx,
-      );
+      if (shouldSyncStock) {
+        await this.orderRecipeConsumptionService.syncOrderConsumption(
+          {
+            orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            status: updatedOrder.status,
+            items: toOrderConsumptionItems(updatedItems),
+          },
+          tx,
+        );
+      }
 
       const additionals =
         await this.orderItemAdditionalsRepository.listByOrderItemIds(
@@ -688,22 +700,19 @@ export class OrdersService {
       const items = await this.orderItemsRepository.listByOrderId(id, tx);
 
       if (
-        shouldConsumeOrderStock(existing.status) !==
-        shouldConsumeOrderStock(updatedOrder.status)
+        shouldResyncOrderStock({
+          previousStatus: existing.status,
+          nextStatus: updatedOrder.status,
+          previousItems: toOrderConsumptionItems(items),
+          nextItems: toOrderConsumptionItems(items),
+        })
       ) {
         await this.orderRecipeConsumptionService.syncOrderConsumption(
           {
             orderId: updatedOrder.id,
             orderNumber: updatedOrder.orderNumber,
             status: updatedOrder.status,
-            items: items.map((item: any) => ({
-              recipeId: item.recipeId ?? null,
-              fillingRecipeId: item.fillingRecipeId ?? null,
-              secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-              tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-              quantity: item.quantity,
-              productName: item.productName,
-            })),
+            items: toOrderConsumptionItems(items),
           },
           tx,
         );
@@ -782,22 +791,19 @@ export class OrdersService {
       const items = await this.orderItemsRepository.listByOrderId(id, tx);
 
       if (
-        shouldConsumeOrderStock(existing.status) !==
-        shouldConsumeOrderStock(updatedOrder.status)
+        shouldResyncOrderStock({
+          previousStatus: existing.status,
+          nextStatus: updatedOrder.status,
+          previousItems: toOrderConsumptionItems(items),
+          nextItems: toOrderConsumptionItems(items),
+        })
       ) {
         await this.orderRecipeConsumptionService.syncOrderConsumption(
           {
             orderId: updatedOrder.id,
             orderNumber: updatedOrder.orderNumber,
             status: updatedOrder.status,
-            items: items.map((item: any) => ({
-              recipeId: item.recipeId ?? null,
-              fillingRecipeId: item.fillingRecipeId ?? null,
-              secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-              tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-              quantity: item.quantity,
-              productName: item.productName,
-            })),
+            items: toOrderConsumptionItems(items),
           },
           tx,
         );
