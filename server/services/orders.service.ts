@@ -781,22 +781,27 @@ export class OrdersService {
 
       const items = await this.orderItemsRepository.listByOrderId(id, tx);
 
-      await this.orderRecipeConsumptionService.syncOrderConsumption(
-        {
-          orderId: updatedOrder.id,
-          orderNumber: updatedOrder.orderNumber,
-          status: updatedOrder.status,
-          items: items.map((item: any) => ({
-            recipeId: item.recipeId ?? null,
-            fillingRecipeId: item.fillingRecipeId ?? null,
-            secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
-            tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
-            quantity: item.quantity,
-            productName: item.productName,
-          })),
-        },
-        tx,
-      );
+      if (
+        shouldConsumeOrderStock(existing.status) !==
+        shouldConsumeOrderStock(updatedOrder.status)
+      ) {
+        await this.orderRecipeConsumptionService.syncOrderConsumption(
+          {
+            orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            status: updatedOrder.status,
+            items: items.map((item: any) => ({
+              recipeId: item.recipeId ?? null,
+              fillingRecipeId: item.fillingRecipeId ?? null,
+              secondaryFillingRecipeId: item.secondaryFillingRecipeId ?? null,
+              tertiaryFillingRecipeId: item.tertiaryFillingRecipeId ?? null,
+              quantity: item.quantity,
+              productName: item.productName,
+            })),
+          },
+          tx,
+        );
+      }
 
       const additionals =
         await this.orderItemAdditionalsRepository.listByOrderItemIds(
