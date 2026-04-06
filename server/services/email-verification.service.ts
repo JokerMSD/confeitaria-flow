@@ -7,6 +7,9 @@ import {
 } from "../utils/verification-token";
 import { MailService } from "./mail.service";
 
+const EMAIL_DELIVERY_UNAVAILABLE_MESSAGE =
+  "Nao foi possivel enviar o e-mail de confirmacao agora. Tente novamente em alguns minutos.";
+
 function getAppOrigin() {
   return (
     process.env.APP_ORIGIN?.trim() ??
@@ -39,11 +42,19 @@ export class EmailVerificationService {
 
     const verificationUrl = `${getAppOrigin()}/verificar-email?token=${encodeURIComponent(token)}`;
 
-    await this.mailService.sendEmailVerification({
-      to: input.email,
-      fullName: input.fullName,
-      verificationUrl,
-    });
+    try {
+      await this.mailService.sendEmailVerification({
+        to: input.email,
+        fullName: input.fullName,
+        verificationUrl,
+      });
+    } catch (error) {
+      console.error(
+        `[EmailVerification] failed to send verification to ${input.email}`,
+        error,
+      );
+      throw new HttpError(503, EMAIL_DELIVERY_UNAVAILABLE_MESSAGE);
+    }
   }
 
   async confirmToken(token: string) {
