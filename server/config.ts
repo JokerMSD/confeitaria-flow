@@ -1,11 +1,18 @@
 export function getAllowedOrigins() {
-  const rawOrigins =
-    process.env.CORS_ORIGINS || process.env.APP_ORIGIN || "http://localhost:3000";
+  const rawOrigins = [
+    process.env.CORS_ORIGINS,
+    process.env.APP_ORIGIN,
+    process.env.VITE_APP_ORIGIN,
+  ]
+    .filter(Boolean)
+    .join(",");
 
-  return rawOrigins
+  const normalizedOrigins = (rawOrigins || "http://localhost:3000")
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  return Array.from(new Set(normalizedOrigins));
 }
 
 export function getSessionSecret() {
