@@ -13,6 +13,11 @@ function getAppOrigin() {
   );
 }
 
+function getMailTimeoutMs() {
+  const configured = Number(getRequiredEnv("SMTP_TIMEOUT_MS") ?? "12000");
+  return Number.isFinite(configured) && configured > 0 ? configured : 12000;
+}
+
 export class MailService {
   private transporter: nodemailer.Transporter | null = null;
 
@@ -35,6 +40,9 @@ export class MailService {
       host,
       port,
       secure,
+      connectionTimeout: getMailTimeoutMs(),
+      greetingTimeout: getMailTimeoutMs(),
+      socketTimeout: getMailTimeoutMs(),
       auth: {
         user,
         pass,
@@ -66,32 +74,41 @@ export class MailService {
       return;
     }
 
-    await transporter.sendMail({
-      from,
-      to: input.to,
-      subject: "Confirme seu e-mail - Universo Doce",
-      text: [
-        `Oi, ${input.fullName}.`,
-        "",
-        "Clique no link abaixo para confirmar seu e-mail e ativar sua conta:",
-        input.verificationUrl,
-        "",
-        `Se preferir, voce tambem pode abrir ${appOrigin}/login e pedir um novo envio.`,
-      ].join("\n"),
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #2d1b1f;">
-          <h2>Confirme seu e-mail</h2>
-          <p>Oi, <strong>${input.fullName}</strong>.</p>
-          <p>Seu cadastro na Universo Doce esta quase pronto. Clique no botao abaixo para confirmar seu e-mail:</p>
-          <p>
-            <a href="${input.verificationUrl}" style="display:inline-block;padding:12px 20px;background:#d9799f;color:#fff;text-decoration:none;border-radius:999px;">
-              Confirmar e-mail
-            </a>
-          </p>
-          <p>Se o botao nao abrir, use este link:</p>
-          <p><a href="${input.verificationUrl}">${input.verificationUrl}</a></p>
-        </div>
-      `,
-    });
+    await Promise.race([
+      transporter.sendMail({
+        from,
+        to: input.to,
+        subject: "Confirme seu e-mail - Universo Doce",
+        text: [
+          `Oi, ${input.fullName}.`,
+          "",
+          "Clique no link abaixo para confirmar seu e-mail e ativar sua conta:",
+          input.verificationUrl,
+          "",
+          `Se preferir, voce tambem pode abrir ${appOrigin}/login e pedir um novo envio.`,
+        ].join("\n"),
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #2d1b1f;">
+            <h2>Confirme seu e-mail</h2>
+            <p>Oi, <strong>${input.fullName}</strong>.</p>
+            <p>Seu cadastro na Universo Doce esta quase pronto. Clique no botao abaixo para confirmar seu e-mail:</p>
+            <p>
+              <a href="${input.verificationUrl}" style="display:inline-block;padding:12px 20px;background:#d9799f;color:#fff;text-decoration:none;border-radius:999px;">
+                Confirmar e-mail
+              </a>
+            </p>
+            <p>Se o botao nao abrir, use este link:</p>
+            <p><a href="${input.verificationUrl}">${input.verificationUrl}</a></p>
+          </div>
+        `,
+      }),
+      new Promise<never>((_, reject) => {
+        const timeout = setTimeout(() => {
+          reject(new Error("Email delivery timeout."));
+        }, getMailTimeoutMs());
+
+        timeout.unref?.();
+      }),
+    ]);
   }
 }
