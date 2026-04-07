@@ -1,0 +1,413 @@
+{
+  "name": "Universo Doce - WhatsApp Bot Base",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1240,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"customerPhone\": \"31999990000\",\n  \"messageText\": \"Quero saber os sabores do ovo de colher 500g\",\n  \"intent\": \"produto\",\n  \"productId\": \"00000000-0000-0000-0000-000000000000\",\n  \"orderNumber\": \"\",\n  \"deliveryMode\": \"Retirada\"\n}"
+      },
+      "id": "sample-payload",
+      "name": "Payload de Exemplo",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1020,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "catalogo",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "produto",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "disponibilidade",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": false,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.intent }}",
+                    "rightValue": "checkout",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        }
+      },
+      "id": "intent-switch",
+      "name": "Roteador de Intencao",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -790,
+        60
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BACKEND_BASE_URL + '/api/bot/store-summary' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.BOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "store-summary",
+      "name": "Resumo da Loja",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        -170
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BACKEND_BASE_URL + '/api/bot/products/' + $json.productId }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.BOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "product-detail",
+      "name": "Detalhe do Produto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        -50
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.BACKEND_BASE_URL + '/api/bot/availability?deliveryMode=' + $json.deliveryMode }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.BOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "availability",
+      "name": "Disponibilidade",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        70
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_BASE_URL + '/api/bot/order-status' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.BOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"data\":{\"customerPhone\":$json.customerPhone,\"orderNumber\":$json.orderNumber || null,\"limit\":5}}",
+        "options": {}
+      },
+      "id": "order-status",
+      "name": "Status do Pedido",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        190
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BACKEND_BASE_URL + '/api/bot/checkout-link' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.BOT_API_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"data\":{\"productId\":$json.productId || null}}",
+        "options": {}
+      },
+      "id": "checkout-link",
+      "name": "Link de Checkout",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -500,
+        310
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"nextStep\": \"Troque este node por um OpenAI Chat Model ou Agent.\",\n  \"notes\": [\n    \"Use os dados do node anterior para montar resposta comercial curta.\",\n    \"Se quiser audio, gere TTS depois desta etapa.\",\n    \"Se estiver usando WhatsApp Trigger, envie o texto final ao numero de origem.\"\n  ],\n  \"payload\": \"={{ $json }}\"\n}"
+      },
+      "id": "agent-placeholder",
+      "name": "Placeholder Agente",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -170,
+        60
+      ]
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Payload de Exemplo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Payload de Exemplo": {
+      "main": [
+        [
+          {
+            "node": "Roteador de Intencao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Roteador de Intencao": {
+      "main": [
+        [
+          {
+            "node": "Resumo da Loja",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Detalhe do Produto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Disponibilidade",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Status do Pedido",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Link de Checkout",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo da Loja": {
+      "main": [
+        [
+          {
+            "node": "Placeholder Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detalhe do Produto": {
+      "main": [
+        [
+          {
+            "node": "Placeholder Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disponibilidade": {
+      "main": [
+        [
+          {
+            "node": "Placeholder Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status do Pedido": {
+      "main": [
+        [
+          {
+            "node": "Placeholder Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Link de Checkout": {
+      "main": [
+        [
+          {
+            "node": "Placeholder Agente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

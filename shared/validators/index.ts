@@ -11,3 +11,4 @@ export * from "./customer.validators";
 export * from "./users.validators";
 export * from "./production.validators";
 export * from "./account.validators";
+export * from "./bot.validators";

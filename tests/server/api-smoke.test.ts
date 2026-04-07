@@ -5,6 +5,7 @@ import type { AddressInfo } from "node:net";
 import { createServer, type Server } from "node:http";
 import { registerHealthRoutes } from "../../server/modules/health/health.routes";
 import { registerAuthRoutes } from "../../server/modules/auth/auth.routes";
+import { registerBotRoutes } from "../../server/modules/bot/bot.routes";
 import { registerOrdersRoutes } from "../../server/modules/orders/orders.routes";
 import { requireAuth } from "../../server/middlewares/require-auth";
 import { errorHandler } from "../../server/middlewares/error-handler";
@@ -17,6 +18,7 @@ function buildTestApp() {
       name: "Admin",
     },
   ]);
+  process.env.BOT_API_TOKEN = "test-bot-token";
 
   const app = express();
 
@@ -44,6 +46,7 @@ function buildTestApp() {
 
   registerHealthRoutes(app);
   registerAuthRoutes(app);
+  registerBotRoutes(app);
   app.use("/api", requireAuth);
   registerOrdersRoutes(app);
   app.use(errorHandler);
@@ -188,5 +191,15 @@ test("GET /api/orders/dashboard-drilldown returns 401 without authenticated sess
 
     assert.equal(response.status, 401);
     assert.equal(body.message, "Authentication required.");
+  });
+});
+
+test("GET /api/bot/store-summary returns 401 without bot token", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/bot/store-summary`);
+    const body = await readJson(response);
+
+    assert.equal(response.status, 401);
+    assert.equal(body.message, "Autenticacao do bot obrigatoria.");
   });
 });

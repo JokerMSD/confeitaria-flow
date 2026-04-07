@@ -16,6 +16,7 @@ import { registerUsersRoutes } from "./modules/users/users.module";
 import { registerProductionRoutes } from "./modules/production/production.module";
 import { registerPublicStoreRoutes } from "./modules/public-store/public-store.module";
 import { registerDiscountCouponRoutes } from "./modules/discount-coupons/discount-coupons.module";
+import { registerBotRoutes } from "./modules/bot/bot.module";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -24,6 +25,7 @@ export async function registerRoutes(
   registerHealthRoutes(app);
   registerAuthRoutes(app);
   registerPublicStoreRoutes(app);
+  registerBotRoutes(app);
   app.use("/api", requireAuth);
   registerAccountRoutes(app);
   app.use("/api", requireStaff);

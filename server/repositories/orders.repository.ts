@@ -112,6 +112,19 @@ export interface OrderDashboardDrilldownRow {
   itemSummary: string | null;
 }
 
+export interface BotOrderStatusLookupRow {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: string;
+  deliveryTime: string | null;
+  deliveryMode: "Entrega" | "Retirada";
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  subtotalAmountCents: number;
+  itemSummary: string | null;
+}
+
 export class OrdersRepository {
   async list(filters: ListOrdersFilters = {}, executor: Executor = getDb()) {
     const conditions = [isNull(orders.deletedAt)];
@@ -253,6 +266,51 @@ export class OrdersRepository {
       .from(orders)
       .where(isNull(orders.deletedAt))
       .orderBy(desc(orders.createdAt));
+  }
+
+  async listBotStatusRows(
+    filters: {
+      customerPhoneDigits: string;
+      orderNumber?: string | null;
+      limit: number;
+    },
+    executor: Executor = getDb(),
+  ) {
+    const normalizedPhone = filters.customerPhoneDigits.replace(/\D/g, "");
+    const normalizedOrderNumber = filters.orderNumber?.trim() || null;
+    const conditions = [isNull(orders.deletedAt)];
+
+    if (normalizedPhone) {
+      conditions.push(
+        sql`regexp_replace(coalesce(${orders.customerPhone}, ''), '[^0-9]', '', 'g') like ${`%${normalizedPhone}%`}`,
+      );
+    }
+
+    if (normalizedOrderNumber) {
+      conditions.push(eq(orders.orderNumber, normalizedOrderNumber));
+    }
+
+    return executor
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        deliveryDate: orders.deliveryDate,
+        deliveryTime: orders.deliveryTime,
+        deliveryMode: orders.deliveryMode,
+        status: orders.status,
+        paymentStatus: orders.paymentStatus,
+        subtotalAmountCents: orders.subtotalAmountCents,
+        itemSummary: sql<string | null>`(
+          select string_agg(item.product_name, ', ' order by item.position asc)
+          from ${orderItems} as item
+          where item.order_id = ${orders.id}
+        )`,
+      })
+      .from(orders)
+      .where(and(...conditions))
+      .orderBy(desc(orders.createdAt))
+      .limit(filters.limit);
   }
 
   async listPendingProductionRows(executor: Executor = getDb()) {
