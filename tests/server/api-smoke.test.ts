@@ -178,3 +178,15 @@ test("GET /api/orders/queue returns 401 without authenticated session", async ()
     assert.equal(body.message, "Authentication required.");
   });
 });
+
+test("GET /api/orders/dashboard-drilldown returns 401 without authenticated session", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/api/orders/dashboard-drilldown?kind=today&dateFrom=2026-04-01&dateTo=2026-04-07`,
+    );
+    const body = await readJson(response);
+
+    assert.equal(response.status, 401);
+    assert.equal(body.message, "Authentication required.");
+  });
+});
