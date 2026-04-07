@@ -3,6 +3,23 @@ export interface OrdersDashboardSummaryFilters {
   dateTo?: string;
 }
 
+export type OrdersDashboardDrilldownKind =
+  | "today"
+  | "overdue"
+  | "cancelled"
+  | "receivable"
+  | "units-sold"
+  | "estimated-profit"
+  | "top-selling-product"
+  | "most-profitable-product";
+
+export interface OrdersDashboardDrilldownFilters
+  extends OrdersDashboardSummaryFilters {
+  kind: OrdersDashboardDrilldownKind;
+  recipeId?: string;
+  productName?: string;
+}
+
 export interface OrdersDashboardProductMetric {
   recipeId: string | null;
   productName: string;
@@ -46,4 +63,26 @@ export interface OrdersDashboardSummary {
   };
   products: OrdersDashboardProductMetric[];
   deliveryModes: OrdersDashboardDeliveryModeMetric[];
+}
+
+export interface OrdersDashboardDrilldownOrder {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: string;
+  deliveryTime: string | null;
+  status: string;
+  paymentStatus: string;
+  subtotalAmountCents: number;
+  itemCount: number;
+  deliveryMode: "Entrega" | "Retirada";
+  itemSummary: string;
+}
+
+export interface OrdersDashboardDrilldown {
+  title: string;
+  description: string;
+  filters: OrdersDashboardDrilldownFilters;
+  totalOrders: number;
+  orders: OrdersDashboardDrilldownOrder[];
 }

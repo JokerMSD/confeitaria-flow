@@ -5,6 +5,8 @@ import type {
   ListOrdersResponse,
   OrderDetailResponse,
   OrdersDashboardSummaryFilters,
+  OrdersDashboardDrilldownFilters,
+  OrdersDashboardDrilldownResponse,
   OrdersDashboardSummaryResponse,
   OrdersLookupResponse,
   OrdersQueueResponse,
@@ -39,6 +41,20 @@ function buildOrdersDashboardSummaryQuery(
     : "/api/orders/dashboard-summary";
 }
 
+function buildOrdersDashboardDrilldownQuery(
+  filters: OrdersDashboardDrilldownFilters,
+) {
+  const params = new URLSearchParams();
+
+  params.set("kind", filters.kind);
+  if (filters.dateFrom) params.set("dateFrom", filters.dateFrom);
+  if (filters.dateTo) params.set("dateTo", filters.dateTo);
+  if (filters.recipeId) params.set("recipeId", filters.recipeId);
+  if (filters.productName) params.set("productName", filters.productName);
+
+  return `/api/orders/dashboard-drilldown?${params.toString()}`;
+}
+
 export function listOrders(filters: ListOrdersFilters = {}) {
   return httpClient<ListOrdersResponse>(buildOrdersQuery(filters));
 }
@@ -60,6 +76,14 @@ export function getOrdersDashboardSummary(
 ) {
   return httpClient<OrdersDashboardSummaryResponse>(
     buildOrdersDashboardSummaryQuery(filters),
+  );
+}
+
+export function getOrdersDashboardDrilldown(
+  filters: OrdersDashboardDrilldownFilters,
+) {
+  return httpClient<OrdersDashboardDrilldownResponse>(
+    buildOrdersDashboardDrilldownQuery(filters),
   );
 }
 

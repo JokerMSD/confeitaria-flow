@@ -30,6 +30,14 @@ export class OrdersController {
     });
   }
 
+  async dashboardDrilldown(req: Request, res: Response) {
+    const data = await this.ordersService.getDashboardDrilldown(req.query as any);
+    res.json({
+      data,
+      filters: req.query,
+    });
+  }
+
   async detail(req: Request, res: Response) {
     const data = await this.ordersService.getById(String(req.params.id));
     res.json({ data });

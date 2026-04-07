@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { orderItems, orders } from "@shared/schema";
 import type {
   ListOrdersFilters,
+  OrdersDashboardDrilldownFilters,
   OrdersDashboardSummaryFilters,
   OrderStatus,
   PaymentMethod,
@@ -95,6 +96,20 @@ export interface OrderDashboardDeliveryModeRow {
   deliveryMode: "Entrega" | "Retirada";
   orderCount: number;
   revenueCents: number;
+}
+
+export interface OrderDashboardDrilldownRow {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  deliveryDate: string;
+  deliveryTime: string | null;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  subtotalAmountCents: number;
+  itemCount: number;
+  deliveryMode: "Entrega" | "Retirada";
+  itemSummary: string | null;
 }
 
 export class OrdersRepository {
@@ -450,6 +465,109 @@ export class OrdersRepository {
       itemLinesCount: toSafeNumber(summary?.itemLinesCount),
       revenueCents: toSafeNumber(summary?.revenueCents),
     };
+  }
+
+  async listDashboardDrilldownRows(
+    filters: OrdersDashboardDrilldownFilters,
+    executor: Executor = getDb(),
+  ): Promise<OrderDashboardDrilldownRow[]> {
+    const conditions = [isNull(orders.deletedAt)];
+
+    if (filters.dateFrom) {
+      conditions.push(sql`${orders.orderDate} >= ${filters.dateFrom}`);
+    }
+
+    if (filters.dateTo) {
+      conditions.push(sql`${orders.orderDate} <= ${filters.dateTo}`);
+    }
+
+    switch (filters.kind) {
+      case "today":
+        conditions.push(eq(orders.deliveryDate, filters.dateTo ?? filters.dateFrom ?? ""));
+        conditions.push(notInArray(orders.status, ["Entregue", "Cancelado"]));
+        break;
+      case "overdue":
+        if (filters.dateTo) {
+          conditions.push(sql`${orders.deliveryDate} < ${filters.dateTo}`);
+        }
+        conditions.push(notInArray(orders.status, ["Entregue", "Cancelado"]));
+        break;
+      case "cancelled":
+        conditions.push(eq(orders.status, "Cancelado"));
+        break;
+      case "receivable":
+        conditions.push(notInArray(orders.status, ["Cancelado"]));
+        conditions.push(sql`${orders.paymentStatus} <> 'Pago'`);
+        break;
+      case "units-sold":
+      case "estimated-profit":
+        conditions.push(notInArray(orders.status, ["Cancelado"]));
+        break;
+      case "top-selling-product":
+      case "most-profitable-product":
+        conditions.push(notInArray(orders.status, ["Cancelado"]));
+        if (filters.recipeId) {
+          conditions.push(eq(orderItems.recipeId, filters.recipeId));
+        } else if (filters.productName) {
+          conditions.push(eq(orderItems.productName, filters.productName));
+        }
+        break;
+    }
+
+    const itemSummarySubquery = sql<string>`(
+      select string_agg(
+        concat(oi.quantity, 'x ', oi.product_name),
+        ', '
+        order by oi.position
+      )
+      from order_items oi
+      where oi.order_id = ${orders.id}
+    )`;
+
+    const rows = await executor
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        deliveryDate: orders.deliveryDate,
+        deliveryTime: orders.deliveryTime,
+        status: orders.status,
+        paymentStatus: orders.paymentStatus,
+        subtotalAmountCents: orders.subtotalAmountCents,
+        itemCount: orders.itemCount,
+        deliveryMode: orders.deliveryMode,
+        itemSummary: itemSummarySubquery,
+      })
+      .from(orders)
+      .leftJoin(orderItems, eq(orderItems.orderId, orders.id))
+      .where(and(...conditions))
+      .orderBy(
+        asc(orders.deliveryDate),
+        sql`coalesce(${orders.deliveryTime}, '23:59')`,
+        desc(orders.updatedAt),
+      );
+
+    const uniqueRows = new Map<string, OrderDashboardDrilldownRow>();
+
+    for (const row of rows as any[]) {
+      if (!uniqueRows.has(row.id)) {
+        uniqueRows.set(row.id, {
+          id: row.id,
+          orderNumber: row.orderNumber,
+          customerName: row.customerName,
+          deliveryDate: row.deliveryDate,
+          deliveryTime: row.deliveryTime ?? null,
+          status: row.status,
+          paymentStatus: row.paymentStatus,
+          subtotalAmountCents: toSafeNumber(row.subtotalAmountCents),
+          itemCount: toSafeNumber(row.itemCount),
+          deliveryMode: row.deliveryMode,
+          itemSummary: row.itemSummary ?? null,
+        });
+      }
+    }
+
+    return Array.from(uniqueRows.values());
   }
 
   async create(data: OrderRowInsert, executor: Executor = getDb()) {

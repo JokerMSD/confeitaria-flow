@@ -1,4 +1,5 @@
 ﻿import { useMemo } from "react";
+import { useState } from "react";
 import { Link } from "wouter";
 import {
   BarChart3,
@@ -6,8 +7,10 @@ import {
   ChevronRight,
   Clock,
   DollarSign,
+  Loader2,
   PieChart as PieChartIcon,
   PackageMinus,
+  ReceiptText,
   ShoppingBag,
   Sparkles,
   TrendingDown,
@@ -18,11 +21,19 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
 import { useCashTransactions } from "@/features/cash/hooks/use-cash-transactions";
+import { useOrdersDashboardDrilldown } from "@/features/orders/hooks/use-orders-dashboard-drilldown";
 import { useOrdersDashboardSummary } from "@/features/orders/hooks/use-orders-dashboard-summary";
 import { useOrders } from "@/features/orders/hooks/use-orders";
 import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter";
@@ -30,6 +41,7 @@ import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-item
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
 import type { UiOrderStatus } from "@/features/orders/types/order-ui";
 import { cn, formatCurrency, getLocalDateKey, getTodayLocalDateKey } from "@/lib/utils";
+import type { OrdersDashboardDrilldownFilters } from "@shared/types";
 
 function getStatusColor(status: UiOrderStatus) {
   switch (status) {
@@ -50,6 +62,66 @@ function getStatusColor(status: UiOrderStatus) {
   }
 }
 
+function SummaryStatCard({
+  title,
+  icon,
+  accentClassName,
+  value,
+  body,
+  onClick,
+  disabled = false,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  accentClassName: string;
+  value: React.ReactNode;
+  body?: React.ReactNode;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  const clickable = Boolean(onClick) && !disabled;
+
+  return (
+    <Card
+      className={cn(
+        "glass-card border-l-4 transition-all",
+        accentClassName,
+        clickable
+          ? "cursor-pointer hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg"
+          : "",
+        disabled ? "opacity-60" : "",
+      )}
+      onClick={clickable ? onClick : undefined}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+      onKeyDown={
+        clickable
+          ? (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+    >
+      <CardContent className="p-4 md:p-6 flex flex-col gap-2">
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span className="text-sm font-medium">{title}</span>
+          {icon}
+        </div>
+        <div className="text-3xl font-display font-bold">{value}</div>
+        {body ? <div className="text-sm text-muted-foreground">{body}</div> : null}
+        {clickable ? (
+          <div className="pt-1 text-xs font-medium uppercase tracking-[0.22em] text-primary/80">
+            Ver pedidos
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const todayStr = getTodayLocalDateKey();
   const dashboardDateFrom = useMemo(() => {
@@ -67,6 +139,8 @@ export default function Dashboard() {
     dateTo: todayStr,
   });
   const inventoryQuery = useInventoryItems();
+  const [activeDrilldown, setActiveDrilldown] =
+    useState<OrdersDashboardDrilldownFilters | null>(null);
 
   const orderCards = useMemo(() => {
     if (!ordersQuery.data) {
@@ -185,6 +259,44 @@ export default function Dashboard() {
     [dashboardSummary],
   );
 
+  const drilldownQuery = useOrdersDashboardDrilldown(activeDrilldown);
+
+  const topSellingDrilldownFilters = dashboardSummary?.highlights.topSellingProduct
+    ? {
+        kind: "top-selling-product" as const,
+        dateFrom: dashboardDateFrom,
+        dateTo: todayStr,
+        recipeId:
+          topSellingProducts.find(
+            (product) =>
+              product.productName ===
+              dashboardSummary.highlights.topSellingProduct?.productName,
+          )?.recipeId ?? undefined,
+        productName: dashboardSummary.highlights.topSellingProduct.productName,
+      }
+    : null;
+
+  const mostProfitableDrilldownFilters =
+    dashboardSummary?.highlights.mostProfitableProduct
+      ? {
+          kind: "most-profitable-product" as const,
+          dateFrom: dashboardDateFrom,
+          dateTo: todayStr,
+          recipeId:
+            soldItemsRanking.find(
+              (product) =>
+                product.productName ===
+                dashboardSummary.highlights.mostProfitableProduct?.productName,
+            )?.recipeId ?? undefined,
+          productName:
+            dashboardSummary.highlights.mostProfitableProduct.productName,
+        }
+      : null;
+
+  const openDrilldown = (filters: OrdersDashboardDrilldownFilters) => {
+    setActiveDrilldown(filters);
+  };
+
   return (
     <AppLayout title="Dashboard">
       <div className="space-y-6">
@@ -205,69 +317,81 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-          <Card className="glass-card border-l-4 border-l-warning">
-            <CardContent className="p-4 md:p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Para Hoje</span>
-                <CalendarDays className="w-5 h-5 text-warning" />
-              </div>
-              <div className="text-3xl font-display font-bold">
-                {ordersQuery.isLoading ? "..." : pedidosHoje}
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryStatCard
+            title="Para Hoje"
+            icon={<CalendarDays className="w-5 h-5 text-warning" />}
+            accentClassName="border-l-warning"
+            value={ordersQuery.isLoading ? "..." : pedidosHoje}
+            onClick={() =>
+              openDrilldown({
+                kind: "today",
+                dateFrom: dashboardDateFrom,
+                dateTo: todayStr,
+              })
+            }
+          />
 
-          <Card className="glass-card border-l-4 border-l-destructive">
-            <CardContent className="p-4 md:p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium text-destructive">
-                  Atrasados
-                </span>
-                <Clock className="w-5 h-5 text-destructive" />
-              </div>
-              <div className="text-3xl font-display font-bold text-destructive">
+          <SummaryStatCard
+            title="Atrasados"
+            icon={<Clock className="w-5 h-5 text-destructive" />}
+            accentClassName="border-l-destructive"
+            value={
+              <span className="text-destructive">
                 {ordersQuery.isLoading ? "..." : pedidosAtrasados}
-              </div>
-            </CardContent>
-          </Card>
+              </span>
+            }
+            onClick={() =>
+              openDrilldown({
+                kind: "overdue",
+                dateFrom: dashboardDateFrom,
+                dateTo: todayStr,
+              })
+            }
+          />
 
-          <Card className="glass-card border-l-4 border-l-rose-500">
-            <CardContent className="p-4 md:p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium text-rose-400">
-                  Cancelados
-                </span>
-                <PackageMinus className="w-5 h-5 text-rose-400" />
-              </div>
-              <div className="text-3xl font-display font-bold text-rose-400">
+          <SummaryStatCard
+            title="Cancelados"
+            icon={<PackageMinus className="w-5 h-5 text-rose-400" />}
+            accentClassName="border-l-rose-500"
+            value={
+              <span className="text-rose-400">
                 {ordersQuery.isLoading ? "..." : cancelledOrders}
-              </div>
-            </CardContent>
-          </Card>
+              </span>
+            }
+            onClick={() =>
+              openDrilldown({
+                kind: "cancelled",
+                dateFrom: dashboardDateFrom,
+                dateTo: todayStr,
+              })
+            }
+          />
 
-          <Card className="glass-card border-l-4 border-l-primary">
-            <CardContent className="p-4 md:p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">A Receber</span>
-                <DollarSign className="w-5 h-5 text-primary" />
-              </div>
-              <div className="text-3xl font-display font-bold">
-                {ordersQuery.isLoading ? "..." : pedidosPendentesPagamento}
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryStatCard
+            title="A Receber"
+            icon={<DollarSign className="w-5 h-5 text-primary" />}
+            accentClassName="border-l-primary"
+            value={ordersQuery.isLoading ? "..." : pedidosPendentesPagamento}
+            onClick={() =>
+              openDrilldown({
+                kind: "receivable",
+                dateFrom: dashboardDateFrom,
+                dateTo: todayStr,
+              })
+            }
+          />
 
-          <Card className="glass-card border-l-4 border-l-success">
-            <CardContent className="p-4 md:p-6 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Estoque Baixo</span>
-                <PackageMinus className="w-5 h-5 text-success" />
-              </div>
-              <div className="text-3xl font-display font-bold text-success">
+          <SummaryStatCard
+            title="Estoque Baixo"
+            icon={<PackageMinus className="w-5 h-5 text-success" />}
+            accentClassName="border-l-success"
+            value={
+              <span className="text-success">
                 {inventoryQuery.isLoading ? "..." : estoqueBaixoItens.length}
-              </div>
-            </CardContent>
-          </Card>
+              </span>
+            }
+            disabled
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -320,86 +444,98 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-          <Card className="glass-card border-l-4 border-l-pink-400">
-            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Produto mais vendido</span>
-                <ShoppingBag className="w-5 h-5 text-pink-400" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xl font-display font-bold leading-tight">
-                  {dashboardSummaryQuery.isLoading
-                    ? "..."
-                    : dashboardSummary?.highlights.topSellingProduct?.productName ??
-                      "Sem vendas"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {dashboardSummary?.highlights.topSellingProduct?.quantitySold ?? 0}{" "}
-                  unidade(s) vendidas nos ultimos 30 dias
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryStatCard
+            title="Produto mais vendido"
+            icon={<ShoppingBag className="w-5 h-5 text-pink-400" />}
+            accentClassName="border-l-pink-400"
+            value={
+              dashboardSummaryQuery.isLoading
+                ? "..."
+                : dashboardSummary?.highlights.topSellingProduct?.productName ??
+                  "Sem vendas"
+            }
+            body={
+              <>
+                {dashboardSummary?.highlights.topSellingProduct?.quantitySold ?? 0}{" "}
+                unidade(s) vendidas nos ultimos 30 dias
+              </>
+            }
+            onClick={
+              topSellingDrilldownFilters
+                ? () => openDrilldown(topSellingDrilldownFilters)
+                : undefined
+            }
+            disabled={!topSellingDrilldownFilters}
+          />
 
-          <Card className="glass-card border-l-4 border-l-amber-400">
-            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Produto mais lucrativo</span>
-                <Sparkles className="w-5 h-5 text-amber-400" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xl font-display font-bold leading-tight">
-                  {dashboardSummaryQuery.isLoading
-                    ? "..."
-                    : dashboardSummary?.highlights.mostProfitableProduct?.productName ??
-                      "Sem base suficiente"}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Lucro estimado:{" "}
-                  {formatCurrency(
-                    (dashboardSummary?.highlights.mostProfitableProduct
-                      ?.estimatedProfitCents ?? 0) / 100,
-                  )}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          <SummaryStatCard
+            title="Produto mais lucrativo"
+            icon={<Sparkles className="w-5 h-5 text-amber-400" />}
+            accentClassName="border-l-amber-400"
+            value={
+              dashboardSummaryQuery.isLoading
+                ? "..."
+                : dashboardSummary?.highlights.mostProfitableProduct?.productName ??
+                  "Sem base suficiente"
+            }
+            body={
+              <>
+                Lucro estimado:{" "}
+                {formatCurrency(
+                  (dashboardSummary?.highlights.mostProfitableProduct
+                    ?.estimatedProfitCents ?? 0) / 100,
+                )}
+              </>
+            }
+            onClick={
+              mostProfitableDrilldownFilters
+                ? () => openDrilldown(mostProfitableDrilldownFilters)
+                : undefined
+            }
+            disabled={!mostProfitableDrilldownFilters}
+          />
 
-          <Card className="glass-card border-l-4 border-l-primary">
-            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Itens vendidos</span>
-                <BarChart3 className="w-5 h-5 text-primary" />
-              </div>
-              <p className="text-3xl font-display font-bold">
-                {dashboardSummaryQuery.isLoading
-                  ? "..."
-                  : dashboardSummary?.totals.unitsSold ?? 0}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Quantidade total de unidades vendidas no recorte.
-              </p>
-            </CardContent>
-          </Card>
+          <SummaryStatCard
+            title="Itens vendidos"
+            icon={<BarChart3 className="w-5 h-5 text-primary" />}
+            accentClassName="border-l-primary"
+            value={
+              dashboardSummaryQuery.isLoading
+                ? "..."
+                : dashboardSummary?.totals.unitsSold ?? 0
+            }
+            body="Quantidade total de unidades vendidas no recorte."
+            onClick={() =>
+              openDrilldown({
+                kind: "units-sold",
+                dateFrom: dashboardDateFrom,
+                dateTo: todayStr,
+              })
+            }
+          />
 
-          <Card className="glass-card border-l-4 border-l-emerald-400">
-            <CardContent className="p-5 md:p-6 flex flex-col gap-3">
-              <div className="flex items-center justify-between text-muted-foreground">
-                <span className="text-sm font-medium">Lucro estimado</span>
-                <DollarSign className="w-5 h-5 text-emerald-400" />
-              </div>
-              <p className="text-3xl font-display font-bold text-emerald-400">
+          <SummaryStatCard
+            title="Lucro estimado"
+            icon={<DollarSign className="w-5 h-5 text-emerald-400" />}
+            accentClassName="border-l-emerald-400"
+            value={
+              <span className="text-emerald-400">
                 {dashboardSummaryQuery.isLoading
                   ? "..."
                   : formatCurrency(
                       (dashboardSummary?.totals.estimatedProfitCents ?? 0) / 100,
                     )}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Baseado em custo atual das receitas com custo conhecido.
-              </p>
-            </CardContent>
-          </Card>
+              </span>
+            }
+            body="Baseado em custo atual das receitas com custo conhecido."
+            onClick={() =>
+              openDrilldown({
+                kind: "estimated-profit",
+                dateFrom: dashboardDateFrom,
+                dateTo: todayStr,
+              })
+            }
+          />
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -776,6 +912,98 @@ export default function Dashboard() {
             </Card>
           </div>
         </div>
+        <Dialog
+          open={Boolean(activeDrilldown)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setActiveDrilldown(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-3xl border-border/70 bg-card/95 sm:max-h-[80vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-xl font-display">
+                <ReceiptText className="h-5 w-5 text-primary" />
+                {drilldownQuery.data?.data.title ?? "Pedidos correspondentes"}
+              </DialogTitle>
+              <DialogDescription>
+                {drilldownQuery.data?.data.description ??
+                  "Pedidos usados para compor a estatistica selecionada."}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 overflow-y-auto pr-1">
+              {drilldownQuery.isLoading ? (
+                <div className="flex min-h-40 items-center justify-center text-muted-foreground">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Carregando pedidos...
+                </div>
+              ) : drilldownQuery.isError ? (
+                <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                  Nao foi possivel carregar os pedidos desta estatistica.
+                </div>
+              ) : drilldownQuery.data?.data.orders.length ? (
+                <>
+                  <div className="rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                    {drilldownQuery.data.data.totalOrders} pedido(s) encontrados.
+                  </div>
+                  <div className="space-y-3">
+                    {drilldownQuery.data.data.orders.map((order) => (
+                      <div
+                        key={order.id}
+                        className="rounded-[1.4rem] border border-border/60 bg-background/50 p-4"
+                      >
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0 space-y-1">
+                            <p className="font-semibold text-foreground">
+                              {order.orderNumber} • {order.customerName}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {order.itemSummary}
+                            </p>
+                          </div>
+                          <div className="text-sm sm:text-right">
+                            <p className="font-semibold">
+                              {formatCurrency(order.subtotalAmountCents / 100)}
+                            </p>
+                            <p className="text-muted-foreground">
+                              {order.deliveryMode} • {order.itemCount} item(ns)
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                          <span className="rounded-full border border-border/60 px-3 py-1 text-muted-foreground">
+                            {order.deliveryDate}
+                            {order.deliveryTime ? ` • ${order.deliveryTime}` : ""}
+                          </span>
+                          <span
+                            className={cn(
+                              "rounded-full px-3 py-1 font-medium",
+                              getStatusColor(order.status as UiOrderStatus),
+                            )}
+                          >
+                            {order.status}
+                          </span>
+                          <span className="rounded-full border border-border/60 px-3 py-1 text-muted-foreground">
+                            {order.paymentStatus}
+                          </span>
+                          <Link href={`/pedidos/${order.id}`}>
+                            <a className="rounded-full border border-primary/30 px-3 py-1 font-medium text-primary transition-colors hover:bg-primary/10">
+                              Abrir pedido
+                            </a>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="rounded-2xl border border-border/60 bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                  Nenhum pedido encontrado para esta estatistica.
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AppLayout>
   );

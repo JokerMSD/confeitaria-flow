@@ -1,6 +1,8 @@
 import type {
   CreateOrderInput,
   OrderDiscount,
+  OrdersDashboardDrilldown,
+  OrdersDashboardDrilldownFilters,
   OrdersDashboardSummary,
   OrdersDashboardSummaryFilters,
   ListOrdersFilters,
@@ -269,6 +271,39 @@ export class OrdersService {
       },
       products: productMetrics,
       deliveryModes,
+    };
+  }
+
+  async getDashboardDrilldown(
+    filters: OrdersDashboardDrilldownFilters,
+  ): Promise<OrdersDashboardDrilldown> {
+    const period = {
+      ...getDefaultDashboardPeriod(),
+      ...filters,
+    };
+
+    const rows = await this.ordersRepository.listDashboardDrilldownRows(period);
+
+    const metadata = this.getDashboardDrilldownMetadata(period);
+
+    return {
+      title: metadata.title,
+      description: metadata.description,
+      filters: period,
+      totalOrders: rows.length,
+      orders: rows.map((row) => ({
+        id: row.id,
+        orderNumber: row.orderNumber,
+        customerName: row.customerName,
+        deliveryDate: row.deliveryDate,
+        deliveryTime: row.deliveryTime,
+        status: row.status,
+        paymentStatus: row.paymentStatus,
+        subtotalAmountCents: row.subtotalAmountCents,
+        itemCount: row.itemCount,
+        deliveryMode: row.deliveryMode,
+        itemSummary: row.itemSummary ?? "Sem itens listados",
+      })),
     };
   }
 
@@ -1128,6 +1163,64 @@ export class OrdersService {
       grossAmountCents,
       label: input.label,
     });
+  }
+
+  private getDashboardDrilldownMetadata(filters: OrdersDashboardDrilldownFilters) {
+    switch (filters.kind) {
+      case "today":
+        return {
+          title: "Pedidos para hoje",
+          description: "Pedidos ativos com entrega ou retirada previstas para hoje.",
+        };
+      case "overdue":
+        return {
+          title: "Pedidos atrasados",
+          description: "Pedidos ativos com data passada e ainda nao concluidos.",
+        };
+      case "cancelled":
+        return {
+          title: "Pedidos cancelados",
+          description: "Pedidos cancelados dentro do recorte atual.",
+        };
+      case "receivable":
+        return {
+          title: "Pedidos a receber",
+          description: "Pedidos ativos com pagamento pendente ou parcial.",
+        };
+      case "units-sold":
+        return {
+          title: "Pedidos do recorte comercial",
+          description:
+            "Pedidos usados para compor o total de itens vendidos no periodo.",
+        };
+      case "estimated-profit":
+        return {
+          title: "Pedidos com lucro estimado",
+          description:
+            "Pedidos considerados no calculo de lucro estimado do periodo.",
+        };
+      case "top-selling-product":
+        return {
+          title: filters.productName
+            ? `Pedidos com ${filters.productName}`
+            : "Pedidos do produto mais vendido",
+          description:
+            "Pedidos que ajudaram a formar o destaque de produto mais vendido.",
+        };
+      case "most-profitable-product":
+        return {
+          title: filters.productName
+            ? `Pedidos com ${filters.productName}`
+            : "Pedidos do produto mais lucrativo",
+          description:
+            "Pedidos que ajudaram a formar o destaque de produto mais lucrativo.",
+        };
+      default:
+        return {
+          title: "Pedidos da dashboard",
+          description: "Pedidos correspondentes ao indicador selecionado.",
+        };
+    }
   }
 
   private mapOrderListItem(row: any): OrderListItem {

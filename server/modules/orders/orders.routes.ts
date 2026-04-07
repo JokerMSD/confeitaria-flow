@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import {
   createOrderInputSchema,
+  ordersDashboardDrilldownFiltersSchema,
   listOrdersFiltersSchema,
   ordersDashboardSummaryFiltersSchema,
   orderIdParamsSchema,
@@ -24,6 +25,11 @@ export function registerOrdersRoutes(app: Express) {
     "/api/orders/dashboard-summary",
     validateRequest(ordersDashboardSummaryFiltersSchema, "query"),
     controller.dashboardSummary.bind(controller),
+  );
+  app.get(
+    "/api/orders/dashboard-drilldown",
+    validateRequest(ordersDashboardDrilldownFiltersSchema, "query"),
+    controller.dashboardDrilldown.bind(controller),
   );
   app.get("/api/orders/:id", validateRequest(orderIdParamsSchema, "params"), controller.detail.bind(controller));
   app.post("/api/orders", validateRequest(orderBodySchema, "body"), controller.create.bind(controller));
