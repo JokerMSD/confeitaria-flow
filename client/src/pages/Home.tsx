@@ -36,6 +36,7 @@ import { useCashTransactions } from "@/features/cash/hooks/use-cash-transactions
 import { useOrdersDashboardDrilldown } from "@/features/orders/hooks/use-orders-dashboard-drilldown";
 import { useOrdersDashboardSummary } from "@/features/orders/hooks/use-orders-dashboard-summary";
 import { useOrders } from "@/features/orders/hooks/use-orders";
+import { formatInventoryQuantity } from "@/features/inventory/lib/inventory-quantity-display";
 import { adaptOrderListToCards } from "@/features/orders/lib/order-list-adapter";
 import { useInventoryItems } from "@/features/inventory/hooks/use-inventory-items";
 import { adaptInventoryItemsToList } from "@/features/inventory/lib/inventory-list-adapter";
@@ -141,6 +142,7 @@ export default function Dashboard() {
   const inventoryQuery = useInventoryItems();
   const [activeDrilldown, setActiveDrilldown] =
     useState<OrdersDashboardDrilldownFilters | null>(null);
+  const [stockLowModalOpen, setStockLowModalOpen] = useState(false);
 
   const orderCards = useMemo(() => {
     if (!ordersQuery.data) {
@@ -390,7 +392,8 @@ export default function Dashboard() {
                 {inventoryQuery.isLoading ? "..." : estoqueBaixoItens.length}
               </span>
             }
-            disabled
+            onClick={() => setStockLowModalOpen(true)}
+            disabled={inventoryQuery.isLoading}
           />
         </div>
 
@@ -913,10 +916,11 @@ export default function Dashboard() {
           </div>
         </div>
         <Dialog
-          open={Boolean(activeDrilldown)}
+          open={Boolean(activeDrilldown) || stockLowModalOpen}
           onOpenChange={(open) => {
             if (!open) {
               setActiveDrilldown(null);
+              setStockLowModalOpen(false);
             }
           }}
         >
@@ -924,15 +928,95 @@ export default function Dashboard() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl font-display">
                 <ReceiptText className="h-5 w-5 text-primary" />
-                {drilldownQuery.data?.data.title ?? "Pedidos correspondentes"}
+                {stockLowModalOpen
+                  ? "Itens com estoque baixo"
+                  : drilldownQuery.data?.data.title ?? "Pedidos correspondentes"}
               </DialogTitle>
               <DialogDescription>
-                {drilldownQuery.data?.data.description ??
-                  "Pedidos usados para compor a estatistica selecionada."}
+                {stockLowModalOpen
+                  ? "Leitura detalhada dos itens abaixo do minimo operacional."
+                  : drilldownQuery.data?.data.description ??
+                    "Pedidos usados para compor a estatistica selecionada."}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 overflow-y-auto pr-1">
-              {drilldownQuery.isLoading ? (
+              {stockLowModalOpen ? (
+                inventoryQuery.isError ? (
+                  <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                    Nao foi possivel carregar os itens com estoque baixo.
+                  </div>
+                ) : estoqueBaixoItens.length ? (
+                  <>
+                    <div className="rounded-2xl border border-border/60 bg-background/60 px-4 py-3 text-sm text-muted-foreground">
+                      {estoqueBaixoItens.length} item(ns) abaixo do minimo.
+                    </div>
+                    <div className="space-y-3">
+                      {estoqueBaixoItens.map((item) => {
+                        const currentDisplay = formatInventoryQuantity(
+                          item.currentQuantity,
+                          item.unit,
+                          item.recipeEquivalentQuantity,
+                          item.recipeEquivalentUnit,
+                        );
+                        const minDisplay = formatInventoryQuantity(
+                          item.minQuantity,
+                          item.unit,
+                          item.recipeEquivalentQuantity,
+                          item.recipeEquivalentUnit,
+                        );
+
+                        return (
+                          <div
+                            key={item.id}
+                            className="rounded-[1.4rem] border border-border/60 bg-background/50 p-4"
+                          >
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0 space-y-1">
+                                <p className="font-semibold text-foreground">
+                                  {item.name}
+                                </p>
+                                <p className="text-sm text-muted-foreground">
+                                  {item.category}
+                                </p>
+                              </div>
+                              <div className="grid gap-3 text-sm sm:grid-cols-2 sm:text-right">
+                                <div>
+                                  <p className="text-muted-foreground">
+                                    Estoque atual
+                                  </p>
+                                  <p className="font-semibold text-destructive">
+                                    {currentDisplay.inlineLabel}
+                                  </p>
+                                  {currentDisplay.detail ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      {currentDisplay.detail}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <div>
+                                  <p className="text-muted-foreground">Minimo</p>
+                                  <p className="font-semibold">
+                                    {minDisplay.inlineLabel}
+                                  </p>
+                                  {minDisplay.detail ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      {minDisplay.detail}
+                                    </p>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-2xl border border-border/60 bg-background/60 p-6 text-center text-sm text-muted-foreground">
+                    Nenhum item com estoque baixo no momento.
+                  </div>
+                )
+              ) : drilldownQuery.isLoading ? (
                 <div className="flex min-h-40 items-center justify-center text-muted-foreground">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Carregando pedidos...
