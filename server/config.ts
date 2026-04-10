@@ -43,6 +43,10 @@ export function getN8nForwardTimeoutMs() {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 4000;
 }
 
+export function isWhatsAppWebhookDebugEnabled() {
+  return process.env.WHATSAPP_WEBHOOK_DEBUG === "true";
+}
+
 export function getSessionSecret() {
   const secret = process.env.SESSION_SECRET?.trim();
 

@@ -2,6 +2,7 @@ import {
   getN8nForwardTimeoutMs,
   getN8nWhatsAppWebhookUrl,
   getWhatsAppVerifyToken,
+  isWhatsAppWebhookDebugEnabled,
 } from "../config";
 
 type WhatsAppMessageType = "text" | "audio" | string;
@@ -98,6 +99,20 @@ export function summarizeWhatsAppWebhook(payload: unknown) {
   return "ignored:unsupported";
 }
 
+export function getWhatsAppWebhookDebugSnapshot(payload: unknown) {
+  const value = getWebhookValue(payload);
+  const message = getWhatsAppUserMessage(payload);
+  const [status] = value.statuses ?? [];
+
+  return {
+    hasMessages: Array.isArray(value.messages) && value.messages.length > 0,
+    hasStatuses: Array.isArray(value.statuses) && value.statuses.length > 0,
+    messageType: message?.type ?? null,
+    messageFrom: message?.from ?? null,
+    status: status?.status ?? null,
+  };
+}
+
 export class WhatsAppWebhookService {
   isVerificationRequestValid(input: {
     mode?: string | null;
@@ -112,16 +127,35 @@ export class WhatsAppWebhookService {
     );
   }
 
+  logDebug(label: string, payload?: unknown) {
+    if (!isWhatsAppWebhookDebugEnabled()) {
+      return;
+    }
+
+    if (payload === undefined) {
+      console.info(`[whatsapp-webhook][debug] ${label}`);
+      return;
+    }
+
+    console.info(`[whatsapp-webhook][debug] ${label}`, payload);
+  }
+
   async forwardToN8n(payload: unknown) {
     const webhookUrl = getN8nWhatsAppWebhookUrl();
 
     if (!webhookUrl) {
       console.warn("[whatsapp-webhook] N8N_WHATSAPP_WEBHOOK_URL not configured.");
+      this.logDebug("forward skipped: missing N8N_WHATSAPP_WEBHOOK_URL");
       return { forwarded: false as const, reason: "missing-webhook-url" };
     }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), getN8nForwardTimeoutMs());
+    this.logDebug("forward start", {
+      webhookUrl,
+      summary: summarizeWhatsAppWebhook(payload),
+      timeoutMs: getN8nForwardTimeoutMs(),
+    });
 
     try {
       const response = await fetch(webhookUrl, {
@@ -137,12 +171,27 @@ export class WhatsAppWebhookService {
         console.error(
           `[whatsapp-webhook] n8n forward failed with status ${response.status}.`,
         );
+        this.logDebug("forward failed", {
+          status: response.status,
+          summary: summarizeWhatsAppWebhook(payload),
+        });
         return { forwarded: false as const, reason: "n8n-error" };
       }
 
+      this.logDebug("forward success", {
+        status: response.status,
+        summary: summarizeWhatsAppWebhook(payload),
+      });
       return { forwarded: true as const };
     } catch (error) {
       console.error("[whatsapp-webhook] n8n forward failed.", error);
+      this.logDebug("forward exception", {
+        summary: summarizeWhatsAppWebhook(payload),
+        error:
+          error instanceof Error
+            ? { message: error.message, name: error.name }
+            : String(error),
+      });
       return { forwarded: false as const, reason: "request-error" };
     } finally {
       clearTimeout(timeout);
