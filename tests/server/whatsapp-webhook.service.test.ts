@@ -45,13 +45,76 @@ const statusPayload = {
   ],
 };
 
+const multiChangeMessagePayload = {
+  object: "whatsapp_business_account",
+  entry: [
+    {
+      changes: [
+        {
+          value: {},
+        },
+        {
+          value: {
+            messages: [
+              {
+                from: "5531888887777",
+                type: "audio",
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
+const multiEntryStatusPayload = {
+  object: "whatsapp_business_account",
+  entry: [
+    {
+      changes: [
+        {
+          value: {},
+        },
+      ],
+    },
+    {
+      changes: [
+        {
+          value: {
+            statuses: [
+              {
+                status: "read",
+              },
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+
 test("isWhatsAppUserMessage accepts text message events", () => {
   assert.equal(isWhatsAppUserMessage(messagePayload), true);
+});
+
+test("isWhatsAppUserMessage scans all changes for supported messages", () => {
+  assert.equal(isWhatsAppUserMessage(multiChangeMessagePayload), true);
+  assert.equal(
+    summarizeWhatsAppWebhook(multiChangeMessagePayload),
+    "message:audio:5531888887777",
+  );
 });
 
 test("isWhatsAppUserMessage ignores statuses payloads", () => {
   assert.equal(isWhatsAppUserMessage(statusPayload), false);
   assert.equal(hasWhatsAppStatuses(statusPayload), true);
+});
+
+test("hasWhatsAppStatuses scans all entries for status callbacks", () => {
+  assert.equal(isWhatsAppUserMessage(multiEntryStatusPayload), false);
+  assert.equal(hasWhatsAppStatuses(multiEntryStatusPayload), true);
+  assert.equal(summarizeWhatsAppWebhook(multiEntryStatusPayload), "status:read");
 });
 
 test("summarizeWhatsAppWebhook keeps logs short and useful", () => {

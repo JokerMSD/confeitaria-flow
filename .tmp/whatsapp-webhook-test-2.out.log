@@ -1,0 +1,38 @@
+
+> rest-express@1.0.0 preapi
+> tsx script/ensure-port.ts 3001
+
+port 3001 is free
+
+> rest-express@1.0.0 api
+> cross-env NODE_ENV=development SERVE_CLIENT=false PORT=3001 tsx watch --clear-screen server/index.ts
+
+7:27:54 PM [express] client serving disabled; running API-only mode
+7:27:54 PM [express] serving on port 3001
+7:28:27 PM [express] GET /api/health 200 in 3ms
+[whatsapp-webhook][debug] verify request { mode: 'subscribe', challengePresent: true, verifyTokenPresent: true }
+[whatsapp-webhook][debug] verify accepted
+[whatsapp-webhook] received status:read
+[whatsapp-webhook][debug] receive payload snapshot {
+  hasMessages: false,
+  hasStatuses: true,
+  messageType: null,
+  messageFrom: null,
+  status: 'read'
+}
+[whatsapp-webhook][debug] receive ignored { reason: 'not-user-message', summary: 'status:read' }
+[whatsapp-webhook] received message:text:5531999990000
+[whatsapp-webhook][debug] receive payload snapshot {
+  hasMessages: true,
+  hasStatuses: false,
+  messageType: 'text',
+  messageFrom: '5531999990000',
+  status: null
+}
+[whatsapp-webhook][debug] forward start {
+  webhookUrl: 'https://batmnif.app.n8n.cloud/webhook-test/ee3a814b-897a-4d9e-bc46-02e7a951bcc5/webhook',
+  summary: 'message:text:5531999990000',
+  timeoutMs: 4000
+}
+[whatsapp-webhook][debug] forward failed { status: 404, summary: 'message:text:5531999990000' }
+[whatsapp-webhook][debug] receive forward result { forwarded: false, reason: 'n8n-error' }

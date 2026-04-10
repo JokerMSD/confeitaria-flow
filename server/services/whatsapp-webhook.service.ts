@@ -17,48 +17,65 @@ type WhatsAppEnvelopeValue = {
   }>;
 };
 
-function getWebhookValue(payload: unknown): WhatsAppEnvelopeValue {
+function getWebhookValues(payload: unknown): WhatsAppEnvelopeValue[] {
   const directValue =
     payload && typeof payload === "object" ? (payload as Record<string, unknown>) : null;
+  const values: WhatsAppEnvelopeValue[] = [];
 
   if (
     directValue?.entry &&
-    Array.isArray(directValue.entry) &&
-    directValue.entry[0] &&
-    typeof directValue.entry[0] === "object"
+    Array.isArray(directValue.entry)
   ) {
-    const entry = directValue.entry[0] as Record<string, unknown>;
-    const change = Array.isArray(entry.changes) ? entry.changes[0] : null;
-    const value =
-      change && typeof change === "object"
-        ? (change as Record<string, unknown>).value
-        : null;
+    for (const rawEntry of directValue.entry) {
+      if (!rawEntry || typeof rawEntry !== "object") {
+        continue;
+      }
 
-    if (value && typeof value === "object") {
-      return value as WhatsAppEnvelopeValue;
+      const entry = rawEntry as Record<string, unknown>;
+      const changes = Array.isArray(entry.changes) ? entry.changes : [];
+
+      for (const rawChange of changes) {
+        if (!rawChange || typeof rawChange !== "object") {
+          continue;
+        }
+
+        const value = (rawChange as Record<string, unknown>).value;
+
+        if (value && typeof value === "object") {
+          values.push(value as WhatsAppEnvelopeValue);
+        }
+      }
     }
   }
 
-  return (directValue ?? {}) as WhatsAppEnvelopeValue;
+  if (values.length > 0) {
+    return values;
+  }
+
+  return [(directValue ?? {}) as WhatsAppEnvelopeValue];
 }
 
 export function getWhatsAppUserMessage(payload: unknown) {
-  const value = getWebhookValue(payload);
-  const [message] = value.messages ?? [];
+  for (const value of getWebhookValues(payload)) {
+    const [message] = value.messages ?? [];
 
-  if (!message || typeof message !== "object") {
-    return null;
+    if (!message || typeof message !== "object") {
+      continue;
+    }
+
+    return {
+      from: typeof message.from === "string" ? message.from : null,
+      type: typeof message.type === "string" ? message.type : null,
+    };
   }
 
-  return {
-    from: typeof message.from === "string" ? message.from : null,
-    type: typeof message.type === "string" ? message.type : null,
-  };
+  return null;
 }
 
 export function hasWhatsAppStatuses(payload: unknown) {
-  const value = getWebhookValue(payload);
-  return Array.isArray(value.statuses) && value.statuses.length > 0;
+  return getWebhookValues(payload).some(
+    (value) => Array.isArray(value.statuses) && value.statuses.length > 0,
+  );
 }
 
 /**
@@ -85,8 +102,10 @@ export function isWhatsAppUserMessage(payload: unknown) {
 
 export function summarizeWhatsAppWebhook(payload: unknown) {
   if (hasWhatsAppStatuses(payload)) {
-    const value = getWebhookValue(payload);
-    const [status] = value.statuses ?? [];
+    const firstStatusValue = getWebhookValues(payload).find(
+      (value) => Array.isArray(value.statuses) && value.statuses.length > 0,
+    );
+    const [status] = firstStatusValue?.statuses ?? [];
     return `status:${status?.status ?? "unknown"}`;
   }
 
@@ -100,13 +119,21 @@ export function summarizeWhatsAppWebhook(payload: unknown) {
 }
 
 export function getWhatsAppWebhookDebugSnapshot(payload: unknown) {
-  const value = getWebhookValue(payload);
+  const values = getWebhookValues(payload);
   const message = getWhatsAppUserMessage(payload);
-  const [status] = value.statuses ?? [];
+  const firstStatusValue = values.find(
+    (value) => Array.isArray(value.statuses) && value.statuses.length > 0,
+  );
+  const [status] = firstStatusValue?.statuses ?? [];
 
   return {
-    hasMessages: Array.isArray(value.messages) && value.messages.length > 0,
-    hasStatuses: Array.isArray(value.statuses) && value.statuses.length > 0,
+    entryCount: values.length,
+    hasMessages: values.some(
+      (value) => Array.isArray(value.messages) && value.messages.length > 0,
+    ),
+    hasStatuses: values.some(
+      (value) => Array.isArray(value.statuses) && value.statuses.length > 0,
+    ),
     messageType: message?.type ?? null,
     messageFrom: message?.from ?? null,
     status: status?.status ?? null,
