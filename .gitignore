@@ -12,6 +12,7 @@ vite.config.ts.*
 .agents/
 .codex/
 .codex-temp/
+.tmp/
 .github/agents/
 AGENTS.md
 skills-lock.json
