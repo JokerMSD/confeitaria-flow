@@ -17,12 +17,14 @@ import { registerProductionRoutes } from "./modules/production/production.module
 import { registerPublicStoreRoutes } from "./modules/public-store/public-store.module";
 import { registerDiscountCouponRoutes } from "./modules/discount-coupons/discount-coupons.module";
 import { registerBotRoutes } from "./modules/bot/bot.module";
+import { registerWhatsAppWebhookRoutes } from "./modules/whatsapp-webhook/whatsapp-webhook.module";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express,
 ): Promise<Server> {
   registerHealthRoutes(app);
+  registerWhatsAppWebhookRoutes(app);
   registerAuthRoutes(app);
   registerPublicStoreRoutes(app);
   registerBotRoutes(app);

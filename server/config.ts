@@ -30,6 +30,19 @@ export function getBotApiToken() {
   return process.env.BOT_API_TOKEN?.trim() || null;
 }
 
+export function getWhatsAppVerifyToken() {
+  return process.env.WHATSAPP_VERIFY_TOKEN?.trim() || null;
+}
+
+export function getN8nWhatsAppWebhookUrl() {
+  return process.env.N8N_WHATSAPP_WEBHOOK_URL?.trim() || null;
+}
+
+export function getN8nForwardTimeoutMs() {
+  const parsed = Number(process.env.N8N_WHATSAPP_WEBHOOK_TIMEOUT_MS ?? "4000");
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 4000;
+}
+
 export function getSessionSecret() {
   const secret = process.env.SESSION_SECRET?.trim();
 

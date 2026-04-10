@@ -7,6 +7,7 @@ import { registerHealthRoutes } from "../../server/modules/health/health.routes"
 import { registerAuthRoutes } from "../../server/modules/auth/auth.routes";
 import { registerBotRoutes } from "../../server/modules/bot/bot.routes";
 import { registerOrdersRoutes } from "../../server/modules/orders/orders.routes";
+import { registerWhatsAppWebhookRoutes } from "../../server/modules/whatsapp-webhook/whatsapp-webhook.routes";
 import { requireAuth } from "../../server/middlewares/require-auth";
 import { errorHandler } from "../../server/middlewares/error-handler";
 
@@ -19,6 +20,8 @@ function buildTestApp() {
     },
   ]);
   process.env.BOT_API_TOKEN = "test-bot-token";
+  process.env.WHATSAPP_VERIFY_TOKEN = "test-whatsapp-token";
+  process.env.N8N_WHATSAPP_WEBHOOK_URL = "https://n8n.example.com/webhook/whatsapp";
 
   const app = express();
 
@@ -45,6 +48,7 @@ function buildTestApp() {
   });
 
   registerHealthRoutes(app);
+  registerWhatsAppWebhookRoutes(app);
   registerAuthRoutes(app);
   registerBotRoutes(app);
   app.use("/api", requireAuth);
@@ -201,5 +205,125 @@ test("GET /api/bot/store-summary returns 401 without bot token", async () => {
 
     assert.equal(response.status, 401);
     assert.equal(body.message, "Autenticacao do bot obrigatoria.");
+  });
+});
+
+test("GET /webhooks/whatsapp returns challenge when verification token is valid", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(
+      `${baseUrl}/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=test-whatsapp-token&hub.challenge=abc123`,
+    );
+    const body = await response.text();
+
+    assert.equal(response.status, 200);
+    assert.equal(body, "abc123");
+  });
+});
+
+test("POST /webhooks/whatsapp ignores status-only payloads", async () => {
+  await withServer(async (baseUrl) => {
+    const originalFetch = globalThis.fetch;
+    let forwarded = false;
+
+    globalThis.fetch = (async (...args: Parameters<typeof fetch>) => {
+      const target = String(args[0]);
+      if (target.startsWith(baseUrl)) {
+        return originalFetch(...args);
+      }
+
+      forwarded = true;
+      return originalFetch(...args);
+    }) as typeof fetch;
+
+    try {
+      const response = await fetch(`${baseUrl}/webhooks/whatsapp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          entry: [
+            {
+              changes: [
+                {
+                  value: {
+                    statuses: [{ status: "delivered" }],
+                  },
+                },
+              ],
+            },
+          ],
+        }),
+      });
+      const body = await readJson(response);
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(body, { ok: true, forwarded: false });
+      assert.equal(forwarded, false);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+});
+
+test("POST /webhooks/whatsapp forwards user messages to n8n and still returns 200", async () => {
+  await withServer(async (baseUrl) => {
+    const originalFetch = globalThis.fetch;
+    let capturedUrl = "";
+    let capturedBody = "";
+
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const target = String(input);
+      if (target.startsWith(baseUrl)) {
+        return originalFetch(input, init);
+      }
+
+      capturedUrl = target;
+      capturedBody = String(init?.body ?? "");
+
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: {
+          "content-type": "application/json",
+        },
+      });
+    }) as typeof fetch;
+
+    try {
+      const payload = {
+        entry: [
+          {
+            changes: [
+              {
+                value: {
+                  messages: [
+                    {
+                      from: "5531999990000",
+                      type: "text",
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      const response = await fetch(`${baseUrl}/webhooks/whatsapp`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+      const body = await readJson(response);
+
+      assert.equal(response.status, 200);
+      assert.deepEqual(body, { ok: true, forwarded: true });
+      assert.equal(capturedUrl, "https://n8n.example.com/webhook/whatsapp");
+      assert.deepEqual(JSON.parse(capturedBody), payload);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });
