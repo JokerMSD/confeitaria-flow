@@ -81,17 +81,27 @@ Exemplo de erro:
 
 Configuracao atual:
 
-- voz: `pt-BR-FranciscaNeural`
+- voz padrao: `pt-BR-BrendaNeural`
+- rate padrao: `-12%`
+- pitch padrao: `+0Hz`
+- volume padrao: `+0%`
 - formato intermediario: `mp3`
 - formato final: `ogg`
 - codec final: `libopus`
 - canais: `mono`
 - bitrate: `24k`
 
+Variaveis opcionais:
+
+- `TTS_VOICE`
+- `TTS_RATE`
+- `TTS_PITCH`
+- `TTS_VOLUME`
+
 ## Fluxo interno
 
 1. valida o body
-2. sanitiza o texto
+2. humaniza o texto para fala
 3. gera mp3 temporario com Edge TTS
 4. converte para `ogg/opus` com `ffmpeg`
 5. carrega o arquivo final em memoria
@@ -135,7 +145,7 @@ Fluxo sugerido:
 Logs resumidos emitidos pelo backend:
 
 ```txt
-[tts] voice note requested { length: 48, voice: 'pt-BR-FranciscaNeural' }
+[tts] voice note requested { length: 48, voice: 'pt-BR-BrendaNeural', rate: '-12%', pitch: '+0Hz' }
 [tts] voice note generated { bytes: 10849 }
 ```
 
@@ -159,3 +169,19 @@ Se o fluxo exigir resiliencia maior, o proximo passo recomendado e adicionar:
 - retry controlado
 - cache por texto curto
 - request id nos logs
+
+## Dica de qualidade de voz
+
+Para soar menos como leitura e mais como fala:
+
+- escreva frases curtas
+- separe blocos por paragrafos
+- evite markdown e emojis desnecessarios
+- prefira texto conversacional
+
+O backend agora ja:
+
+- remove markdown comum
+- ignora emojis decorativos
+- transforma paragrafos em pausas curtas
+- aplica prosodia configuravel por ambiente

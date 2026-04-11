@@ -338,6 +338,106 @@ Como posso ajudar hoje?"
   }
 });
 
+test("POST /api/tts/voice-note accepts structured content parts arrays", async () => {
+  const originalCreateVoiceNote = TtsService.prototype.createVoiceNote;
+  let receivedText = "";
+
+  TtsService.prototype.createVoiceNote = async (text: string) => {
+    receivedText = text;
+
+    return {
+      buffer: Buffer.from("fake-ogg-audio"),
+      filename: "voice-note.ogg",
+    };
+  };
+
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer test-bot-token",
+        },
+        body: JSON.stringify([
+          {
+            content: {
+              parts: [
+                {
+                  text: "\n\n",
+                },
+                {
+                  text: "Olá! Seja muito bem-vindo(a) à Universo Doce! Como posso te ajudar hoje?",
+                  thoughtSignature: "abc123",
+                },
+              ],
+              role: "model",
+            },
+            finishReason: "STOP",
+            index: 0,
+          },
+        ]),
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(
+        receivedText,
+        "Olá! Seja muito bem-vindo(a) à Universo Doce! Como posso te ajudar hoje?",
+      );
+    });
+  } finally {
+    TtsService.prototype.createVoiceNote = originalCreateVoiceNote;
+  }
+});
+
+test("POST /api/tts/voice-note extracts text from arbitrary nested structures", async () => {
+  const originalCreateVoiceNote = TtsService.prototype.createVoiceNote;
+  let receivedText = "";
+
+  TtsService.prototype.createVoiceNote = async (text: string) => {
+    receivedText = text;
+
+    return {
+      buffer: Buffer.from("fake-ogg-audio"),
+      filename: "voice-note.ogg",
+    };
+  };
+
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer test-bot-token",
+        },
+        body: JSON.stringify({
+          response: {
+            candidates: [
+              {
+                role: "model",
+                output: {
+                  content: {
+                    parts: [
+                      { text: "Oi! " },
+                      { text: "Quero te ajudar com seu pedido." },
+                    ],
+                  },
+                },
+              },
+            ],
+          },
+        }),
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(receivedText, "Oi!\nQuero te ajudar com seu pedido.");
+    });
+  } finally {
+    TtsService.prototype.createVoiceNote = originalCreateVoiceNote;
+  }
+});
+
 test("GET /webhooks/whatsapp returns challenge when verification token is valid", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(
