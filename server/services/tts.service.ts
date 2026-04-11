@@ -8,6 +8,13 @@ import ffmpegPath from "ffmpeg-static";
 import { HttpError } from "../utils/http-error";
 
 const DEFAULT_TTS_VOICE = process.env.TTS_VOICE?.trim() || "pt-BR-BrendaNeural";
+const DEFAULT_TTS_FALLBACK_VOICES = (
+  process.env.TTS_VOICE_FALLBACKS?.trim() ||
+  "pt-BR-FranciscaNeural,pt-BR-AntonioNeural"
+)
+  .split(",")
+  .map((voice) => voice.trim())
+  .filter(Boolean);
 const DEFAULT_TTS_RATE = process.env.TTS_RATE?.trim() || "-12%";
 const DEFAULT_TTS_VOLUME = process.env.TTS_VOLUME?.trim() || "+0%";
 const DEFAULT_TTS_PITCH = process.env.TTS_PITCH?.trim() || "+0Hz";
@@ -21,6 +28,12 @@ if (ffmpegPath) {
 
 function sanitizeTtsText(rawText: string) {
   return rawText.replace(/\s+/g, " ").trim();
+}
+
+function getVoiceCandidates() {
+  return [DEFAULT_TTS_VOICE, ...DEFAULT_TTS_FALLBACK_VOICES].filter(
+    (voice, index, voices) => voices.indexOf(voice) === index,
+  );
 }
 
 function removeMarkdownSyntax(rawText: string) {
@@ -150,27 +163,47 @@ async function generateTemporaryMp3(text: string): Promise<string> {
   }
 
   const tempMp3Path = path.join(os.tmpdir(), `confeitaria-flow-tts-${randomUUID()}.mp3`);
+  const voiceCandidates = getVoiceCandidates();
 
-  try {
-    const tts = new EdgeTTS(normalizedText, DEFAULT_TTS_VOICE, {
-      rate: DEFAULT_TTS_RATE,
-      volume: DEFAULT_TTS_VOLUME,
-      pitch: DEFAULT_TTS_PITCH,
-    });
-    const result = await withTimeout(
-      tts.synthesize(),
-      TTS_TIMEOUT_MS,
-      "A geracao de voz",
-    );
-    const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
+  for (const voice of voiceCandidates) {
+    try {
+      console.info("[tts] synthesis attempt", {
+        voice,
+        length: normalizedText.length,
+      });
 
-    await fs.writeFile(tempMp3Path, audioBuffer);
-    return tempMp3Path;
-  } catch (error) {
-    await removeTemporaryFiles([tempMp3Path]);
-    console.error("[tts] edge synthesis failed.", error);
-    throw new HttpError(502, "Nao foi possivel gerar o audio agora.");
+      const tts = new EdgeTTS(normalizedText, voice, {
+        rate: DEFAULT_TTS_RATE,
+        volume: DEFAULT_TTS_VOLUME,
+        pitch: DEFAULT_TTS_PITCH,
+      });
+      const result = await withTimeout(
+        tts.synthesize(),
+        TTS_TIMEOUT_MS,
+        "A geracao de voz",
+      );
+      const audioBuffer = Buffer.from(await result.audio.arrayBuffer());
+
+      await fs.writeFile(tempMp3Path, audioBuffer);
+
+      if (voice !== DEFAULT_TTS_VOICE) {
+        console.warn("[tts] synthesis recovered with fallback voice", {
+          primaryVoice: DEFAULT_TTS_VOICE,
+          fallbackVoice: voice,
+        });
+      }
+
+      return tempMp3Path;
+    } catch (error) {
+      console.error("[tts] edge synthesis failed.", {
+        voice,
+        error,
+      });
+    }
   }
+
+  await removeTemporaryFiles([tempMp3Path]);
+  throw new HttpError(502, "Nao foi possivel gerar o audio agora.");
 }
 
 export async function generateVoiceNote(text: string): Promise<Buffer> {
@@ -183,6 +216,7 @@ export async function generateVoiceNote(text: string): Promise<Buffer> {
   console.info("[tts] voice note requested", {
     length: normalizedText.length,
     voice: DEFAULT_TTS_VOICE,
+    fallbackVoices: DEFAULT_TTS_FALLBACK_VOICES,
     rate: DEFAULT_TTS_RATE,
     pitch: DEFAULT_TTS_PITCH,
   });

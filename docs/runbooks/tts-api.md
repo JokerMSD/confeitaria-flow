@@ -82,6 +82,7 @@ Exemplo de erro:
 Configuracao atual:
 
 - voz padrao: `pt-BR-BrendaNeural`
+- vozes de fallback: `pt-BR-FranciscaNeural`, `pt-BR-AntonioNeural`
 - rate padrao: `-12%`
 - pitch padrao: `+0Hz`
 - volume padrao: `+0%`
@@ -97,6 +98,7 @@ Variaveis opcionais:
 - `TTS_RATE`
 - `TTS_PITCH`
 - `TTS_VOLUME`
+- `TTS_VOICE_FALLBACKS`
 
 ## Fluxo interno
 
@@ -185,3 +187,4 @@ O backend agora ja:
 - ignora emojis decorativos
 - transforma paragrafos em pausas curtas
 - aplica prosodia configuravel por ambiente
+- tenta vozes de fallback quando o provider retorna resposta sem audio
