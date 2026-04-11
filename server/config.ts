@@ -15,6 +15,11 @@ export function getAllowedOrigins() {
   return Array.from(new Set(normalizedOrigins));
 }
 
+function parsePositiveNumber(rawValue: string | undefined, fallback: number) {
+  const parsed = Number(rawValue ?? "");
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
 export function getPublicAppOrigin() {
   const explicitOrigin =
     process.env.APP_ORIGIN?.trim() || process.env.VITE_APP_ORIGIN?.trim();
@@ -24,6 +29,50 @@ export function getPublicAppOrigin() {
   }
 
   return getAllowedOrigins()[0] ?? "http://localhost:3000";
+}
+
+export function getKeepAliveUrl() {
+  const configured =
+    process.env.RENDER_KEEPALIVE_URL?.trim() ||
+    process.env.API_PUBLIC_ORIGIN?.trim() ||
+    process.env.RENDER_EXTERNAL_URL?.trim() ||
+    null;
+
+  if (!configured) {
+    return null;
+  }
+
+  try {
+    const url = new URL(configured);
+    if (url.pathname === "/" || url.pathname === "") {
+      url.pathname = "/api/health";
+    }
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function isKeepAliveEnabled() {
+  return process.env.RENDER_KEEPALIVE_ENABLED === "true";
+}
+
+export function getKeepAliveIntervalMs() {
+  const configured = parsePositiveNumber(
+    process.env.RENDER_KEEPALIVE_INTERVAL_MS,
+    14 * 60 * 1000,
+  );
+
+  return Math.max(60_000, configured);
+}
+
+export function getKeepAliveTimeoutMs() {
+  const configured = parsePositiveNumber(
+    process.env.RENDER_KEEPALIVE_TIMEOUT_MS,
+    10_000,
+  );
+
+  return Math.max(1_000, configured);
 }
 
 export function getBotApiToken() {
@@ -39,8 +88,7 @@ export function getN8nWhatsAppWebhookUrl() {
 }
 
 export function getN8nForwardTimeoutMs() {
-  const parsed = Number(process.env.N8N_WHATSAPP_WEBHOOK_TIMEOUT_MS ?? "4000");
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 4000;
+  return parsePositiveNumber(process.env.N8N_WHATSAPP_WEBHOOK_TIMEOUT_MS, 4000);
 }
 
 export function isWhatsAppWebhookDebugEnabled() {

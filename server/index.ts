@@ -20,6 +20,12 @@ import {
   reapplyRuntimeMigrations,
   shouldAutoApplyMigrations,
 } from "./db/runtime-migrations";
+import {
+  getKeepAliveIntervalMs,
+  getKeepAliveTimeoutMs,
+  getKeepAliveUrl,
+  isKeepAliveEnabled,
+} from "./config";
 
 const app = express();
 const httpServer = createServer(app);
@@ -65,6 +71,58 @@ export function log(message: string, source = "express") {
   });
 
   console.log(`${formattedTime} [${source}] ${message}`);
+}
+
+function startKeepAliveLoop() {
+  if (!isKeepAliveEnabled()) {
+    return;
+  }
+
+  const keepAliveUrl = getKeepAliveUrl();
+  if (!keepAliveUrl) {
+    log(
+      "keepalive enabled but no valid URL was configured; skipping",
+      "keepalive",
+    );
+    return;
+  }
+
+  const intervalMs = getKeepAliveIntervalMs();
+  const timeoutMs = getKeepAliveTimeoutMs();
+
+  const ping = async () => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(keepAliveUrl, {
+        method: "GET",
+        signal: controller.signal,
+        headers: {
+          "x-render-keepalive": "1",
+        },
+      });
+
+      log(
+        `pinged ${keepAliveUrl} -> ${response.status} every ${intervalMs}ms`,
+        "keepalive",
+      );
+    } catch (error) {
+      console.error("[keepalive] ping failed", error);
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+
+  const timer = setInterval(() => {
+    void ping();
+  }, intervalMs);
+  timer.unref();
+
+  log(
+    `keepalive enabled for ${keepAliveUrl} with interval ${intervalMs}ms`,
+    "keepalive",
+  );
 }
 
 async function findAvailablePort(startPort: number, host: string) {
@@ -181,6 +239,7 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      startKeepAliveLoop();
     },
   );
 })();
