@@ -16,4 +16,5 @@ import "./server/email-verification.service.test";
 import "./server/mail.service.test";
 import "./server/mercado-pago-order-domain.test";
 import "./server/mercado-pago.service.test";
+import "./server/tts.service.test";
 import "./server/whatsapp-webhook.service.test";

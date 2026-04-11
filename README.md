@@ -117,6 +117,8 @@ npm run backfill:legacy-order-recipes
 - dominio da loja publica: [docs/domains/public-store.md](./docs/domains/public-store.md)
 - dominio de producao: [docs/domains/production.md](./docs/domains/production.md)
 - deploy: [docs/runbooks/deploy.md](./docs/runbooks/deploy.md)
+- bot WhatsApp via n8n: [docs/runbooks/whatsapp-bot-n8n.md](./docs/runbooks/whatsapp-bot-n8n.md)
+- API interna de TTS: [docs/runbooks/tts-api.md](./docs/runbooks/tts-api.md)
 
 ## Observacoes operacionais
 

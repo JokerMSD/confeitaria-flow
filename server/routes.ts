@@ -17,6 +17,8 @@ import { registerProductionRoutes } from "./modules/production/production.module
 import { registerPublicStoreRoutes } from "./modules/public-store/public-store.module";
 import { registerDiscountCouponRoutes } from "./modules/discount-coupons/discount-coupons.module";
 import { registerBotRoutes } from "./modules/bot/bot.module";
+import { registerDocsRoutes } from "./modules/docs/docs.module";
+import { registerTtsRoutes } from "./modules/tts/tts.module";
 import { registerWhatsAppWebhookRoutes } from "./modules/whatsapp-webhook/whatsapp-webhook.module";
 
 export async function registerRoutes(
@@ -24,10 +26,12 @@ export async function registerRoutes(
   app: Express,
 ): Promise<Server> {
   registerHealthRoutes(app);
+  registerDocsRoutes(app);
   registerWhatsAppWebhookRoutes(app);
   registerAuthRoutes(app);
   registerPublicStoreRoutes(app);
   registerBotRoutes(app);
+  registerTtsRoutes(app);
   app.use("/api", requireAuth);
   registerAccountRoutes(app);
   app.use("/api", requireStaff);

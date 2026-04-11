@@ -7,9 +7,11 @@ import { registerHealthRoutes } from "../../server/modules/health/health.routes"
 import { registerAuthRoutes } from "../../server/modules/auth/auth.routes";
 import { registerBotRoutes } from "../../server/modules/bot/bot.routes";
 import { registerOrdersRoutes } from "../../server/modules/orders/orders.routes";
+import { registerTtsRoutes } from "../../server/modules/tts/tts.routes";
 import { registerWhatsAppWebhookRoutes } from "../../server/modules/whatsapp-webhook/whatsapp-webhook.routes";
 import { requireAuth } from "../../server/middlewares/require-auth";
 import { errorHandler } from "../../server/middlewares/error-handler";
+import { TtsService } from "../../server/services/tts.service";
 
 function buildTestApp() {
   process.env.AUTH_USERS_JSON = JSON.stringify([
@@ -51,6 +53,7 @@ function buildTestApp() {
   registerWhatsAppWebhookRoutes(app);
   registerAuthRoutes(app);
   registerBotRoutes(app);
+  registerTtsRoutes(app);
   app.use("/api", requireAuth);
   registerOrdersRoutes(app);
   app.use(errorHandler);
@@ -206,6 +209,58 @@ test("GET /api/bot/store-summary returns 401 without bot token", async () => {
     assert.equal(response.status, 401);
     assert.equal(body.message, "Autenticacao do bot obrigatoria.");
   });
+});
+
+test("POST /api/tts/voice-note returns 401 without bot token", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        text: "ola",
+      }),
+    });
+    const body = await readJson(response);
+
+    assert.equal(response.status, 401);
+    assert.equal(body.message, "Autenticacao do bot obrigatoria.");
+  });
+});
+
+test("POST /api/tts/voice-note returns ogg audio for authenticated bot calls", async () => {
+  const originalCreateVoiceNote = TtsService.prototype.createVoiceNote;
+  TtsService.prototype.createVoiceNote = async () => ({
+    buffer: Buffer.from("fake-ogg-audio"),
+    filename: "voice-note.ogg",
+  });
+
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer test-bot-token",
+        },
+        body: JSON.stringify({
+          text: "ola, como posso ajudar?",
+        }),
+      });
+      const body = Buffer.from(await response.arrayBuffer());
+
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get("content-type"), "audio/ogg");
+      assert.equal(
+        response.headers.get("content-disposition"),
+        'inline; filename="voice-note.ogg"',
+      );
+      assert.deepEqual(body, Buffer.from("fake-ogg-audio"));
+    });
+  } finally {
+    TtsService.prototype.createVoiceNote = originalCreateVoiceNote;
+  }
 });
 
 test("GET /webhooks/whatsapp returns challenge when verification token is valid", async () => {

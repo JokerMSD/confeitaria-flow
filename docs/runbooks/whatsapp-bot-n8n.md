@@ -25,6 +25,11 @@ Rotas:
 - `GET /api/bot/availability?deliveryMode=Entrega|Retirada&selectedDate=YYYY-MM-DD`
 - `POST /api/bot/order-status`
 - `POST /api/bot/checkout-link`
+- `POST /api/tts/voice-note`
+
+Documentacao dedicada do TTS:
+
+- `docs/runbooks/tts-api.md`
 
 ## Variaveis do backend
 
@@ -85,7 +90,7 @@ Substituir:
 - `Manual Trigger` por `WhatsApp Trigger` ou webhook oficial do seu fluxo
 - `Placeholder Agente` por:
   - um agent/chat node com OpenAI
-  - opcionalmente um node de audio
+  - opcionalmente uma chamada ao `POST /api/tts/voice-note`
   - envio final via WhatsApp Cloud
 
 ## Intencoes recomendadas
