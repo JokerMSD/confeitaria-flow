@@ -17,6 +17,7 @@ import { registerProductionRoutes } from "./modules/production/production.module
 import { registerPublicStoreRoutes } from "./modules/public-store/public-store.module";
 import { registerDiscountCouponRoutes } from "./modules/discount-coupons/discount-coupons.module";
 import { registerBotRoutes } from "./modules/bot/bot.module";
+import { registerChatHistoryRoutes } from "./modules/chat-history/chat-history.module";
 import { registerDocsRoutes } from "./modules/docs/docs.module";
 import { registerTtsRoutes } from "./modules/tts/tts.module";
 import { registerWhatsAppWebhookRoutes } from "./modules/whatsapp-webhook/whatsapp-webhook.module";
@@ -31,6 +32,7 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerPublicStoreRoutes(app);
   registerBotRoutes(app);
+  registerChatHistoryRoutes(app);
   registerTtsRoutes(app);
   app.use("/api", requireAuth);
   registerAccountRoutes(app);

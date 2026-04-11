@@ -1,5 +1,6 @@
 export * from "./auth.validators";
 export * from "./cash.validators";
+export * from "./chat-history.validators";
 export * from "./common.validators";
 export * from "./discount-coupon.validators";
 export * from "./inventory.validators";

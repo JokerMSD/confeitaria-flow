@@ -13,6 +13,7 @@ import "./server/order-stock-sync-domain.test";
 import "./server/purchase-plan-domain.test";
 import "./server/receipt-import-domain.test";
 import "./server/email-verification.service.test";
+import "./server/chat-history.service.test";
 import "./server/mail.service.test";
 import "./server/mercado-pago-order-domain.test";
 import "./server/mercado-pago.service.test";

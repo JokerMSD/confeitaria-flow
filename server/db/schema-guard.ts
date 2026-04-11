@@ -28,6 +28,7 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     "inventory_movements",
     "recipe_media",
     "discount_coupons",
+    "conversation_messages",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -161,6 +162,7 @@ const migrationHints: Record<string, string> = {
     "0013_phase13_inventory_purchase_discount.sql",
   recipe_media: "0021_phase21_recipe_media.sql",
   discount_coupons: "0023_phase23_order_discounts_and_coupons.sql",
+  conversation_messages: "0032_phase32_chat_history.sql",
   "discount_coupons.code": "0023_phase23_order_discounts_and_coupons.sql",
   "discount_coupons.title": "0023_phase23_order_discounts_and_coupons.sql",
   "discount_coupons.discount_type":

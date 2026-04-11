@@ -6,9 +6,11 @@ import { createServer, type Server } from "node:http";
 import { registerHealthRoutes } from "../../server/modules/health/health.routes";
 import { registerAuthRoutes } from "../../server/modules/auth/auth.routes";
 import { registerBotRoutes } from "../../server/modules/bot/bot.routes";
+import { registerChatHistoryRoutes } from "../../server/modules/chat-history/chat-history.routes";
 import { registerOrdersRoutes } from "../../server/modules/orders/orders.routes";
 import { registerTtsRoutes } from "../../server/modules/tts/tts.routes";
 import { registerWhatsAppWebhookRoutes } from "../../server/modules/whatsapp-webhook/whatsapp-webhook.routes";
+import { ChatHistoryService } from "../../server/services/chat-history.service";
 import { requireAuth } from "../../server/middlewares/require-auth";
 import { errorHandler } from "../../server/middlewares/error-handler";
 import { TtsService } from "../../server/services/tts.service";
@@ -60,6 +62,7 @@ function buildTestApp() {
   registerWhatsAppWebhookRoutes(app);
   registerAuthRoutes(app);
   registerBotRoutes(app);
+  registerChatHistoryRoutes(app);
   registerTtsRoutes(app);
   app.use("/api", requireAuth);
   registerOrdersRoutes(app);
@@ -216,6 +219,149 @@ test("GET /api/bot/store-summary returns 401 without bot token", async () => {
     assert.equal(response.status, 401);
     assert.equal(body.message, "Autenticacao do bot obrigatoria.");
   });
+});
+
+test("POST /api/chat-history/messages returns 401 without bot token", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/chat-history/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        customerPhone: "553182502353",
+        role: "user",
+        message: "Oi",
+      }),
+    });
+    const body = await readJson(response);
+
+    assert.equal(response.status, 401);
+    assert.equal(body.message, "Autenticacao do bot obrigatoria.");
+  });
+});
+
+test("POST /api/chat-history/messages rejects invalid payloads", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/chat-history/messages`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        authorization: "Bearer test-bot-token",
+      },
+      body: JSON.stringify({
+        customerPhone: "553182502353",
+        role: "invalid",
+        message: "",
+      }),
+    });
+    const body = await readJson(response);
+
+    assert.equal(response.status, 400);
+    assert.equal(body.message, "Invalid request payload.");
+  });
+});
+
+test("chat history routes save messages and return recent context for bot calls", async () => {
+  const savedMessages: Array<Record<string, unknown>> = [];
+  const originalSaveMessage = ChatHistoryService.prototype.saveMessage;
+  const originalGetRecentMessages = ChatHistoryService.prototype.getRecentMessages;
+  const originalGetConversationContext = ChatHistoryService.prototype.getConversationContext;
+
+  ChatHistoryService.prototype.saveMessage =
+    async function mockSaveMessage(input: any) {
+      const item = {
+        id: `msg-${savedMessages.length + 1}`,
+        customerPhone: input.customerPhone,
+        role: input.role,
+        message: input.message,
+        channel: input.channel ?? "whatsapp",
+        metadata: input.metadata ?? null,
+        createdAt: "2026-04-11T10:00:00.000Z",
+      };
+      savedMessages.push(item);
+      return item;
+    };
+
+  ChatHistoryService.prototype.getRecentMessages =
+    async function mockGetRecentMessages(customerPhone: string, limit?: number) {
+      return {
+        customerPhone,
+        messages: savedMessages.slice(0, limit ?? 10).map((message) => ({
+          role: message.role as "user" | "assistant" | "system",
+          message: String(message.message),
+          createdAt: String(message.createdAt),
+          channel: String(message.channel),
+          metadata: (message.metadata as Record<string, unknown> | null) ?? null,
+        })),
+      };
+    };
+
+  ChatHistoryService.prototype.getConversationContext =
+    async function mockGetConversationContext(customerPhone: string) {
+      return {
+        customerPhone,
+        historyText: "Cliente: Oi\nBot: Olá! Como posso ajudar?",
+      };
+    };
+
+  try {
+    await withServer(async (baseUrl) => {
+      const createResponse = await fetch(`${baseUrl}/api/chat-history/messages`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer test-bot-token",
+        },
+        body: JSON.stringify({
+          customerPhone: "553182502353",
+          role: "user",
+          message: "Oi",
+          metadata: {
+            messageType: "text",
+          },
+        }),
+      });
+      const created = await readJson(createResponse);
+
+      assert.equal(createResponse.status, 201);
+      assert.equal(created.customerPhone, "553182502353");
+
+      const listResponse = await fetch(
+        `${baseUrl}/api/chat-history/553182502353?limit=5`,
+        {
+          headers: {
+            authorization: "Bearer test-bot-token",
+          },
+        },
+      );
+      const listed = await readJson(listResponse);
+
+      assert.equal(listResponse.status, 200);
+      assert.equal(listed.customerPhone, "553182502353");
+      assert.equal(Array.isArray(listed.messages), true);
+
+      const contextResponse = await fetch(
+        `${baseUrl}/api/chat-history/553182502353/context?limit=5`,
+        {
+          headers: {
+            authorization: "Bearer test-bot-token",
+          },
+        },
+      );
+      const context = await readJson(contextResponse);
+
+      assert.equal(contextResponse.status, 200);
+      assert.equal(
+        context.historyText,
+        "Cliente: Oi\nBot: Olá! Como posso ajudar?",
+      );
+    });
+  } finally {
+    ChatHistoryService.prototype.saveMessage = originalSaveMessage;
+    ChatHistoryService.prototype.getRecentMessages = originalGetRecentMessages;
+    ChatHistoryService.prototype.getConversationContext = originalGetConversationContext;
+  }
 });
 
 test("POST /api/tts/voice-note returns 401 without bot token", async () => {

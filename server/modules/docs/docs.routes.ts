@@ -312,6 +312,49 @@ function buildOpenApiDocument() {
         responses: { "200": jsonResponse("Link retornado") },
       },
     },
+    "/api/chat-history/messages": {
+      post: {
+        tags: ["Chat History"],
+        summary: "Salva uma mensagem da conversa do bot",
+        security: botAuth,
+        requestBody: jsonBody("#/components/schemas/ChatHistorySaveMessageRequest"),
+        responses: {
+          "201": jsonResponse("Mensagem salva", "#/components/schemas/ChatHistoryMessageItem"),
+          "400": jsonResponse("Payload invalido", "#/components/schemas/ErrorResponse"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/chat-history/{customerPhone}": {
+      get: {
+        tags: ["Chat History"],
+        summary: "Retorna historico recente da conversa",
+        security: botAuth,
+        parameters: [
+          { name: "customerPhone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
+          { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 30, example: 10 } },
+        ],
+        responses: {
+          "200": jsonResponse("Historico retornado", "#/components/schemas/ChatHistoryMessagesResponse"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/chat-history/{customerPhone}/context": {
+      get: {
+        tags: ["Chat History"],
+        summary: "Retorna contexto textual pronto para prompt",
+        security: botAuth,
+        parameters: [
+          { name: "customerPhone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
+          { name: "limit", in: "query", schema: { type: "integer", minimum: 1, maximum: 30, example: 10 } },
+        ],
+        responses: {
+          "200": jsonResponse("Contexto retornado", "#/components/schemas/ChatHistoryContextResponse"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
     "/api/tts/voice-note": {
       post: {
         tags: ["TTS"],
@@ -912,7 +955,7 @@ function buildOpenApiDocument() {
     servers: [{ url: "/", description: "Servidor atual" }],
     tags: [
       { name: "Docs" }, { name: "Health" }, { name: "Auth" }, { name: "WhatsApp Webhook" },
-      { name: "Public Store" }, { name: "Payments" }, { name: "Bot" }, { name: "TTS" },
+      { name: "Public Store" }, { name: "Payments" }, { name: "Bot" }, { name: "Chat History" }, { name: "TTS" },
       { name: "Account" }, { name: "Orders" }, { name: "Customers" }, { name: "Users" },
       { name: "Recipes" }, { name: "Product Additionals" }, { name: "Discount Coupons" },
       { name: "Inventory" }, { name: "Production" }, { name: "Cash" },
@@ -1002,6 +1045,72 @@ function buildOpenApiDocument() {
             productId: { type: "string", format: "uuid", nullable: true, example: "11111111-1111-1111-1111-111111111111" },
           } } },
           required: ["data"],
+        },
+        ChatHistorySaveMessageRequest: {
+          type: "object",
+          properties: {
+            customerPhone: { type: "string", example: "553182502353" },
+            role: { type: "string", enum: ["user", "assistant", "system"], example: "user" },
+            message: { type: "string", example: "Quero um bolo de chocolate" },
+            channel: { type: "string", example: "whatsapp" },
+            metadata: {
+              type: "object",
+              additionalProperties: true,
+              example: {
+                messageType: "text",
+              },
+            },
+          },
+          required: ["customerPhone", "role", "message"],
+        },
+        ChatHistoryMessageItem: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            customerPhone: { type: "string", example: "553182502353" },
+            role: { type: "string", enum: ["user", "assistant", "system"] },
+            message: { type: "string", example: "Quero um bolo de chocolate" },
+            channel: { type: "string", example: "whatsapp" },
+            metadata: {
+              type: "object",
+              nullable: true,
+              additionalProperties: true,
+            },
+            createdAt: { type: "string", format: "date-time" },
+          },
+        },
+        ChatHistoryMessagesResponse: {
+          type: "object",
+          properties: {
+            customerPhone: { type: "string", example: "553182502353" },
+            messages: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  role: { type: "string", enum: ["user", "assistant", "system"] },
+                  message: { type: "string" },
+                  createdAt: { type: "string", format: "date-time" },
+                  channel: { type: "string", example: "whatsapp" },
+                  metadata: {
+                    type: "object",
+                    nullable: true,
+                    additionalProperties: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        ChatHistoryContextResponse: {
+          type: "object",
+          properties: {
+            customerPhone: { type: "string", example: "553182502353" },
+            historyText: {
+              type: "string",
+              example: "Cliente: Oi\nBot: Olá! Como posso ajudar?\nCliente: Quero um bolo",
+            },
+          },
         },
         TtsVoiceNoteRequest: {
           type: "object",

@@ -20,6 +20,7 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       "inventory_movements",
       "recipe_media",
       "discount_coupons",
+      "conversation_messages",
       "product_additional_groups",
       "product_additional_options",
       "order_item_additionals",
@@ -184,6 +185,7 @@ test("schema guard reports pending migrations for missing recent tables and colu
     "inventory_movements",
     "recipe_media",
     "discount_coupons",
+    "conversation_messages",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -228,5 +230,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0023_phase23_order_discounts_and_coupons.sql",
     "0024_phase24_mercado_pago_checkout.sql",
     "0026_phase26_public_registration_and_email_verification.sql",
+    "0032_phase32_chat_history.sql",
   ]);
 });

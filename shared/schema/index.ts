@@ -1,4 +1,5 @@
 export * from "./cash-transactions";
+export * from "./chat-history";
 export * from "./checkout-account-requests";
 export * from "./discount-coupons";
 export * from "./email-verification-tokens";

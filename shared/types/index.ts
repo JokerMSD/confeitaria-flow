@@ -2,6 +2,7 @@ export * from "./auth-api.types";
 export * from "./auth.types";
 export * from "./cash-api.types";
 export * from "./cash.types";
+export * from "./chat-history.types";
 export * from "./common.types";
 export * from "./discount-coupon-api.types";
 export * from "./discount-coupon.types";
