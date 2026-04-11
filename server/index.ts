@@ -33,12 +33,19 @@ declare module "http" {
 }
 
 app.use(
-  express.json({
-    limit: "5mb",
-    verify: (req, _res, buf) => {
-      req.rawBody = buf;
-    },
-  }),
+  (req, res, next) => {
+    if (req.path === "/api/tts/voice-note") {
+      next();
+      return;
+    }
+
+    express.json({
+      limit: "5mb",
+      verify: (jsonReq, _jsonRes, buf) => {
+        jsonReq.rawBody = buf;
+      },
+    })(req, res, next);
+  },
 );
 
 app.use(express.urlencoded({ extended: false }));

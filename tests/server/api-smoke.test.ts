@@ -27,7 +27,14 @@ function buildTestApp() {
 
   const app = express();
 
-  app.use(express.json());
+  app.use((req, res, next) => {
+    if (req.path === "/api/tts/voice-note") {
+      next();
+      return;
+    }
+
+    express.json()(req, res, next);
+  });
   app.use(express.urlencoded({ extended: false }));
   app.use((req, _res, next) => {
     const session = {
@@ -257,6 +264,74 @@ test("POST /api/tts/voice-note returns ogg audio for authenticated bot calls", a
         'inline; filename="voice-note.ogg"',
       );
       assert.deepEqual(body, Buffer.from("fake-ogg-audio"));
+    });
+  } finally {
+    TtsService.prototype.createVoiceNote = originalCreateVoiceNote;
+  }
+});
+
+test("POST /api/tts/voice-note accepts plain text bodies", async () => {
+  const originalCreateVoiceNote = TtsService.prototype.createVoiceNote;
+  let receivedText = "";
+
+  TtsService.prototype.createVoiceNote = async (text: string) => {
+    receivedText = text;
+
+    return {
+      buffer: Buffer.from("fake-ogg-audio"),
+      filename: "voice-note.ogg",
+    };
+  };
+
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
+        method: "POST",
+        headers: {
+          "content-type": "text/plain",
+          authorization: "Bearer test-bot-token",
+        },
+        body: "Ola!\n\nComo posso ajudar hoje?",
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(receivedText, "Ola!\n\nComo posso ajudar hoje?");
+    });
+  } finally {
+    TtsService.prototype.createVoiceNote = originalCreateVoiceNote;
+  }
+});
+
+test("POST /api/tts/voice-note salvages multiline text from loose json payloads", async () => {
+  const originalCreateVoiceNote = TtsService.prototype.createVoiceNote;
+  let receivedText = "";
+
+  TtsService.prototype.createVoiceNote = async (text: string) => {
+    receivedText = text;
+
+    return {
+      buffer: Buffer.from("fake-ogg-audio"),
+      filename: "voice-note.ogg",
+    };
+  };
+
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          authorization: "Bearer test-bot-token",
+        },
+        body: `{
+  "text": "Ola!
+
+Como posso ajudar hoje?"
+}`,
+      });
+
+      assert.equal(response.status, 200);
+      assert.equal(receivedText, "Ola!\n\nComo posso ajudar hoje?");
     });
   } finally {
     TtsService.prototype.createVoiceNote = originalCreateVoiceNote;

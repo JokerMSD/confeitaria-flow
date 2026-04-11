@@ -317,7 +317,46 @@ function buildOpenApiDocument() {
         tags: ["TTS"],
         summary: "Gera voice note ogg/opus para WhatsApp",
         security: botAuth,
-        requestBody: jsonBody("#/components/schemas/TtsVoiceNoteRequest"),
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: { $ref: "#/components/schemas/TtsVoiceNoteRequest" },
+              examples: {
+                jsonValido: {
+                  summary: "JSON valido",
+                  value: {
+                    text: "Ola! Seja bem-vindo a Universo Doce! Como posso ajudar hoje?",
+                  },
+                },
+                jsonComQuebraEscapada: {
+                  summary: "JSON com quebra de linha escapada",
+                  value: {
+                    text: "Ola! Seja bem-vindo a Universo Doce!\\n\\nComo posso ajudar hoje?",
+                  },
+                },
+              },
+            },
+            "text/plain": {
+              schema: {
+                type: "string",
+                example: "Ola! Seja bem-vindo a Universo Doce!\n\nComo posso ajudar hoje?",
+              },
+            },
+            "application/x-www-form-urlencoded": {
+              schema: {
+                type: "object",
+                properties: {
+                  text: {
+                    type: "string",
+                    example: "Ola! Seja bem-vindo a Universo Doce! Como posso ajudar hoje?",
+                  },
+                },
+                required: ["text"],
+              },
+            },
+          },
+        },
         responses: {
           "200": { description: "Audio gerado", content: { "audio/ogg": { schema: { type: "string", format: "binary" } } } },
           "400": jsonResponse("Texto invalido", "#/components/schemas/ErrorResponse"),
