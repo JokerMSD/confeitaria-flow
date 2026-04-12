@@ -125,6 +125,22 @@ export interface BotOrderStatusLookupRow {
   itemSummary: string | null;
 }
 
+export interface WhatsAppAssistantOrderLookupRow {
+  id: string;
+  orderNumber: string;
+  customerName: string;
+  orderDate: string;
+  deliveryDate: string;
+  deliveryTime: string | null;
+  deliveryMode: "Entrega" | "Retirada";
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  subtotalAmountCents: number;
+  paidAmountCents: number;
+  remainingAmountCents: number;
+  itemSummary: string | null;
+}
+
 export class OrdersRepository {
   async list(filters: ListOrdersFilters = {}, executor: Executor = getDb()) {
     const conditions = [isNull(orders.deletedAt)];
@@ -311,6 +327,72 @@ export class OrdersRepository {
       .where(and(...conditions))
       .orderBy(desc(orders.createdAt))
       .limit(filters.limit);
+  }
+
+  async listByPhoneDigits(
+    phoneDigits: string,
+    limit = 10,
+    executor: Executor = getDb(),
+  ): Promise<WhatsAppAssistantOrderLookupRow[]> {
+    const normalizedPhone = phoneDigits.replace(/\D/g, "");
+
+    if (!normalizedPhone) {
+      return [];
+    }
+
+    const rows = await executor
+      .select({
+        id: orders.id,
+        orderNumber: orders.orderNumber,
+        customerName: orders.customerName,
+        orderDate: orders.orderDate,
+        deliveryDate: orders.deliveryDate,
+        deliveryTime: orders.deliveryTime,
+        deliveryMode: orders.deliveryMode,
+        status: orders.status,
+        paymentStatus: orders.paymentStatus,
+        subtotalAmountCents: orders.subtotalAmountCents,
+        paidAmountCents: orders.paidAmountCents,
+        remainingAmountCents: orders.remainingAmountCents,
+        itemSummary: sql<string | null>`(
+          select string_agg(item.product_name, ', ' order by item.position asc)
+          from ${orderItems} as item
+          where item.order_id = ${orders.id}
+        )`,
+      })
+      .from(orders)
+      .where(
+        and(
+          isNull(orders.deletedAt),
+          sql`regexp_replace(coalesce(${orders.customerPhone}, ''), '[^0-9]', '', 'g') like ${`%${normalizedPhone}%`}`,
+        ),
+      )
+      .orderBy(desc(orders.createdAt))
+      .limit(limit);
+
+    return rows.map((row: any) => ({
+      id: row.id,
+      orderNumber: row.orderNumber,
+      customerName: row.customerName,
+      orderDate: row.orderDate,
+      deliveryDate: row.deliveryDate,
+      deliveryTime: row.deliveryTime ?? null,
+      deliveryMode: row.deliveryMode,
+      status: row.status,
+      paymentStatus: row.paymentStatus,
+      subtotalAmountCents: toSafeNumber(row.subtotalAmountCents),
+      paidAmountCents: toSafeNumber(row.paidAmountCents),
+      remainingAmountCents: toSafeNumber(row.remainingAmountCents),
+      itemSummary: row.itemSummary ?? null,
+    }));
+  }
+
+  async findLatestByPhoneDigits(
+    phoneDigits: string,
+    executor: Executor = getDb(),
+  ) {
+    const [row] = await this.listByPhoneDigits(phoneDigits, 1, executor);
+    return row ?? null;
   }
 
   async listPendingProductionRows(executor: Executor = getDb()) {

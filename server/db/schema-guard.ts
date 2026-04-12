@@ -29,6 +29,8 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
     "recipe_media",
     "discount_coupons",
     "conversation_messages",
+    "whatsapp_customers",
+    "whatsapp_order_drafts",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -84,6 +86,27 @@ const requiredRuntimeSchema: RequiredSchemaShape = {
       "discount_value",
       "minimum_order_amount_cents",
       "is_active",
+    ],
+    whatsapp_customers: [
+      "phone",
+      "linked_customer_id",
+      "name",
+      "address",
+      "notes",
+      "last_interaction_at",
+    ],
+    whatsapp_order_drafts: [
+      "customer_phone",
+      "whatsapp_customer_id",
+      "linked_customer_id",
+      "product_id",
+      "product_name",
+      "quantity",
+      "flavor",
+      "delivery_date",
+      "delivery_type",
+      "address",
+      "notes",
     ],
     product_additional_groups: [
       "product_recipe_id",
@@ -163,6 +186,8 @@ const migrationHints: Record<string, string> = {
   recipe_media: "0021_phase21_recipe_media.sql",
   discount_coupons: "0023_phase23_order_discounts_and_coupons.sql",
   conversation_messages: "0032_phase32_chat_history.sql",
+  whatsapp_customers: "0033_phase33_whatsapp_assistant.sql",
+  whatsapp_order_drafts: "0033_phase33_whatsapp_assistant.sql",
   "discount_coupons.code": "0023_phase23_order_discounts_and_coupons.sql",
   "discount_coupons.title": "0023_phase23_order_discounts_and_coupons.sql",
   "discount_coupons.discount_type":
@@ -172,6 +197,31 @@ const migrationHints: Record<string, string> = {
   "discount_coupons.minimum_order_amount_cents":
     "0023_phase23_order_discounts_and_coupons.sql",
   "discount_coupons.is_active": "0023_phase23_order_discounts_and_coupons.sql",
+  "whatsapp_customers.phone": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_customers.linked_customer_id":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_customers.name": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_customers.address": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_customers.notes": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_customers.last_interaction_at":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.customer_phone":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.whatsapp_customer_id":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.linked_customer_id":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.product_id": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.product_name":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.quantity": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.flavor": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.delivery_date":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.delivery_type":
+    "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.address": "0033_phase33_whatsapp_assistant.sql",
+  "whatsapp_order_drafts.notes": "0033_phase33_whatsapp_assistant.sql",
   "recipe_media.recipe_id": "0021_phase21_recipe_media.sql",
   "recipe_media.variation_recipe_id": "0022_phase22_recipe_media_variation.sql",
   "recipe_media.file_url": "0021_phase21_recipe_media.sql",

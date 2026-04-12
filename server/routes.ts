@@ -21,6 +21,7 @@ import { registerChatHistoryRoutes } from "./modules/chat-history/chat-history.m
 import { registerDocsRoutes } from "./modules/docs/docs.module";
 import { registerTtsRoutes } from "./modules/tts/tts.module";
 import { registerWhatsAppWebhookRoutes } from "./modules/whatsapp-webhook/whatsapp-webhook.module";
+import { registerWhatsAppAssistantRoutes } from "./modules/whatsapp-assistant/whatsapp-assistant.module";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -32,6 +33,7 @@ export async function registerRoutes(
   registerAuthRoutes(app);
   registerPublicStoreRoutes(app);
   registerBotRoutes(app);
+  registerWhatsAppAssistantRoutes(app);
   registerChatHistoryRoutes(app);
   registerTtsRoutes(app);
   app.use("/api", requireAuth);

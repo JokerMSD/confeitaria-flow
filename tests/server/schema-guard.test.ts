@@ -21,6 +21,8 @@ test("schema guard passes when required runtime tables and columns exist", () =>
       "recipe_media",
       "discount_coupons",
       "conversation_messages",
+      "whatsapp_customers",
+      "whatsapp_order_drafts",
       "product_additional_groups",
       "product_additional_options",
       "order_item_additionals",
@@ -96,6 +98,33 @@ test("schema guard passes when required runtime tables and columns exist", () =>
           "discount_value",
           "minimum_order_amount_cents",
           "is_active",
+        ]),
+      ],
+      [
+        "whatsapp_customers",
+        new Set([
+          "phone",
+          "linked_customer_id",
+          "name",
+          "address",
+          "notes",
+          "last_interaction_at",
+        ]),
+      ],
+      [
+        "whatsapp_order_drafts",
+        new Set([
+          "customer_phone",
+          "whatsapp_customer_id",
+          "linked_customer_id",
+          "product_id",
+          "product_name",
+          "quantity",
+          "flavor",
+          "delivery_date",
+          "delivery_type",
+          "address",
+          "notes",
         ]),
       ],
       [
@@ -186,6 +215,8 @@ test("schema guard reports pending migrations for missing recent tables and colu
     "recipe_media",
     "discount_coupons",
     "conversation_messages",
+    "whatsapp_customers",
+    "whatsapp_order_drafts",
     "product_additional_groups",
     "product_additional_options",
     "order_item_additionals",
@@ -231,5 +262,6 @@ test("schema guard collects unique migration filenames from missing tables and c
     "0024_phase24_mercado_pago_checkout.sql",
     "0026_phase26_public_registration_and_email_verification.sql",
     "0032_phase32_chat_history.sql",
+    "0033_phase33_whatsapp_assistant.sql",
   ]);
 });

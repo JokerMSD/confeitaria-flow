@@ -57,6 +57,27 @@ export class CustomersRepository {
     return customer ?? null;
   }
 
+  async findByPhoneDigits(phoneDigits: string, executor: Executor = getDb()) {
+    const normalizedPhone = phoneDigits.replace(/\D/g, "");
+
+    if (!normalizedPhone) {
+      return null;
+    }
+
+    const [customer] = await executor
+      .select()
+      .from(customers)
+      .where(
+        and(
+          isNull(customers.deletedAt),
+          sql`regexp_replace(coalesce(${customers.phone}, ''), '[^0-9]', '', 'g') = ${normalizedPhone}`,
+        ),
+      )
+      .limit(1);
+
+    return customer ?? null;
+  }
+
   async create(data: InsertCustomer, executor: Executor = getDb()) {
     const [customer] = await executor
       .insert(customers)

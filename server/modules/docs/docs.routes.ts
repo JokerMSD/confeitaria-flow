@@ -312,6 +312,141 @@ function buildOpenApiDocument() {
         responses: { "200": jsonResponse("Link retornado") },
       },
     },
+    "/api/whatsapp-assistant/customers/by-phone/{phone}": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Busca cliente ou perfil do canal por telefone",
+        security: botAuth,
+        parameters: [
+          { name: "phone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
+        ],
+        responses: {
+          "200": jsonResponse("Cliente encontrado ou null", "#/components/schemas/WhatsAppAssistantCustomer"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/customers/upsert": {
+      post: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Cria ou atualiza o perfil operacional do cliente no canal",
+        security: botAuth,
+        requestBody: jsonBody("#/components/schemas/WhatsAppAssistantCustomerUpsertRequest"),
+        responses: {
+          "201": jsonResponse("Cliente salvo", "#/components/schemas/WhatsAppAssistantCustomer"),
+          "400": jsonResponse("Payload invalido", "#/components/schemas/ErrorResponse"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/catalog": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Catalogo resumido para o bot",
+        security: botAuth,
+        responses: {
+          "200": jsonResponse("Catalogo resumido", "#/components/schemas/WhatsAppAssistantCatalogList"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/catalog/search": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Busca simples de catalogo por nome ou categoria",
+        security: botAuth,
+        parameters: [
+          { name: "q", in: "query", required: true, schema: { type: "string", example: "ovo ninho" } },
+        ],
+        responses: {
+          "200": jsonResponse("Resultados da busca", "#/components/schemas/WhatsAppAssistantCatalogList"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/orders/draft/{phone}": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Retorna o rascunho atual do pedido por telefone",
+        security: botAuth,
+        parameters: [
+          { name: "phone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
+        ],
+        responses: {
+          "200": jsonResponse("Rascunho encontrado ou null", "#/components/schemas/WhatsAppAssistantDraftOrder"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/orders/draft/upsert": {
+      post: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Cria ou atualiza o rascunho do pedido",
+        security: botAuth,
+        requestBody: jsonBody("#/components/schemas/WhatsAppAssistantDraftUpsertRequest"),
+        responses: {
+          "201": jsonResponse("Rascunho salvo", "#/components/schemas/WhatsAppAssistantDraftOrder"),
+          "400": jsonResponse("Payload invalido", "#/components/schemas/ErrorResponse"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/orders/draft/confirm": {
+      post: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Confirma o rascunho e cria um pedido real",
+        security: botAuth,
+        requestBody: jsonBody("#/components/schemas/WhatsAppAssistantDraftConfirmRequest"),
+        responses: {
+          "200": jsonResponse("Pedido criado"),
+          "400": jsonResponse("Rascunho invalido", "#/components/schemas/ErrorResponse"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/orders/by-phone/{phone}": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Lista os ultimos pedidos do cliente por telefone",
+        security: botAuth,
+        parameters: [
+          { name: "phone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
+        ],
+        responses: {
+          "200": jsonResponse("Pedidos encontrados", "#/components/schemas/WhatsAppAssistantOrderSummaryList"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/orders/{id}": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Detalhe completo de um pedido",
+        security: botAuth,
+        parameters: [
+          { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+        ],
+        responses: {
+          "200": jsonResponse("Detalhe do pedido"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+          "404": jsonResponse("Pedido nao encontrado", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
+    "/api/whatsapp-assistant/session/{phone}": {
+      get: {
+        tags: ["WhatsApp Assistant"],
+        summary: "Retorna o estado operacional da conversa por telefone",
+        security: botAuth,
+        parameters: [
+          { name: "phone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
+        ],
+        responses: {
+          "200": jsonResponse("Sessao encontrada", "#/components/schemas/WhatsAppAssistantSessionStatus"),
+          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+        },
+      },
+    },
     "/api/chat-history/messages": {
       post: {
         tags: ["Chat History"],
@@ -955,7 +1090,7 @@ function buildOpenApiDocument() {
     servers: [{ url: "/", description: "Servidor atual" }],
     tags: [
       { name: "Docs" }, { name: "Health" }, { name: "Auth" }, { name: "WhatsApp Webhook" },
-      { name: "Public Store" }, { name: "Payments" }, { name: "Bot" }, { name: "Chat History" }, { name: "TTS" },
+      { name: "Public Store" }, { name: "Payments" }, { name: "Bot" }, { name: "WhatsApp Assistant" }, { name: "Chat History" }, { name: "TTS" },
       { name: "Account" }, { name: "Orders" }, { name: "Customers" }, { name: "Users" },
       { name: "Recipes" }, { name: "Product Additionals" }, { name: "Discount Coupons" },
       { name: "Inventory" }, { name: "Production" }, { name: "Cash" },
@@ -1045,6 +1180,125 @@ function buildOpenApiDocument() {
             productId: { type: "string", format: "uuid", nullable: true, example: "11111111-1111-1111-1111-111111111111" },
           } } },
           required: ["data"],
+        },
+        WhatsAppAssistantCustomerUpsertRequest: {
+          type: "object",
+          properties: {
+            phone: { type: "string", example: "553182502353" },
+            name: { type: "string", example: "Igor Silva", nullable: true },
+            address: { type: "string", example: "Rua das Flores, 100", nullable: true },
+            notes: { type: "string", example: "Prefere contato por audio", nullable: true },
+          },
+          required: ["phone"],
+        },
+        WhatsAppAssistantCustomer: {
+          type: "object",
+          nullable: true,
+          properties: {
+            whatsappCustomerId: { type: "string", format: "uuid", nullable: true },
+            customerId: { type: "string", format: "uuid", nullable: true },
+            phone: { type: "string", example: "553182502353" },
+            name: { type: "string", nullable: true, example: "Igor Silva" },
+            email: { type: "string", nullable: true, example: "igor@email.com" },
+            address: { type: "string", nullable: true, example: "Rua das Flores, 100" },
+            notes: { type: "string", nullable: true, example: "Prefere contato por audio" },
+            isActive: { type: "boolean", nullable: true, example: true },
+            source: { type: "string", enum: ["whatsapp", "customer", "linked"] },
+            lastInteractionAt: { type: "string", format: "date-time", nullable: true },
+          },
+        },
+        WhatsAppAssistantCatalogItem: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            name: { type: "string", example: "Ovo de colher 500g" },
+            category: { type: "string", example: "Ovos" },
+            priceCents: { type: "integer", example: 4990 },
+            available: { type: "boolean", example: true },
+            notes: { type: "string", nullable: true },
+            primaryImageUrl: { type: "string", nullable: true, example: "/uploads/catalog/produto.png" },
+          },
+        },
+        WhatsAppAssistantCatalogList: {
+          type: "array",
+          items: { $ref: "#/components/schemas/WhatsAppAssistantCatalogItem" },
+        },
+        WhatsAppAssistantDraftOrder: {
+          type: "object",
+          nullable: true,
+          properties: {
+            id: { type: "string", format: "uuid" },
+            customerPhone: { type: "string", example: "553182502353" },
+            whatsappCustomerId: { type: "string", format: "uuid", nullable: true },
+            customerId: { type: "string", format: "uuid", nullable: true },
+            productId: { type: "string", format: "uuid", nullable: true },
+            productName: { type: "string", nullable: true, example: "Ovo de colher 500g" },
+            quantity: { type: "integer", nullable: true, example: 2 },
+            flavor: { type: "string", nullable: true, example: "Leite Ninho" },
+            deliveryDate: { type: "string", nullable: true, example: "2026-04-15" },
+            deliveryType: { type: "string", nullable: true, enum: ["pickup", "delivery"] },
+            address: { type: "string", nullable: true, example: "Rua das Flores, 100" },
+            notes: { type: "string", nullable: true, example: "Entregar apos 18h" },
+            createdAt: { type: "string", format: "date-time" },
+            updatedAt: { type: "string", format: "date-time" },
+          },
+        },
+        WhatsAppAssistantDraftUpsertRequest: {
+          type: "object",
+          properties: {
+            customerPhone: { type: "string", example: "553182502353" },
+            productId: { type: "string", format: "uuid", nullable: true },
+            productName: { type: "string", nullable: true, example: "Ovo de colher 500g" },
+            quantity: { type: "integer", nullable: true, example: 2 },
+            flavor: { type: "string", nullable: true, example: "Leite Ninho" },
+            deliveryDate: { type: "string", nullable: true, example: "2026-04-15" },
+            deliveryType: { type: "string", nullable: true, enum: ["pickup", "delivery"] },
+            address: { type: "string", nullable: true, example: "Rua das Flores, 100" },
+            notes: { type: "string", nullable: true, example: "Entregar apos 18h" },
+          },
+          required: ["customerPhone"],
+        },
+        WhatsAppAssistantDraftConfirmRequest: {
+          type: "object",
+          properties: {
+            customerPhone: { type: "string", example: "553182502353" },
+          },
+          required: ["customerPhone"],
+        },
+        WhatsAppAssistantOrderSummary: {
+          type: "object",
+          properties: {
+            id: { type: "string", format: "uuid" },
+            orderNumber: { type: "string", example: "PED-000123" },
+            customerName: { type: "string", example: "Igor Silva" },
+            orderDate: { type: "string", example: "2026-04-12" },
+            deliveryDate: { type: "string", example: "2026-04-15" },
+            deliveryTime: { type: "string", nullable: true, example: "18:00" },
+            deliveryMode: { type: "string", enum: ["Entrega", "Retirada"] },
+            status: { type: "string", example: "Novo" },
+            paymentStatus: { type: "string", example: "Pendente" },
+            subtotalAmountCents: { type: "integer", example: 4990 },
+            paidAmountCents: { type: "integer", example: 0 },
+            remainingAmountCents: { type: "integer", example: 4990 },
+            itemSummary: { type: "string", nullable: true, example: "Ovo de colher 500g - Leite Ninho" },
+          },
+        },
+        WhatsAppAssistantOrderSummaryList: {
+          type: "array",
+          items: { $ref: "#/components/schemas/WhatsAppAssistantOrderSummary" },
+        },
+        WhatsAppAssistantSessionStatus: {
+          type: "object",
+          properties: {
+            customerExists: { type: "boolean", example: true },
+            hasDraftOrder: { type: "boolean", example: true },
+            missingFields: {
+              type: "array",
+              items: { type: "string" },
+              example: ["flavor", "address"],
+            },
+            lastOrderId: { type: "string", format: "uuid", nullable: true },
+          },
         },
         ChatHistorySaveMessageRequest: {
           type: "object",

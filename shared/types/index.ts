@@ -24,3 +24,4 @@ export * from "./users.types";
 export * from "./production.types";
 export * from "./account.types";
 export * from "./bot.types";
+export * from "./whatsapp-assistant.types";

@@ -9,8 +9,10 @@ import { registerBotRoutes } from "../../server/modules/bot/bot.routes";
 import { registerChatHistoryRoutes } from "../../server/modules/chat-history/chat-history.routes";
 import { registerOrdersRoutes } from "../../server/modules/orders/orders.routes";
 import { registerTtsRoutes } from "../../server/modules/tts/tts.routes";
+import { registerWhatsAppAssistantRoutes } from "../../server/modules/whatsapp-assistant/whatsapp-assistant.routes";
 import { registerWhatsAppWebhookRoutes } from "../../server/modules/whatsapp-webhook/whatsapp-webhook.routes";
 import { ChatHistoryService } from "../../server/services/chat-history.service";
+import { WhatsAppAssistantService } from "../../server/services/whatsapp-assistant.service";
 import { requireAuth } from "../../server/middlewares/require-auth";
 import { errorHandler } from "../../server/middlewares/error-handler";
 import { TtsService } from "../../server/services/tts.service";
@@ -62,6 +64,7 @@ function buildTestApp() {
   registerWhatsAppWebhookRoutes(app);
   registerAuthRoutes(app);
   registerBotRoutes(app);
+  registerWhatsAppAssistantRoutes(app);
   registerChatHistoryRoutes(app);
   registerTtsRoutes(app);
   app.use("/api", requireAuth);
@@ -241,6 +244,16 @@ test("POST /api/chat-history/messages returns 401 without bot token", async () =
   });
 });
 
+test("GET /api/whatsapp-assistant/catalog returns 401 without bot token", async () => {
+  await withServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/whatsapp-assistant/catalog`);
+    const body = await readJson(response);
+
+    assert.equal(response.status, 401);
+    assert.equal(body.message, "Autenticacao do bot obrigatoria.");
+  });
+});
+
 test("POST /api/chat-history/messages rejects invalid payloads", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/chat-history/messages`, {
@@ -361,6 +374,254 @@ test("chat history routes save messages and return recent context for bot calls"
     ChatHistoryService.prototype.saveMessage = originalSaveMessage;
     ChatHistoryService.prototype.getRecentMessages = originalGetRecentMessages;
     ChatHistoryService.prototype.getConversationContext = originalGetConversationContext;
+  }
+});
+
+test("whatsapp assistant routes expose customer, draft, orders and session for bot calls", async () => {
+  const originalGetCustomerByPhone =
+    WhatsAppAssistantService.prototype.getCustomerByPhone;
+  const originalUpsertCustomer =
+    WhatsAppAssistantService.prototype.upsertCustomer;
+  const originalGetCatalog = WhatsAppAssistantService.prototype.getCatalog;
+  const originalSearchCatalog = WhatsAppAssistantService.prototype.searchCatalog;
+  const originalGetDraftByPhone =
+    WhatsAppAssistantService.prototype.getDraftByPhone;
+  const originalUpsertDraft = WhatsAppAssistantService.prototype.upsertDraft;
+  const originalConfirmDraft = WhatsAppAssistantService.prototype.confirmDraft;
+  const originalListOrdersByPhone =
+    WhatsAppAssistantService.prototype.listOrdersByPhone;
+  const originalGetOrderById = WhatsAppAssistantService.prototype.getOrderById;
+  const originalGetSessionStatus =
+    WhatsAppAssistantService.prototype.getSessionStatus;
+
+  WhatsAppAssistantService.prototype.getCustomerByPhone = async (phone: string) => ({
+    whatsappCustomerId: "wa-1",
+    customerId: "cust-1",
+    phone,
+    name: "Igor Silva",
+    email: "igor@email.com",
+    address: "Rua A, 100",
+    notes: null,
+    isActive: true,
+    source: "linked",
+    lastInteractionAt: "2026-04-12T10:00:00.000Z",
+  });
+  WhatsAppAssistantService.prototype.upsertCustomer = async (input: any) => ({
+    whatsappCustomerId: "wa-1",
+    customerId: "cust-1",
+    phone: input.phone,
+    name: input.name ?? "Igor Silva",
+    email: "igor@email.com",
+    address: input.address ?? null,
+    notes: input.notes ?? null,
+    isActive: true,
+    source: "linked",
+    lastInteractionAt: "2026-04-12T10:00:00.000Z",
+  });
+  WhatsAppAssistantService.prototype.getCatalog = async () => [
+    {
+      id: "prod-1",
+      name: "Ovo de colher 500g",
+      category: "Ovos",
+      priceCents: 4990,
+      available: true,
+      notes: null,
+      primaryImageUrl: null,
+    },
+  ];
+  WhatsAppAssistantService.prototype.searchCatalog = async () => [
+    {
+      id: "prod-1",
+      name: "Ovo de colher 500g",
+      category: "Ovos",
+      priceCents: 4990,
+      available: true,
+      notes: null,
+      primaryImageUrl: null,
+    },
+  ];
+  WhatsAppAssistantService.prototype.getDraftByPhone = async (phone: string) => ({
+    id: "draft-1",
+    customerPhone: phone,
+    whatsappCustomerId: "wa-1",
+    customerId: "cust-1",
+    productId: "prod-1",
+    productName: "Ovo de colher 500g",
+    quantity: 2,
+    flavor: "Ninho",
+    deliveryDate: "2026-04-15",
+    deliveryType: "pickup",
+    address: null,
+    notes: null,
+    createdAt: "2026-04-12T10:00:00.000Z",
+    updatedAt: "2026-04-12T10:00:00.000Z",
+  });
+  WhatsAppAssistantService.prototype.upsertDraft = async (input: any) => ({
+    id: "draft-1",
+    customerPhone: input.customerPhone,
+    whatsappCustomerId: "wa-1",
+    customerId: "cust-1",
+    productId: input.productId ?? null,
+    productName: input.productName ?? "Ovo de colher 500g",
+    quantity: input.quantity ?? 1,
+    flavor: input.flavor ?? null,
+    deliveryDate: input.deliveryDate ?? null,
+    deliveryType: input.deliveryType ?? null,
+    address: input.address ?? null,
+    notes: input.notes ?? null,
+    createdAt: "2026-04-12T10:00:00.000Z",
+    updatedAt: "2026-04-12T10:00:00.000Z",
+  });
+  WhatsAppAssistantService.prototype.confirmDraft = async () => ({
+    orderId: "order-1",
+    orderNumber: "PED-000123",
+    status: "Novo",
+    paymentStatus: "Pendente",
+  });
+  WhatsAppAssistantService.prototype.listOrdersByPhone = async () => [
+    {
+      id: "order-1",
+      orderNumber: "PED-000123",
+      customerName: "Igor Silva",
+      orderDate: "2026-04-12",
+      deliveryDate: "2026-04-15",
+      deliveryTime: null,
+      deliveryMode: "Retirada",
+      status: "Novo",
+      paymentStatus: "Pendente",
+      subtotalAmountCents: 4990,
+      paidAmountCents: 0,
+      remainingAmountCents: 4990,
+      itemSummary: "Ovo de colher 500g - Ninho",
+    },
+  ];
+  WhatsAppAssistantService.prototype.getOrderById = async (id: string) => ({
+    id,
+    orderNumber: "PED-000123",
+  });
+  WhatsAppAssistantService.prototype.getSessionStatus = async () => ({
+    customerExists: true,
+    hasDraftOrder: true,
+    missingFields: [],
+    lastOrderId: "order-1",
+  });
+
+  try {
+    await withServer(async (baseUrl) => {
+      const headers = {
+        authorization: "Bearer test-bot-token",
+        "content-type": "application/json",
+      };
+
+      const customerResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/customers/by-phone/553182502353`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const customer = await readJson(customerResponse);
+      assert.equal(customerResponse.status, 200);
+      assert.equal(customer.phone, "553182502353");
+
+      const upsertCustomerResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/customers/upsert`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            phone: "553182502353",
+            name: "Igor Silva",
+          }),
+        },
+      );
+      assert.equal(upsertCustomerResponse.status, 201);
+
+      const catalogResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/catalog`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const catalog = await readJson(catalogResponse);
+      assert.equal(catalogResponse.status, 200);
+      assert.equal(Array.isArray(catalog), true);
+
+      const searchResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/catalog/search?q=ovo`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      assert.equal(searchResponse.status, 200);
+
+      const draftResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/orders/draft/553182502353`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const draft = await readJson(draftResponse);
+      assert.equal(draftResponse.status, 200);
+      assert.equal(draft.customerPhone, "553182502353");
+
+      const upsertDraftResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/orders/draft/upsert`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            customerPhone: "553182502353",
+            productId: "11111111-1111-1111-1111-111111111111",
+            quantity: 2,
+          }),
+        },
+      );
+      assert.equal(upsertDraftResponse.status, 201);
+
+      const confirmResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/orders/draft/confirm`,
+        {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            customerPhone: "553182502353",
+          }),
+        },
+      );
+      const confirmed = await readJson(confirmResponse);
+      assert.equal(confirmResponse.status, 200);
+      assert.equal(confirmed.orderNumber, "PED-000123");
+
+      const ordersResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/orders/by-phone/553182502353`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const orders = await readJson(ordersResponse);
+      assert.equal(ordersResponse.status, 200);
+      assert.equal(Array.isArray(orders), true);
+
+      const orderDetailResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/orders/11111111-1111-1111-1111-111111111111`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const orderDetail = await readJson(orderDetailResponse);
+      assert.equal(orderDetailResponse.status, 200);
+      assert.equal(orderDetail.id, "11111111-1111-1111-1111-111111111111");
+
+      const sessionResponse = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/session/553182502353`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const session = await readJson(sessionResponse);
+      assert.equal(sessionResponse.status, 200);
+      assert.equal(session.customerExists, true);
+    });
+  } finally {
+    WhatsAppAssistantService.prototype.getCustomerByPhone =
+      originalGetCustomerByPhone;
+    WhatsAppAssistantService.prototype.upsertCustomer = originalUpsertCustomer;
+    WhatsAppAssistantService.prototype.getCatalog = originalGetCatalog;
+    WhatsAppAssistantService.prototype.searchCatalog = originalSearchCatalog;
+    WhatsAppAssistantService.prototype.getDraftByPhone = originalGetDraftByPhone;
+    WhatsAppAssistantService.prototype.upsertDraft = originalUpsertDraft;
+    WhatsAppAssistantService.prototype.confirmDraft = originalConfirmDraft;
+    WhatsAppAssistantService.prototype.listOrdersByPhone =
+      originalListOrdersByPhone;
+    WhatsAppAssistantService.prototype.getOrderById = originalGetOrderById;
+    WhatsAppAssistantService.prototype.getSessionStatus =
+      originalGetSessionStatus;
   }
 });
 

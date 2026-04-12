@@ -15,3 +15,5 @@ export * from "./recipe-media";
 export * from "./recipes";
 export * from "./users";
 export * from "./customers";
+export * from "./whatsapp-customers";
+export * from "./whatsapp-order-drafts";

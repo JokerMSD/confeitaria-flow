@@ -14,3 +14,4 @@ export * from "./production.validators";
 export * from "./account.validators";
 export * from "./bot.validators";
 export * from "./tts.validators";
+export * from "./whatsapp-assistant.validators";
