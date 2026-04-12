@@ -312,20 +312,21 @@ function buildOpenApiDocument() {
         responses: { "200": jsonResponse("Link retornado") },
       },
     },
-    "/api/whatsapp-assistant/customers/by-phone/{phone}": {
-      get: {
-        tags: ["WhatsApp Assistant"],
-        summary: "Busca cliente ou perfil do canal por telefone",
-        security: botAuth,
+      "/api/whatsapp-assistant/customers/by-phone/{phone}": {
+        get: {
+          tags: ["WhatsApp Assistant"],
+          summary: "Busca cliente ou perfil do canal por telefone",
+          security: botAuth,
         parameters: [
           { name: "phone", in: "path", required: true, schema: { type: "string", example: "553182502353" } },
-        ],
-        responses: {
-          "200": jsonResponse("Cliente encontrado ou null", "#/components/schemas/WhatsAppAssistantCustomer"),
-          "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+          ],
+          responses: {
+            "200": jsonResponse("Cliente encontrado", "#/components/schemas/WhatsAppAssistantCustomer"),
+            "404": jsonResponse("Cliente nao encontrado", "#/components/schemas/ErrorResponse"),
+            "401": jsonResponse("Token do bot invalido", "#/components/schemas/ErrorResponse"),
+          },
         },
       },
-    },
     "/api/whatsapp-assistant/customers/upsert": {
       post: {
         tags: ["WhatsApp Assistant"],

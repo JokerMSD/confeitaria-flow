@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { WhatsAppAssistantService } from "../../services/whatsapp-assistant.service";
+import { HttpError } from "../../utils/http-error";
 
 export class WhatsAppAssistantController {
   private readonly whatsappAssistantService = new WhatsAppAssistantService();
@@ -8,6 +9,9 @@ export class WhatsAppAssistantController {
     const data = await this.whatsappAssistantService.getCustomerByPhone(
       String(req.params.phone),
     );
+    if (!data) {
+      throw new HttpError(404, "Cliente nao encontrado para este telefone.");
+    }
     res.json(data);
   }
 

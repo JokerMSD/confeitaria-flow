@@ -625,6 +625,29 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
   }
 });
 
+test("GET /api/whatsapp-assistant/customers/by-phone/:phone returns 404 when customer does not exist", async () => {
+  const originalGetCustomerByPhone =
+    WhatsAppAssistantService.prototype.getCustomerByPhone;
+
+  WhatsAppAssistantService.prototype.getCustomerByPhone = async () => null;
+
+  try {
+    await withServer(async (baseUrl) => {
+      const response = await fetch(
+        `${baseUrl}/api/whatsapp-assistant/customers/by-phone/553182502353`,
+        { headers: { authorization: "Bearer test-bot-token" } },
+      );
+      const body = await readJson(response);
+
+      assert.equal(response.status, 404);
+      assert.equal(body.message, "Cliente nao encontrado para este telefone.");
+    });
+  } finally {
+    WhatsAppAssistantService.prototype.getCustomerByPhone =
+      originalGetCustomerByPhone;
+  }
+});
+
 test("POST /api/tts/voice-note returns 401 without bot token", async () => {
   await withServer(async (baseUrl) => {
     const response = await fetch(`${baseUrl}/api/tts/voice-note`, {
