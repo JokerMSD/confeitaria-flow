@@ -31,6 +31,8 @@ test("whatsapp assistant catalog exposes available flavors from product detail",
             minFillings: 1,
             maxFillings: 3,
             fillingOptions: [
+              { id: "fill-base", name: "Base recheio" },
+              { id: "fill-simple", name: "Recheio simples" },
               { id: "fill-1", name: "Ninho" },
               { id: "fill-2", name: "Brigadeiro" },
             ],
@@ -73,6 +75,41 @@ test("whatsapp assistant catalog exposes available flavors from product detail",
   assert.equal(result[1].minFillings, 0);
   assert.equal(result[1].maxFillings, 0);
   assert.deepEqual(result[1].additionalGroups, []);
+});
+
+test("whatsapp assistant does not accept base recipes as sellable flavors", () => {
+  const service = new WhatsAppAssistantService() as any;
+
+  assert.throws(
+    () =>
+      service.resolveFlavorOption(
+        {
+          fillingOptions: [
+            { id: "fill-base", name: "Base recheio" },
+            { id: "fill-simple", name: "Recheio simples" },
+            { id: "fill-1", name: "Ninho" },
+          ],
+        },
+        "Base recheio",
+      ),
+    {
+      message: "O sabor informado nao existe para esse produto.",
+    },
+  );
+
+  assert.equal(
+    service.resolveFlavorOption(
+      {
+        fillingOptions: [
+          { id: "fill-base", name: "Base recheio" },
+          { id: "fill-simple", name: "Recheio simples" },
+          { id: "fill-1", name: "Ninho" },
+        ],
+      },
+      "Ninho",
+    )?.name,
+    "Ninho",
+  );
 });
 
 test("whatsapp assistant sanitizes phone and merges customer profile data", async () => {

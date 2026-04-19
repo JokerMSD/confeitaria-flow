@@ -70,6 +70,11 @@ function mergePartialText(
   return normalized ?? previous ?? null;
 }
 
+const NON_SELLABLE_FLAVOR_RECIPE_NAMES = new Set([
+  "base recheio",
+  "recheio simples",
+]);
+
 export class WhatsAppAssistantService {
   private readonly customersRepository = new CustomersRepository();
   private readonly ordersRepository = new OrdersRepository();
@@ -508,12 +513,13 @@ export class WhatsAppAssistantService {
     flavorName: string | null,
   ) {
     const normalizedFlavor = normalizeSearch(flavorName ?? "");
+    const visibleFlavorOptions = this.listSellableFlavorOptions(productDetail);
 
     if (!normalizedFlavor) {
       return null;
     }
 
-    const exactMatch = productDetail.fillingOptions.find(
+    const exactMatch = visibleFlavorOptions.find(
       (option) => normalizeSearch(option.name) === normalizedFlavor,
     );
 
@@ -521,7 +527,7 @@ export class WhatsAppAssistantService {
       return exactMatch;
     }
 
-    const fuzzyMatches = productDetail.fillingOptions.filter((option) => {
+    const fuzzyMatches = visibleFlavorOptions.filter((option) => {
       const normalizedOption = normalizeSearch(option.name);
       return (
         normalizedOption.includes(normalizedFlavor) ||
@@ -571,7 +577,14 @@ export class WhatsAppAssistantService {
       return [];
     }
 
-    return productDetail.fillingOptions.map((option) => option.name);
+    return this.listSellableFlavorOptions(productDetail).map((option) => option.name);
+  }
+
+  private listSellableFlavorOptions(productDetail: PublicStoreProductDetail) {
+    return productDetail.fillingOptions.filter(
+      (option) =>
+        !NON_SELLABLE_FLAVOR_RECIPE_NAMES.has(normalizeSearch(option.name)),
+    );
   }
 
   private mapDraft(row: any): WhatsAppAssistantDraftOrder {
