@@ -29,22 +29,50 @@ test("whatsapp assistant catalog exposes available flavors from product detail",
         ? {
             id,
             minFillings: 1,
+            maxFillings: 3,
             fillingOptions: [
               { id: "fill-1", name: "Ninho" },
               { id: "fill-2", name: "Brigadeiro" },
+            ],
+            additionalGroups: [
+              {
+                id: "group-1",
+                productRecipeId: id,
+                name: "Adicionais da casa",
+                minSelections: 0,
+                maxSelections: 2,
+                position: 0,
+                options: [
+                  {
+                    id: "opt-1",
+                    groupId: "group-1",
+                    name: "Kit Kat",
+                    priceDeltaCents: 600,
+                    position: 0,
+                  },
+                ],
+              },
             ],
           }
         : {
             id,
             minFillings: 0,
+            maxFillings: 0,
             fillingOptions: [{ id: "fill-3", name: "Nao deve aparecer" }],
+            additionalGroups: [],
           },
   };
 
   const result = await service.getCatalog();
 
   assert.deepEqual(result[0].availableFlavors, ["Ninho", "Brigadeiro"]);
+  assert.equal(result[0].minFillings, 1);
+  assert.equal(result[0].maxFillings, 3);
+  assert.equal(result[0].additionalGroups[0]?.options[0]?.name, "Kit Kat");
   assert.deepEqual(result[1].availableFlavors, []);
+  assert.equal(result[1].minFillings, 0);
+  assert.equal(result[1].maxFillings, 0);
+  assert.deepEqual(result[1].additionalGroups, []);
 });
 
 test("whatsapp assistant sanitizes phone and merges customer profile data", async () => {

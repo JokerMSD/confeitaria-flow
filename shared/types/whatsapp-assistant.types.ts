@@ -1,4 +1,5 @@
 import type { DeliveryMode, OrderStatus, PaymentStatus } from "./order-item.types";
+import type { ProductAdditionalGroupDetail } from "./product-additional.types";
 
 export interface WhatsAppAssistantCustomer {
   whatsappCustomerId: string | null;
@@ -29,6 +30,9 @@ export interface WhatsAppAssistantCatalogItem {
   notes: string | null;
   primaryImageUrl: string | null;
   availableFlavors: string[];
+  minFillings: number;
+  maxFillings: number;
+  additionalGroups: ProductAdditionalGroupDetail[];
 }
 
 export interface WhatsAppAssistantDraftOrder {

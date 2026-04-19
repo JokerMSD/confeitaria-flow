@@ -1223,6 +1223,35 @@ function buildOpenApiDocument() {
               items: { type: "string" },
               example: ["Ninho", "Brigadeiro", "Morango", "Maracuja"],
             },
+            minFillings: { type: "integer", example: 1 },
+            maxFillings: { type: "integer", example: 3 },
+            additionalGroups: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  id: { type: "string", format: "uuid" },
+                  productRecipeId: { type: "string", format: "uuid" },
+                  name: { type: "string", example: "Adicionais da casa" },
+                  minSelections: { type: "integer", example: 0 },
+                  maxSelections: { type: "integer", example: 2 },
+                  position: { type: "integer", example: 0 },
+                  options: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        id: { type: "string", format: "uuid" },
+                        groupId: { type: "string", format: "uuid" },
+                        name: { type: "string", example: "Kit Kat" },
+                        priceDeltaCents: { type: "integer", example: 600 },
+                        position: { type: "integer", example: 0 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         WhatsAppAssistantCatalogList: {

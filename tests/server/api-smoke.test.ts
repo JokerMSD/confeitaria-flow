@@ -428,6 +428,27 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
       notes: null,
       primaryImageUrl: null,
       availableFlavors: ["Ninho", "Brigadeiro"],
+      minFillings: 1,
+      maxFillings: 3,
+      additionalGroups: [
+        {
+          id: "group-1",
+          productRecipeId: "prod-1",
+          name: "Adicionais da casa",
+          minSelections: 0,
+          maxSelections: 2,
+          position: 0,
+          options: [
+            {
+              id: "opt-1",
+              groupId: "group-1",
+              name: "Kit Kat",
+              priceDeltaCents: 600,
+              position: 0,
+            },
+          ],
+        },
+      ],
     },
   ];
   WhatsAppAssistantService.prototype.searchCatalog = async () => [
@@ -440,6 +461,27 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
       notes: null,
       primaryImageUrl: null,
       availableFlavors: ["Ninho", "Brigadeiro"],
+      minFillings: 1,
+      maxFillings: 3,
+      additionalGroups: [
+        {
+          id: "group-1",
+          productRecipeId: "prod-1",
+          name: "Adicionais da casa",
+          minSelections: 0,
+          maxSelections: 2,
+          position: 0,
+          options: [
+            {
+              id: "opt-1",
+              groupId: "group-1",
+              name: "Kit Kat",
+              priceDeltaCents: 600,
+              position: 0,
+            },
+          ],
+        },
+      ],
     },
   ];
   WhatsAppAssistantService.prototype.getDraftByPhone = async (phone: string) => ({
@@ -547,6 +589,9 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
         "Ninho",
         "Brigadeiro",
       ]);
+      assert.equal((catalog as any[])[0]?.minFillings, 1);
+      assert.equal((catalog as any[])[0]?.maxFillings, 3);
+      assert.equal((catalog as any[])[0]?.additionalGroups?.[0]?.options?.[0]?.name, "Kit Kat");
 
       const searchResponse = await fetch(
         `${baseUrl}/api/whatsapp-assistant/catalog/search?q=ovo`,

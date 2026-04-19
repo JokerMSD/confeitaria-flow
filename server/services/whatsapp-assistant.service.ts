@@ -560,6 +560,9 @@ export class WhatsAppAssistantService {
       notes: product.notes,
       primaryImageUrl: product.primaryImageUrl,
       availableFlavors: this.extractAvailableFlavors(productDetail),
+      minFillings: productDetail.minFillings,
+      maxFillings: productDetail.maxFillings,
+      additionalGroups: productDetail.additionalGroups,
     };
   }
 
