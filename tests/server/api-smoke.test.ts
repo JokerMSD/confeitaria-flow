@@ -427,6 +427,7 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
       available: true,
       notes: null,
       primaryImageUrl: null,
+      availableFlavors: ["Ninho", "Brigadeiro"],
     },
   ];
   WhatsAppAssistantService.prototype.searchCatalog = async () => [
@@ -438,6 +439,7 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
       available: true,
       notes: null,
       primaryImageUrl: null,
+      availableFlavors: ["Ninho", "Brigadeiro"],
     },
   ];
   WhatsAppAssistantService.prototype.getDraftByPhone = async (phone: string) => ({
@@ -541,6 +543,10 @@ test("whatsapp assistant routes expose customer, draft, orders and session for b
       const catalog = await readJson(catalogResponse);
       assert.equal(catalogResponse.status, 200);
       assert.equal(Array.isArray(catalog), true);
+      assert.deepEqual((catalog as any[])[0]?.availableFlavors, [
+        "Ninho",
+        "Brigadeiro",
+      ]);
 
       const searchResponse = await fetch(
         `${baseUrl}/api/whatsapp-assistant/catalog/search?q=ovo`,

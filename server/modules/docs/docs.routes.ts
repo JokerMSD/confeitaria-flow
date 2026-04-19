@@ -1218,6 +1218,11 @@ function buildOpenApiDocument() {
             available: { type: "boolean", example: true },
             notes: { type: "string", nullable: true },
             primaryImageUrl: { type: "string", nullable: true, example: "/uploads/catalog/produto.png" },
+            availableFlavors: {
+              type: "array",
+              items: { type: "string" },
+              example: ["Ninho", "Brigadeiro", "Morango", "Maracuja"],
+            },
           },
         },
         WhatsAppAssistantCatalogList: {

@@ -28,6 +28,7 @@ export interface WhatsAppAssistantCatalogItem {
   available: boolean;
   notes: string | null;
   primaryImageUrl: string | null;
+  availableFlavors: string[];
 }
 
 export interface WhatsAppAssistantDraftOrder {

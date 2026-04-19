@@ -2,6 +2,51 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { WhatsAppAssistantService } from "../../server/services/whatsapp-assistant.service";
 
+test("whatsapp assistant catalog exposes available flavors from product detail", async () => {
+  const service = new WhatsAppAssistantService() as any;
+
+  service.publicStoreService = {
+    listProducts: async () => [
+      {
+        id: "prod-1",
+        name: "Ovo de colher 500g",
+        notes: "Peso nominal 500g.",
+        primaryImageUrl: "/uploads/catalog/prod-1.jpg",
+        salePriceCents: 4990,
+        effectiveSalePriceCents: 4990,
+      },
+      {
+        id: "prod-2",
+        name: "Caixa presente",
+        notes: null,
+        primaryImageUrl: null,
+        salePriceCents: 2990,
+        effectiveSalePriceCents: 2990,
+      },
+    ],
+    getProduct: async (id: string) =>
+      id === "prod-1"
+        ? {
+            id,
+            minFillings: 1,
+            fillingOptions: [
+              { id: "fill-1", name: "Ninho" },
+              { id: "fill-2", name: "Brigadeiro" },
+            ],
+          }
+        : {
+            id,
+            minFillings: 0,
+            fillingOptions: [{ id: "fill-3", name: "Nao deve aparecer" }],
+          },
+  };
+
+  const result = await service.getCatalog();
+
+  assert.deepEqual(result[0].availableFlavors, ["Ninho", "Brigadeiro"]);
+  assert.deepEqual(result[1].availableFlavors, []);
+});
+
 test("whatsapp assistant sanitizes phone and merges customer profile data", async () => {
   const service = new WhatsAppAssistantService() as any;
 

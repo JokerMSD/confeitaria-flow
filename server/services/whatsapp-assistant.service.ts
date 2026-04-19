@@ -160,10 +160,13 @@ export class WhatsAppAssistantService {
 
   async getCatalog(): Promise<WhatsAppAssistantCatalogItem[]> {
     const products = await this.publicStoreService.listProducts();
+    const pricedProducts = products.filter(
+      (product) => getProductPriceCents(product) > 0,
+    );
 
-    return products
-      .filter((product) => getProductPriceCents(product) > 0)
-      .map((product) => this.mapCatalogItem(product));
+    return Promise.all(
+      pricedProducts.map((product) => this.mapCatalogItem(product)),
+    );
   }
 
   async searchCatalog(query: string): Promise<WhatsAppAssistantCatalogItem[]> {
@@ -543,7 +546,11 @@ export class WhatsAppAssistantService {
     );
   }
 
-  private mapCatalogItem(product: PublicStoreProductSummary): WhatsAppAssistantCatalogItem {
+  private async mapCatalogItem(
+    product: PublicStoreProductSummary,
+  ): Promise<WhatsAppAssistantCatalogItem> {
+    const productDetail = await this.publicStoreService.getProduct(product.id);
+
     return {
       id: product.id,
       name: product.name,
@@ -552,7 +559,16 @@ export class WhatsAppAssistantService {
       available: true,
       notes: product.notes,
       primaryImageUrl: product.primaryImageUrl,
+      availableFlavors: this.extractAvailableFlavors(productDetail),
     };
+  }
+
+  private extractAvailableFlavors(productDetail: PublicStoreProductDetail) {
+    if ((productDetail.minFillings ?? 0) <= 0) {
+      return [];
+    }
+
+    return productDetail.fillingOptions.map((option) => option.name);
   }
 
   private mapDraft(row: any): WhatsAppAssistantDraftOrder {
